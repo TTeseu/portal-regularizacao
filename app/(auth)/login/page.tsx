@@ -15,12 +15,8 @@ export default async function LoginPage({
     <main className="grid min-h-screen place-items-center bg-edp-navy px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-8 flex items-center justify-center">
-          <div
-            className="flex h-20 w-40 items-center justify-center rounded-2xl border border-white/10 bg-white/5 bg-contain bg-center bg-no-repeat px-6"
-            style={{ backgroundImage: "url('https://www.edp.com.br/css/icons/EDP-Logo-white.svg')" }}
-            aria-label="EDP"
-          >
-            <span className="text-3xl font-bold tracking-wide text-white">EDP</span>
+          <div className="flex h-20 w-40 items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-6">
+            <img src="/edp-logo-white.svg" alt="EDP" className="h-12 w-auto" />
           </div>
         </div>
         <form action="/api/auth/login" method="post" className="panel p-8">

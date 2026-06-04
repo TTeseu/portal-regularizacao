@@ -26,12 +26,8 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-edp-navy">
       <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-line bg-edp-navy lg:block">
         <div className="flex h-24 items-center gap-4 border-b border-line px-6">
-          <div
-            className="flex h-14 w-28 items-center justify-center rounded-xl border border-white/10 bg-white/5 bg-contain bg-center bg-no-repeat px-4"
-            style={{ backgroundImage: "url('https://www.edp.com.br/css/icons/EDP-Logo-white.svg')" }}
-            aria-label="EDP"
-          >
-            <span className="text-xl font-bold tracking-wide text-white">EDP</span>
+          <div className="flex h-14 w-28 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4">
+            <img src="/edp-logo-white.svg" alt="EDP" className="h-9 w-auto" />
           </div>
           <div>
             <div className="text-sm font-bold text-white">Portal</div>

@@ -92,7 +92,7 @@ export default async function DashboardPage({
       <section className="rounded-2xl border border-line bg-surface/60 px-6 py-6">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-edp">EDP</p>
+            <img src="/edp-logo-white.svg" alt="EDP" className="h-8 w-auto" />
             <h1 className="mt-2 text-3xl font-bold text-white">Portal de Regularização</h1>
           </div>
           <p className="max-w-xl text-sm leading-6 text-edp-muted">
