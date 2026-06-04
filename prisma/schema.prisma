@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Notificacao {
+  id                      String    @id
+  created_date            DateTime?
+  updated_date            DateTime?
+  created_by_id           String?
+  created_by              String?
+  is_sample               Boolean   @default(false)
+
+  tipo_notificacao        String?
+  numero_oficio           String?
+  data_notificacao        String?
+  nota_atendimento        String?
+  empresa                 String?
+  status_envio            String?
+  vencimento              String?
+  ano_vencimento          String?
+  endereco                String?
+  bairro                  String?
+  cidade                  String?
+  estado                  String?
+  contrato_numero         String?
+  ac                      String?
+  numero_nome             String?
+  celebrado_em            String?
+  numero_parceiro         String?
+  cnpj                    String?
+  empresa_rep             String?
+  endereco_rep            String?
+  bairro_rep              String?
+  cidade_rep              String?
+  estado_rep              String?
+  campo_11_6_3            String?
+  empresa_1               String?
+  rua_empresa_1           String?
+  cidade_empresa_1        String?
+  estado_empresa_1        String?
+  cnpj_empresa_1          String?
+  numero_contrato_1       String?
+  empresa_2               String?
+  endereco_empresa_2      String?
+  cnpj_empresa_2          String?
+  numero_contrato_2       String?
+  endereco_notificacao    String?
+  razao_social_condominio String?
+  endereco_condominio     String?
+  cidade_condominio       String?
+  estado_condominio       String?
+  cnpj_condominio         String?
+  condominio_identificado String?
+  data_reuniao            String?
+  prazo_dias              String?
+  prazo_resposta          String?
+  lote_nome               String?
+  lote_id                 String?
+  pdf_base64              String?
+  pdfUrl                  String?
+  html_content            String?
+  status                  String    @default("Pendente")
+  observacoes             String?
+  retorno_cliente         String?
+  anexo_url               String?
+  anexo_nome              String?
+  anexos                  Json?
+  origem                  String    @default("manual")
+  visualizada             Boolean   @default(false)
+  arquivada               Boolean   @default(false)
+  sem_projeto             Boolean   @default(false)
+  encaminhado_prefeitura  Boolean   @default(false)
+  download_count          Int       @default(0)
+  last_downloaded_at      DateTime?
+  last_downloaded_by      String?
+
+  @@index([status])
+  @@index([origem])
+  @@index([empresa])
+  @@index([cidade])
+  @@index([lote_id])
+  @@index([lote_nome])
+  @@index([vencimento])
+  @@index([arquivada])
+  @@index([visualizada])
+  @@index([created_date])
+}
+
+model Empresa {
+  id                    String    @id
+  created_date          DateTime?
+  updated_date          DateTime?
+  created_by_id         String?
+  created_by            String?
+  is_sample             Boolean   @default(false)
+
+  nome                  String
+  cnpj                  String?
+  contrato_numero       String?
+  endereco              String?
+  cidade                String?
+  estado                String?
+  celebrado_em          String?
+  tem_clausula_11_6_3   Boolean   @default(false)
+  campo_11_6_3          String?
+
+  @@index([nome])
+  @@index([cnpj])
+  @@index([contrato_numero])
+  @@index([cidade])
+}
+
+model HistoricoDownload {
+  id                   String    @id
+  created_date         DateTime?
+  updated_date         DateTime?
+  created_by_id        String?
+  created_by           String?
+  is_sample            Boolean   @default(false)
+
+  tipo                 String
+  descricao            String
+  quantidade_arquivos  Int       @default(0)
+  ids_baixados         String[]
+  usuario_nome         String?
+
+  @@index([tipo])
+  @@index([created_date])
+}
+
+model User {
+  id                    String    @id
+  created_date          DateTime?
+  updated_date          DateTime?
+  full_name             String?
+  email                 String    @unique
+  role                  String    @default("user")
+  pode_editar_importar  Boolean   @default(false)
+  password_hash         String?
+
+  @@index([role])
+}
