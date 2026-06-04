@@ -1,14 +1,41 @@
+import { GerarNotificacaoWizard } from "@/components/gerar-notificacao-wizard";
 import { canEdit, requireUser } from "@/lib/auth";
-import { PageTitle } from "@/components/page-title";
-import { NotificacaoForm } from "@/components/notificacao-form";
-import { createNotificacao } from "../../actions";
+import { prisma } from "@/lib/prisma";
+import { createNotificacoesWizard } from "../../actions";
 
 export default async function NovaNotificacaoPage() {
   const user = await requireUser();
+  const [empresas, tiposRows] = await Promise.all([
+    prisma.empresa.findMany({
+      orderBy: { nome: "asc" },
+      select: {
+        id: true,
+        nome: true,
+        cnpj: true,
+        contrato_numero: true,
+        endereco: true,
+        cidade: true,
+        estado: true
+      }
+    }),
+    prisma.notificacao.findMany({
+      distinct: ["tipo_notificacao"],
+      where: { tipo_notificacao: { not: null } },
+      select: { tipo_notificacao: true },
+      take: 20
+    })
+  ]);
+
+  const tipos = tiposRows
+    .map((row) => row.tipo_notificacao)
+    .filter((tipo): tipo is string => Boolean(tipo));
+
   return (
-    <>
-      <PageTitle title="Nova notificação" subtitle="Cadastro manual preservando os campos do Base44." />
-      <NotificacaoForm action={createNotificacao} canEdit={canEdit(user)} />
-    </>
+    <GerarNotificacaoWizard
+      empresas={empresas}
+      tipos={tipos}
+      canEdit={canEdit(user)}
+      action={createNotificacoesWizard}
+    />
   );
 }

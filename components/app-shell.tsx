@@ -13,7 +13,8 @@ import { getCurrentUser } from "@/lib/auth";
 
 const nav = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/notificacoes", label: "Notificações", icon: Bell },
+  { href: "/notificacoes/nova", label: "Gerar Notificação", icon: FileText },
+  { href: "/notificacoes", label: "Buscar Notificações", icon: Bell },
   { href: "/empresas", label: "Empresas", icon: Building2 },
   { href: "/downloads", label: "Downloads", icon: Download },
   { href: "/usuarios", label: "Usuários", icon: Users }

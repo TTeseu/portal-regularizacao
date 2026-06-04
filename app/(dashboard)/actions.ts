@@ -96,6 +96,90 @@ export async function createNotificacao(formData: FormData) {
   redirect(`/notificacoes/${id}`);
 }
 
+function dateFromInput(value: string | null) {
+  if (!value) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  return `${match[3]}/${match[2]}/${match[1]}`;
+}
+
+function pluralLabel(count: number) {
+  return count === 1 ? "notificacao" : "notificacoes";
+}
+
+export async function createNotificacoesWizard(formData: FormData) {
+  const user = await assertCanEdit();
+  const empresaIds = formData.getAll("empresa_ids").map(String).filter(Boolean);
+  if (empresaIds.length === 0) {
+    throw new Error("Selecione ao menos uma empresa.");
+  }
+
+  const empresas = await prisma.empresa.findMany({
+    where: { id: { in: empresaIds } },
+    orderBy: { nome: "asc" }
+  });
+
+  if (empresas.length === 0) {
+    throw new Error("Nenhuma empresa selecionada foi encontrada.");
+  }
+
+  const createdIds: string[] = [];
+  const now = new Date();
+  const loteId = randomUUID();
+  const loteNome = stringValue(formData, "lote_nome") || `Geracao ${now.toLocaleDateString("pt-BR")} - ${empresas.length} ${pluralLabel(empresas.length)}`;
+  const tipo = stringValue(formData, "tipo_notificacao");
+  const numeroOficio = stringValue(formData, "numero_oficio");
+  const dataNotificacao = dateFromInput(stringValue(formData, "data_notificacao"));
+  const prazoDias = stringValue(formData, "prazo_dias");
+  const enderecoNotificacao = stringValue(formData, "endereco_notificacao");
+
+  for (const empresa of empresas) {
+    const id = randomUUID();
+    const data = {
+      id,
+      created_date: now,
+      updated_date: now,
+      created_by_id: user.id,
+      created_by: user.email,
+      tipo_notificacao: tipo,
+      numero_oficio: numeroOficio,
+      data_notificacao: dataNotificacao,
+      empresa: empresa.nome,
+      cnpj: empresa.cnpj,
+      contrato_numero: empresa.contrato_numero,
+      endereco: empresa.endereco,
+      cidade: empresa.cidade,
+      estado: empresa.estado,
+      celebrado_em: empresa.celebrado_em,
+      campo_11_6_3: empresa.campo_11_6_3,
+      endereco_notificacao: enderecoNotificacao,
+      prazo_dias: prazoDias,
+      prazo_resposta: prazoDias,
+      lote_nome: loteNome,
+      lote_id: loteId,
+      status: "Pendente",
+      origem: "manual"
+    };
+
+    const created = await prisma.notificacao.create({ data });
+    await prisma.notificacao.update({
+      where: { id },
+      data: {
+        html_content: buildNotificacaoHtml(created),
+        pdfUrl: `/api/notificacoes/${id}/pdf`
+      }
+    });
+    createdIds.push(id);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/notificacoes");
+  if (createdIds.length === 1) {
+    redirect(`/notificacoes/${createdIds[0]}`);
+  }
+  redirect(`/notificacoes?lote=${encodeURIComponent(loteNome)}`);
+}
+
 export async function updateNotificacao(id: string, formData: FormData) {
   await assertCanEdit();
   const anexos = parseAnexos(formData);

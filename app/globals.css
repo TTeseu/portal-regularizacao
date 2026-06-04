@@ -54,3 +54,7 @@ textarea {
 .panel {
   @apply rounded-lg border border-line bg-white shadow-sm;
 }
+
+.wizard-panel {
+  @apply rounded-lg bg-white shadow-xl shadow-slate-200/80;
+}
