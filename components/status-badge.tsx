@@ -1,15 +1,16 @@
 const colors: Record<string, string> = {
-  Pendente: "border-amber-200 bg-amber-50 text-amber-800",
-  Notificado: "border-blue-200 bg-blue-50 text-blue-800",
-  "Em Análise": "border-violet-200 bg-violet-50 text-violet-800",
-  Regularizado: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  Vencido: "border-red-200 bg-red-50 text-red-800"
+  Pendente: "border-amber-300/30 bg-amber-300/10 text-amber-200",
+  Notificado: "border-sky-300/30 bg-sky-300/10 text-sky-200",
+  "Em Analise": "border-violet-300/30 bg-violet-300/10 text-violet-200",
+  "Em Análise": "border-violet-300/30 bg-violet-300/10 text-violet-200",
+  Regularizado: "border-edp/30 bg-edp/10 text-edp",
+  Vencido: "border-red-300/30 bg-red-400/10 text-red-200"
 };
 
 export function StatusBadge({ status }: { status?: string | null }) {
   const label = status || "Pendente";
   return (
-    <span className={`inline-flex rounded-full border px-2 py-1 text-xs font-semibold ${colors[label] || "border-slate-200 bg-slate-50 text-slate-700"}`}>
+    <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${colors[label] || "border-white/10 bg-white/5 text-edp-muted"}`}>
       {label}
     </span>
   );

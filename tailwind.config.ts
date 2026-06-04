@@ -9,10 +9,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#1f2933",
-        line: "#d8dee7",
-        surface: "#f7f9fb",
-        edp: "#cf2030"
+        ink: "#FFFFFF",
+        line: "rgba(255,255,255,0.08)",
+        surface: "#24354F",
+        card: "#263A57",
+        edp: "#00E676",
+        "edp-hover": "#00C853",
+        "edp-navy": "#1E2D44",
+        "edp-muted": "#C7D0DA"
+      },
+      fontFamily: {
+        sans: ["var(--font-inter)", "Inter", "ui-sans-serif", "system-ui", "sans-serif"]
       }
     }
   },

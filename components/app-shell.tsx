@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import {
   Building2,
   Database,
-  Download,
   FileText,
   LayoutDashboard,
   LogOut,
@@ -16,8 +15,7 @@ const nav = [
   { href: "/notificacoes/nova", label: "Gerar Notificação", icon: FileText },
   { href: "/notificacoes", label: "Buscar Notificações", icon: Search },
   { href: "/empresas", label: "Empresas", icon: Building2 },
-  { href: "/notificacoes?origem=importacao", label: "Importar Dados", icon: Database },
-  { href: "https://github.com/TTeseu/portal-regularizacao", label: "Baixar Código", icon: Download }
+  { href: "/notificacoes?origem=importacao", label: "Importar Dados", icon: Database }
 ];
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
@@ -25,50 +23,55 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   if (!user) redirect("/login");
 
   return (
-    <div className="min-h-screen">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-line bg-white lg:block">
-        <div className="flex h-16 items-center gap-3 border-b border-line px-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-edp text-white">
-            <FileText size={19} />
+    <div className="min-h-screen bg-edp-navy">
+      <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-line bg-edp-navy lg:block">
+        <div className="flex h-24 items-center gap-4 border-b border-line px-6">
+          <div
+            className="flex h-14 w-28 items-center justify-center rounded-xl border border-white/10 bg-white/5 bg-contain bg-center bg-no-repeat px-4"
+            style={{ backgroundImage: "url('https://www.edp.com.br/css/icons/EDP-Logo-white.svg')" }}
+            aria-label="EDP"
+          >
+            <span className="text-xl font-bold tracking-wide text-white">EDP</span>
           </div>
           <div>
-            <div className="text-sm font-bold">Portal</div>
-            <div className="text-xs text-slate-500">Regularização</div>
+            <div className="text-sm font-bold text-white">Portal</div>
+            <div className="text-xs font-medium text-edp">Regularização</div>
           </div>
         </div>
-        <nav className="space-y-1 px-3 py-4">
+        <nav className="space-y-2 px-4 py-6">
           {nav.map((item) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                className="group flex items-center gap-3 rounded-xl border border-transparent px-4 py-3 text-sm font-semibold text-edp-muted transition hover:border-white/10 hover:bg-white/[0.06] hover:text-white"
               >
-                <Icon size={18} />
+                <Icon size={18} className="text-white transition group-hover:text-edp" />
                 {item.label}
               </Link>
             );
           })}
         </nav>
       </aside>
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between border-b border-line bg-white px-4 lg:px-8">
+      <div className="lg:pl-72">
+        <header className="sticky top-0 z-20 flex min-h-20 items-center justify-between border-b border-line bg-edp-navy/95 px-4 backdrop-blur lg:px-8">
           <nav className="flex gap-2 overflow-x-auto lg:hidden">
             {nav.map((item) => {
               const Icon = item.icon;
               return (
-                <Link key={item.href} href={item.href} className="btn-secondary px-2">
+                <Link key={item.href} href={item.href} className="btn-secondary px-3">
                   <Icon size={17} />
                   <span className="sr-only">{item.label}</span>
                 </Link>
               );
             })}
           </nav>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-4">
+            <div className="hidden h-9 border-l border-line lg:block" />
             <div className="text-right">
-              <div className="text-sm font-semibold">{user.full_name || user.email}</div>
-              <div className="text-xs text-slate-500">
+              <div className="text-sm font-semibold text-white">{user.full_name || user.email}</div>
+              <div className="text-xs text-edp-muted">
                 {user.role === "admin" ? "Administrador" : "Usuário"}
               </div>
             </div>
@@ -79,7 +82,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             </form>
           </div>
         </header>
-        <main className="px-4 py-6 lg:px-8">{children}</main>
+        <main className="px-4 py-8 lg:px-8">{children}</main>
       </div>
     </div>
   );

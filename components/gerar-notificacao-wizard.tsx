@@ -305,8 +305,8 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Pro
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-4xl font-extrabold leading-tight text-slate-950">Gerar Notificação</h1>
-            <p className="mt-1 text-base text-slate-600">Selecione o tipo, empresas e visualize antes de gerar</p>
+            <h1 className="text-4xl font-bold leading-tight text-white">Gerar Notificação</h1>
+            <p className="mt-1 text-base text-edp-muted">Selecione o tipo, empresas e visualize antes de gerar</p>
           </div>
         </div>
 
@@ -316,13 +316,13 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Pro
             return (
               <div key={item.id} className="flex items-start">
                 <button type="button" onClick={() => setStep(item.id)} className="flex flex-col items-center gap-2 text-sm font-semibold">
-                  <span className={`flex h-10 w-10 items-center justify-center rounded-full ${active ? "bg-violet-600 text-white shadow-lg shadow-violet-200" : "bg-slate-200 text-slate-500"}`}>
+                  <span className={`flex h-10 w-10 items-center justify-center rounded-full border ${active ? "border-edp bg-edp text-edp-navy" : "border-white/10 bg-white/10 text-edp-muted"}`}>
                     {item.id}
                   </span>
-                  <span className={active ? "text-violet-700" : "text-slate-500"}>{item.label}</span>
+                  <span className={active ? "text-edp" : "text-edp-muted"}>{item.label}</span>
                 </button>
                 {index < steps.length - 1 ? (
-                  <div className={`mx-2 mt-5 h-1 w-16 ${index + 1 < step ? "bg-violet-600" : "bg-slate-200"}`} />
+                  <div className={`mx-2 mt-5 h-1 w-16 ${index + 1 < step ? "bg-edp" : "bg-white/10"}`} />
                 ) : null}
               </div>
             );
@@ -331,7 +331,7 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Pro
       </header>
 
       {!canEdit ? (
-        <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="mb-4 rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
           {EDIT_RESTRICTED_MESSAGE}
         </div>
       ) : null}
@@ -390,49 +390,49 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Pro
               </button>
             }
           >
-            <div className="bg-blue-50/80 p-5">
-              <div className="mb-5 flex items-center gap-3 text-2xl font-extrabold text-slate-950">
-                <Edit3 className="text-blue-600" size={24} />
+            <div className="rounded-2xl border border-line bg-surface/60 p-5">
+              <div className="mb-5 flex items-center gap-3 text-2xl font-bold text-white">
+                <Edit3 className="text-edp" size={24} />
                 Editar Informações dos Documentos
               </div>
-              <p className="mb-7 text-sm text-slate-700">As informações preenchidas serão aplicadas a TODOS os {selectedIds.length || 0} PDF(s).</p>
+              <p className="mb-7 text-sm text-edp-muted">As informações preenchidas serão aplicadas a TODOS os {selectedIds.length || 0} PDF(s).</p>
 
               <div className="space-y-5">
                 <label className="block">
-                  <span className="text-sm font-bold text-blue-900">Número da Regularização *</span>
+                  <span className="label">Número da Regularização *</span>
                   <input className="field mt-2" value={form.numero_oficio} onChange={(event) => updateForm("numero_oficio", event.target.value)} placeholder="Ex: 001/2025" />
                 </label>
                 <label className="block">
-                  <span className="text-sm font-bold text-blue-900">Data da Notificação *</span>
+                  <span className="label">Data da Notificação *</span>
                   <input className="field mt-2" type="date" value={form.data_notificacao} onChange={(event) => updateForm("data_notificacao", event.target.value)} />
-                  <span className="mt-2 block text-xs text-blue-700">Formato: São José dos Campos, {displayDate(form.data_notificacao)}</span>
+                  <span className="mt-2 block text-xs text-edp">Formato: São José dos Campos, {displayDate(form.data_notificacao)}</span>
                 </label>
                 <label className="block">
-                  <span className="text-sm font-bold text-blue-900">Prazo para Regularização *</span>
+                  <span className="label">Prazo para Regularização *</span>
                   <select className="field mt-2" value={form.prazo_dias} onChange={(event) => updateForm("prazo_dias", event.target.value)}>
                     <option>10 (dez) dias</option>
                     <option>15 (quinze) dias</option>
                     <option>30 (trinta) dias</option>
                     <option>60 (sessenta) dias</option>
                   </select>
-                  <span className="mt-2 block text-xs text-blue-700">Este prazo aparecerá no texto: "em até X (por extenso) dias"</span>
+                  <span className="mt-2 block text-xs text-edp">Este prazo aparecerá no texto: "em até X (por extenso) dias"</span>
                 </label>
               </div>
 
-              <div className="mt-6 border-t border-blue-200 pt-5">
+              <div className="mt-6 border-t border-line pt-5">
                 <div className="mb-4 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                   <div>
-                    <h3 className="text-xl font-extrabold text-blue-950">Endereços Irregulares (1 a 100)</h3>
-                    <p className="mt-1 text-xs text-blue-700">Você pode definir a quantidade (1-100) de uma vez, adicionar manualmente ou colar em massa.</p>
+                    <h3 className="text-xl font-bold text-white">Endereços Irregulares (1 a 100)</h3>
+                    <p className="mt-1 text-xs text-edp-muted">Você pode definir a quantidade (1-100) de uma vez, adicionar manualmente ou colar em massa.</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <input className="field h-10 w-32" value={addressCount} onChange={(event) => setAddressCount(event.target.value)} placeholder="Qtd (1-100)" />
                     <button type="button" className="btn-secondary h-10" onClick={generateEnderecos}>Gerar</button>
-                    <button type="button" className="btn-secondary h-10 border-violet-300 text-violet-700" onClick={pasteMass}>
+                    <button type="button" className="btn-secondary h-10" onClick={pasteMass}>
                       <Package size={16} />
                       Colar em Massa
                     </button>
-                    <button type="button" className="btn h-10 bg-emerald-600 text-white hover:bg-emerald-700" onClick={() => addEndereco(false)}>
+                    <button type="button" className="btn-primary h-10" onClick={() => addEndereco(false)}>
                       <Plus size={16} />
                       Adicionar Endereço
                     </button>
@@ -441,24 +441,24 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Pro
 
                 <div className="space-y-4">
                   {enderecos.map((row, index) => (
-                    <div key={row.id} className="overflow-hidden rounded-lg border border-blue-200 bg-white">
-                      <div className="flex items-center justify-between border-b border-blue-200 bg-blue-50 px-4 py-3">
-                        <span className="font-bold text-blue-950">Endereço {index + 1}</span>
+                    <div key={row.id} className="overflow-hidden rounded-xl border border-line bg-card">
+                      <div className="flex items-center justify-between border-b border-line bg-surface px-4 py-3">
+                        <span className="font-bold text-white">Endereço {index + 1}</span>
                         <button type="button" className="btn-secondary h-8 px-2 text-red-600" onClick={() => removeEndereco(row.id)} disabled={enderecos.length === 1}>
                           <Trash2 size={15} />
                         </button>
                       </div>
                       <div className="space-y-4 p-4">
                         <label className="block">
-                          <span className="text-sm font-semibold text-slate-900">Endereço (Rua) *</span>
+                          <span className="label">Endereço (Rua) *</span>
                           <input className="field mt-2" value={row.endereco} onChange={(event) => updateEndereco(row.id, "endereco", event.target.value)} placeholder="Ex: Rua das Flores, 123" />
                         </label>
                         <label className="block">
-                          <span className="text-sm font-semibold text-slate-900">Bairro *</span>
+                          <span className="label">Bairro *</span>
                           <input className="field mt-2" value={row.bairro} onChange={(event) => updateEndereco(row.id, "bairro", event.target.value)} placeholder="Ex: Centro" />
                         </label>
                         <label className="block">
-                          <span className="text-sm font-semibold text-slate-900">Cidade *</span>
+                          <span className="label">Cidade *</span>
                           <input className="field mt-2" value={row.cidade} onChange={(event) => updateEndereco(row.id, "cidade", event.target.value)} placeholder="Ex: São Paulo" />
                         </label>
                       </div>
@@ -485,23 +485,23 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Pro
               <span className="label">Nome do lote</span>
               <input className="field mt-1" value={form.lote_nome} onChange={(event) => updateForm("lote_nome", event.target.value)} placeholder={`${selectedIds.length} notificação(ões) - ${displayDate(form.data_notificacao)}`} />
             </label>
-            <div className="mt-5 rounded-md border border-blue-100 bg-blue-50 px-4 py-4 text-sm text-blue-900">
+            <div className="mt-5 rounded-xl border border-edp/25 bg-edp/10 px-4 py-4 text-sm text-edp">
               Ao salvar, o sistema criará uma notificação para cada empresa selecionada, com HTML e URL de PDF gerados automaticamente.
             </div>
           </WizardSection>
         ) : null}
 
-        <footer className="flex items-center justify-between border-t border-line bg-white px-6 py-5">
+        <footer className="flex items-center justify-between border-t border-line bg-card px-6 py-5">
           <div className="flex gap-3">
             <button type="button" className="btn-secondary min-w-24" disabled={step === 1} onClick={() => setStep((current) => Math.max(current - 1, 1))}>Voltar</button>
             <Link href="/notificacoes" className="btn text-red-600 hover:bg-red-50">Cancelar</Link>
           </div>
           {step < 4 ? (
-            <button type="button" className="btn bg-violet-500 px-8 text-white hover:bg-violet-600" disabled={nextDisabled} onClick={goNext}>
+            <button type="button" className="btn-primary px-8" disabled={nextDisabled} onClick={goNext}>
               Continuar para {steps[step]?.label}
             </button>
           ) : (
-            <button className="btn bg-blue-500 px-8 text-white hover:bg-blue-600" disabled={!canEdit || isPending || selectedIds.length === 0}>
+            <button className="btn-primary px-8" disabled={!canEdit || isPending || selectedIds.length === 0}>
               <Save size={16} />
               {isPending ? "Salvando..." : `Salvar ${selectedIds.length} Notificação(ões)`}
             </button>
@@ -515,10 +515,10 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Pro
 function WizardSection({ title, subtitle, aside, children }: { title: string; subtitle: string; aside?: ReactNode; children: ReactNode }) {
   return (
     <>
-      <div className="flex items-start justify-between gap-4 bg-violet-50/60 px-6 py-7">
+      <div className="flex items-start justify-between gap-4 border-b border-line bg-surface px-6 py-7">
         <div>
-          <h2 className="text-2xl font-extrabold text-slate-950">{title}</h2>
-          <p className="mt-2 text-slate-600">{subtitle}</p>
+          <h2 className="text-2xl font-bold text-white">{title}</h2>
+          <p className="mt-2 text-edp-muted">{subtitle}</p>
         </div>
         {aside}
       </div>
@@ -529,13 +529,13 @@ function WizardSection({ title, subtitle, aside, children }: { title: string; su
 
 function PreviewCard({ empresa, previewHtml, onPrint, onView }: { empresa?: EmpresaOption; previewHtml: string; onPrint: () => void; onView: () => void }) {
   return (
-    <div className="rounded-md border border-line bg-white shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line bg-slate-50 px-4 py-4">
+    <div className="rounded-2xl border border-line bg-card">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line bg-surface px-4 py-4">
         <div className="flex gap-3">
-          <FileText className="mt-1 text-violet-600" size={20} />
+          <FileText className="mt-1 text-edp" size={20} />
           <div>
-            <h3 className="font-extrabold text-slate-950">PDF 1 - {empresa?.nome || "Empresa selecionada"}</h3>
-            <p className="text-sm text-slate-600">CNPJ: {empresa?.cnpj || "-"} | Contrato: {empresa?.contrato_numero || "-"}</p>
+            <h3 className="font-bold text-white">PDF 1 - {empresa?.nome || "Empresa selecionada"}</h3>
+            <p className="text-sm text-edp-muted">CNPJ: {empresa?.cnpj || "-"} | Contrato: {empresa?.contrato_numero || "-"}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -543,7 +543,7 @@ function PreviewCard({ empresa, previewHtml, onPrint, onView }: { empresa?: Empr
           <button type="button" className="btn-secondary" onClick={onView}><ExternalLink size={16} />Visualizar</button>
         </div>
       </div>
-      <div className="h-[420px] overflow-auto bg-slate-300 px-8 py-4">
+      <div className="h-[420px] overflow-auto bg-edp-navy px-8 py-4">
         <div className="origin-top scale-[0.58]" dangerouslySetInnerHTML={{ __html: previewHtml }} />
       </div>
     </div>
@@ -552,9 +552,9 @@ function PreviewCard({ empresa, previewHtml, onPrint, onView }: { empresa?: Empr
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-line bg-slate-50 p-4">
-      <div className="flex items-center gap-2 text-xs font-bold uppercase text-slate-500"><Box size={14} />{label}</div>
-      <div className="mt-2 flex items-center gap-2 text-base font-extrabold text-slate-900"><Check size={16} className="text-emerald-600" />{value}</div>
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <div className="flex items-center gap-2 text-xs font-bold uppercase text-edp-muted"><Box size={14} />{label}</div>
+      <div className="mt-2 flex items-center gap-2 text-base font-bold text-white"><Check size={16} className="text-edp" />{value}</div>
     </div>
   );
 }
