@@ -22,8 +22,8 @@ ADMIN_EMAIL="admin@example.com"
 ADMIN_PASSWORD="senha-inicial"
 ADMIN_NAME="Administrador"
 BASE44_APP_ID="690248a304b1770ec9b7c4ed"
-BASE44_EMAIL=""
-BASE44_PASSWORD=""
+BASE44_TOKEN=""
+BASE44_SERVER_URL="https://base44.app"
 ```
 
 `password_hash` e `AUTH_SECRET` sao novos no sistema independente. Eles nao existem no Base44; foram adicionados para substituir o Base44 Auth.
@@ -55,6 +55,8 @@ Exportar:
 npm run export:base44
 ```
 
+O exportador usa `BASE44_TOKEN` para consultar a API do Base44 e grava os JSONs em `exports/base44-690248a304b1770ec9b7c4ed`.
+
 Importar para o banco configurado em `DATABASE_URL`:
 
 ```bash
@@ -68,6 +70,8 @@ node scripts/import-base44.mjs ./exports/base44-690248a304b1770ec9b7c4ed
 ```
 
 IDs originais do Base44 sao preservados para manter historico de downloads e referencias por lote.
+
+Na migracao inicial foram importados 2.146 registros de `Notificacao`, 140 de `Empresa`, 20 de `HistoricoDownload` e 8 usuarios do Base44, mantendo o usuario admin local criado pelo seed.
 
 ## Funcionalidades implementadas
 
@@ -112,6 +116,5 @@ O `buildCommand` configurado roda `prisma generate && next build`.
 ## Limitacoes conhecidas
 
 - O codigo-fonte original do Base44 nao foi exposto pelo conector; a UI foi recriada por engenharia reversa de schema, dados e HTML salvo.
-- A inspecao visual do preview/editor foi bloqueada por falha local do navegador interno.
 - Links antigos em `pdfUrl` podem apontar para storage do Base44; a migracao deve baixar/preservar anexos e HTML antes de desligar o app original.
 - Datas ambigueas foram mantidas como texto para evitar perda de fidelidade.
