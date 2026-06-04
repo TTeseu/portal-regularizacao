@@ -24,6 +24,16 @@ body {
   text-rendering: geometricPrecision;
 }
 
+.edp-technical-bg {
+  background-image:
+    radial-gradient(circle at 18% 10%, rgba(0, 230, 118, 0.11), transparent 28%),
+    radial-gradient(circle at 82% 0%, rgba(110, 231, 255, 0.08), transparent 30%),
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: auto, auto, 56px 56px, 56px 56px;
+  background-position: center, center, 0 0, 0 0;
+}
+
 input,
 select,
 textarea {

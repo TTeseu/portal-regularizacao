@@ -1,15 +1,19 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {
+  Activity,
   AlertTriangle,
   CheckCircle2,
   Clock,
   Download,
   FileText,
+  Filter,
+  Search,
   Send,
   Shield,
   Trash2,
-  TrendingUp
+  TrendingUp,
+  Zap
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/format";
@@ -86,28 +90,40 @@ export default async function DashboardPage({
   ]);
 
   const lotes = groupLotes(recentes);
+  const regularizacaoPct = total > 0 ? Math.round((regularizadas / total) * 100) : 0;
+  const pendentesPct = total > 0 ? Math.round((pendentes / total) * 100) : 0;
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      <section className="rounded-2xl border border-line bg-surface/60 px-6 py-6">
-        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
-            <img src="/edp-logo-white.svg" alt="EDP" className="h-8 w-auto" />
-            <h1 className="mt-2 text-3xl font-bold text-white">Portal de Regularização</h1>
+      <section
+        className="relative min-h-[310px] overflow-hidden rounded-[28px] border border-white/10 bg-cover bg-center px-7 py-8 shadow-2xl shadow-black/20 md:px-10 md:py-10"
+        style={{ backgroundImage: "linear-gradient(90deg, rgba(20,31,49,0.96) 0%, rgba(20,31,49,0.84) 46%, rgba(20,31,49,0.58) 100%), url('/edp-energy-hero.svg')" }}
+      >
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(0,230,118,0.18),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_32%)]" />
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-edp/70 to-transparent" />
+        <div className="relative flex h-full flex-col justify-between gap-10">
+          <div className="max-w-3xl">
+            <img src="/edp-logo-white.svg" alt="EDP" className="h-10 w-auto" />
+            <h1 className="mt-8 text-4xl font-bold leading-tight text-white md:text-5xl">Portal de Regularização</h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-edp-muted md:text-lg">
+              Gestão de notificações, compartilhamento de infraestrutura e acompanhamento operacional
+            </p>
           </div>
-          <p className="max-w-xl text-sm leading-6 text-edp-muted">
-            Painel executivo para acompanhamento de notificações, lotes, downloads e permissões operacionais.
-          </p>
+          <div className="grid gap-3 text-sm text-edp-muted md:grid-cols-3">
+            <HeroSignal label="Infraestrutura" value="Compartilhamento de postes" />
+            <HeroSignal label="Operação" value={`${lotes.length} lotes recentes em análise`} />
+            <HeroSignal label="Eficiência" value={`${regularizacaoPct}% regularizadas`} />
+          </div>
         </div>
       </section>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Total de Notificações" value={total} icon={<FileText size={26} />} tone="blue" />
-        <MetricCard label="Pendentes" value={pendentes} icon={<Clock size={28} />} tone="amber" />
-        <MetricCard label="Regularizadas" value={regularizadas} icon={<CheckCircle2 size={28} />} tone="green" />
-        <MetricCard label="Vencidas" value={vencidas} icon={<AlertTriangle size={28} />} tone="red" />
+        <MetricCard label="Total de Notificações" value={total} context="Base operacional ativa" icon={<Zap size={26} />} tone="blue" />
+        <MetricCard label="Pendentes" value={pendentes} context={`${pendentesPct}% aguardando tratativa`} icon={<Clock size={28} />} tone="amber" />
+        <MetricCard label="Regularizadas" value={regularizadas} context={`${regularizacaoPct}% concluídas`} icon={<CheckCircle2 size={28} />} tone="green" />
+        <MetricCard label="Vencidas" value={vencidas} context="Monitoramento crítico" icon={<AlertTriangle size={28} />} tone="red" />
       </section>
 
-      <section className="rounded-2xl border border-line bg-card p-2">
+      <section className="rounded-2xl border border-line bg-card/95 p-2 shadow-xl shadow-black/10">
         <div className="flex flex-wrap gap-2 text-sm font-semibold">
           <TabLink href="/" active={activeTab === "notificacoes"} icon={<FileText size={16} />}>Notificações</TabLink>
           <TabLink href="/?tab=relatorios" active={activeTab === "relatorios"} icon={<TrendingUp size={16} />}>Relatórios</TabLink>
@@ -124,23 +140,41 @@ export default async function DashboardPage({
 
 function NotificationsPanel({ total, lotes }: { total: number; lotes: ReturnType<typeof groupLotes> }) {
   return (
-    <section className="rounded-2xl border border-line bg-card p-6">
-      <div className="mb-5 flex items-center gap-3">
-        <Clock className="text-edp" size={22} />
-        <h1 className="text-xl font-bold text-white">Notificações Recentes ({total})</h1>
+    <section className="overflow-hidden rounded-[24px] border border-line bg-card/95 shadow-xl shadow-black/10">
+      <div className="border-b border-line bg-surface/70 px-6 py-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-edp/25 bg-edp/10 text-edp">
+              <Activity size={22} />
+            </span>
+            <div>
+              <h1 className="text-xl font-bold text-white">Notificações Recentes ({total})</h1>
+              <p className="mt-1 text-sm text-edp-muted">Lotes ativos, histórico de baixa e acompanhamento operacional</p>
+            </div>
+          </div>
+          <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-edp">
+            Últimos 250 registros
+          </div>
+        </div>
       </div>
 
-      <form action="/notificacoes" className="mb-6 space-y-3">
+      <form action="/notificacoes" className="space-y-4 border-b border-line px-6 py-5">
         <div className="relative">
-          <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-edp-muted" size={18} />
           <input className="field h-11 pl-11" name="q" placeholder="Buscar por empresa, CNPJ, contrato, nº ofício, endereço, observações..." />
         </div>
-        <div className="grid gap-3 md:grid-cols-5">
-          <select className="field" name="status"><option value="">Todos Status</option><option>Pendente</option><option>Regularizado</option><option>Vencido</option></select>
-          <select className="field" name="tipo"><option value="">Todos Tipos</option></select>
-          <select className="field" name="origem"><option value="">Todas</option><option>manual</option><option>importacao</option></select>
-          <select className="field" name="arquivada"><option value="">Não Arquivadas</option><option value="true">Arquivadas</option></select>
-          <select className="field" name="ordem"><option value="">Mais Recentes</option></select>
+        <div className="rounded-2xl border border-line bg-edp-navy/25 p-4">
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-edp-muted">
+            <Filter size={14} className="text-edp" />
+            Filtros operacionais
+          </div>
+          <div className="grid gap-3 md:grid-cols-5">
+            <select className="field" name="status"><option value="">Todos Status</option><option>Pendente</option><option>Regularizado</option><option>Vencido</option></select>
+            <select className="field" name="tipo"><option value="">Todos Tipos</option></select>
+            <select className="field" name="origem"><option value="">Todas</option><option>manual</option><option>importacao</option></select>
+            <select className="field" name="arquivada"><option value="">Não Arquivadas</option><option value="true">Arquivadas</option></select>
+            <select className="field" name="ordem"><option value="">Mais Recentes</option></select>
+          </div>
         </div>
         <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
           <label><span className="label">Data Início</span><input className="field mt-1" type="date" name="inicio" /></label>
@@ -149,17 +183,17 @@ function NotificationsPanel({ total, lotes }: { total: number; lotes: ReturnType
         </div>
       </form>
 
-      <div className="space-y-4">
+      <div className="space-y-4 p-6">
         {lotes.map((lote) => (
-          <article key={lote.nome} className="overflow-hidden rounded-2xl border border-line bg-surface/70">
-            <div className="flex flex-col justify-between gap-4 p-5 lg:flex-row">
+          <article key={lote.nome} className="overflow-hidden rounded-[22px] border border-white/10 bg-gradient-to-br from-surface/95 to-card shadow-lg shadow-black/10">
+            <div className="flex flex-col justify-between gap-5 p-5 lg:flex-row">
               <div className="flex gap-4">
-                <div className="mt-8 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-edp/30 bg-edp/10 text-edp"><FileText size={20} /></div>
+                <div className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-edp/30 bg-edp/10 text-edp shadow-lg shadow-edp/5"><FileText size={21} /></div>
                 <div>
-                  <h2 className="text-lg font-bold text-white">{lote.nome}</h2>
+                  <h2 className="text-lg font-bold text-white md:text-xl">{lote.nome}</h2>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-edp-muted">
                     <span className="rounded-full bg-edp px-3 py-1 font-bold text-edp-navy">{lote.rows.length} notificações</span>
-                    <span>{formatDateTime(lote.created_date)}</span>
+                    <span className="rounded-full border border-white/10 px-3 py-1">{formatDateTime(lote.created_date)}</span>
                   </div>
                   {lote.baixado ? (
                     <div className="mt-3 inline-flex rounded-xl border border-edp/25 bg-edp/10 px-3 py-2 text-xs text-edp">
@@ -169,21 +203,21 @@ function NotificationsPanel({ total, lotes }: { total: number; lotes: ReturnType
                   ) : null}
                 </div>
               </div>
-              <div className="flex flex-wrap items-start gap-2">
+              <div className="flex flex-wrap items-start gap-2 lg:justify-end">
                 <Link href={`/notificacoes?lote=${encodeURIComponent(lote.nome)}`} className="btn-secondary"><Send size={16} />Enviar Portal</Link>
                 <Link href={`/api/downloads/lote?lote_id=${encodeURIComponent(lote.loteId)}`} className="btn-primary"><Download size={16} />Baixar PDFs</Link>
                 <button className="btn bg-red-500 px-3 text-white hover:bg-red-600" title="Excluir lote"><Trash2 size={16} /></button>
               </div>
             </div>
 
-            <div className="mx-5 mb-4 grid max-w-3xl grid-cols-2 rounded-xl border border-line bg-edp-navy/35 text-sm md:grid-cols-4">
+            <div className="mx-5 mb-4 grid max-w-3xl grid-cols-2 overflow-hidden rounded-2xl border border-line bg-edp-navy/35 text-sm md:grid-cols-4">
               <StatusMetric label="Pendentes" value={lote.pendentes} className="text-amber-200" />
               <StatusMetric label="Regularizadas" value={lote.regularizadas} className="text-edp" />
               <StatusMetric label="Em Análise" value={lote.analise} className="text-violet-200" />
               <StatusMetric label="Vencidas" value={lote.vencidas} className="text-red-200" />
             </div>
 
-            <Link href={`/notificacoes?lote=${encodeURIComponent(lote.nome)}`} className="mx-5 mb-5 flex items-center justify-between rounded-xl border border-line bg-white/[0.04] px-4 py-3 text-sm font-medium text-edp">
+            <Link href={`/notificacoes?lote=${encodeURIComponent(lote.nome)}`} className="mx-5 mb-5 flex items-center justify-between rounded-2xl border border-line bg-white/[0.04] px-4 py-3 text-sm font-semibold text-edp transition hover:border-edp/35 hover:bg-edp/10">
               Ver empresas neste lote
               <span>⌄</span>
             </Link>
@@ -299,20 +333,35 @@ function TabLink({ href, active, icon, children }: { href: string; active: boole
   );
 }
 
-function MetricCard({ label, value, icon, tone }: { label: string; value: number; icon: ReactNode; tone: "blue" | "amber" | "green" | "red" }) {
+function HeroSignal({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 backdrop-blur">
+      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-edp">
+        <Activity size={14} />
+        {label}
+      </div>
+      <div className="text-sm font-semibold text-white">{value}</div>
+    </div>
+  );
+}
+
+function MetricCard({ label, value, context, icon, tone }: { label: string; value: number; context: string; icon: ReactNode; tone: "blue" | "amber" | "green" | "red" }) {
   const tones = {
-    blue: "border-sky-300/20 bg-sky-300/10 text-sky-200",
-    amber: "border-amber-300/20 bg-amber-300/10 text-amber-200",
-    green: "border-edp/30 bg-edp/10 text-edp",
-    red: "border-red-300/20 bg-red-400/10 text-red-200"
+    blue: "border-sky-300/25 bg-sky-300/10 text-sky-200 shadow-sky-950/20",
+    amber: "border-amber-300/25 bg-amber-300/10 text-amber-200 shadow-amber-950/20",
+    green: "border-edp/35 bg-edp/10 text-edp shadow-emerald-950/20",
+    red: "border-red-300/25 bg-red-400/10 text-red-200 shadow-red-950/20"
   };
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-line bg-card px-6 py-5">
-      <div>
+    <div className="group relative overflow-hidden rounded-[22px] border border-line bg-gradient-to-br from-card to-surface px-6 py-5 shadow-xl shadow-black/10">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+      <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-edp/5 blur-2xl transition group-hover:bg-edp/10" />
+      <div className="pr-16">
         <div className="text-xs font-semibold uppercase tracking-wide text-edp-muted">{label}</div>
         <div className="mt-2 text-3xl font-bold text-white">{value}</div>
+        <div className="mt-3 text-xs font-medium text-edp-muted">{context}</div>
       </div>
-      <div className={`flex h-14 w-14 items-center justify-center rounded-2xl border ${tones[tone]}`}>{icon}</div>
+      <div className={`absolute right-5 top-5 flex h-14 w-14 items-center justify-center rounded-2xl border shadow-lg ${tones[tone]}`}>{icon}</div>
     </div>
   );
 }
