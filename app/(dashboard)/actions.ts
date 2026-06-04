@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { canEdit, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
+import { CLAUSULA_11_6_3_TEXT } from "@/lib/constants";
 
 function stringValue(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -170,7 +171,7 @@ export async function createNotificacoesWizard(formData: FormData) {
       cidade: empresa.cidade,
       estado: empresa.estado,
       celebrado_em: empresa.celebrado_em,
-      campo_11_6_3: empresa.campo_11_6_3,
+      campo_11_6_3: empresa.tem_clausula_11_6_3 ? (empresa.campo_11_6_3 || CLAUSULA_11_6_3_TEXT) : null,
       endereco_notificacao: enderecoNotificacao,
       prazo_dias: prazoDias,
       prazo_resposta: prazoDias,
@@ -321,4 +322,5 @@ export async function updateUserPermission(id: string, formData: FormData) {
     }
   });
   revalidatePath("/usuarios");
+  revalidatePath("/");
 }

@@ -6,6 +6,10 @@ type AddressRow = {
   cidade: string;
 };
 
+type BuildOptions = {
+  preview?: boolean;
+};
+
 function escapeHtml(value?: string | null) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -115,7 +119,7 @@ function renderAddressTables(rows: AddressRow[]) {
   `).join("");
 }
 
-export function buildNotificacaoHtml(notificacao: Notificacao) {
+export function buildNotificacaoHtml(notificacao: Notificacao, options: BuildOptions = {}) {
   if (notificacao.html_content) return notificacao.html_content;
 
   const empresa = notificacao.empresa || notificacao.empresa_1 || notificacao.empresa_rep || "RAZÃO SOCIAL DA EMPRESA DE TELECOM";
@@ -125,6 +129,10 @@ export function buildNotificacaoHtml(notificacao: Notificacao) {
   const prazo = notificacao.prazo_dias || notificacao.prazo_resposta || "10 (dez) dias";
   const empresaQualificada = companyQualification(notificacao, empresa);
   const rows = parseAddressRows(notificacao);
+  const clausula_11_6_3 = notificacao.campo_11_6_3?.trim();
+  const r1Style = options.preview
+    ? "color:#d71920; font-size:28px; font-weight:700; user-select:none; line-height:1;"
+    : "color:#fff; font-size:1px; user-select:none; line-height:0;";
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -239,6 +247,7 @@ export function buildNotificacaoHtml(notificacao: Notificacao) {
   <div class="cl-2"><p><strong>11.6.1</strong> Em caso de constatação de ocupações em desacordo com o contido no <strong>CONTRATO</strong>, ou, ainda, todo e qualquer cabo, equipamento, materiais ou condutores da <strong>OCUPANTE</strong> instalados em não conformidade com o <strong>PROJETO TÉCNICO</strong> aprovado e liberado pela <strong>DETENTORA</strong>, a <strong>OCUPANTE</strong> deverá providenciar a regularização, conforme prazo a ser estabelecido pela <strong>DETENTORA</strong> em notificação específica.</p></div>
   <div class="cl-3"><p><strong>11.6.1.1</strong> Esse prazo será de até 48 (quarenta e oito) horas quando a ocupação apresentar risco de acidente ao sistema elétrico ou a terceiros. Nas hipóteses de os riscos serem iminentes, a <strong>OCUPANTE</strong> deverá providenciar a imediata regularização, independentemente de notificação da <strong>DETENTORA</strong>.</p></div>
   <div class="cl-2"><p><strong>11.6.2</strong> Não havendo a regularização por parte da <strong>OCUPANTE</strong> no prazo estabelecido, a <strong>DETENTORA</strong> poderá fazê-lo em caráter provisório e precário, se entender conveniente, devendo ser ressarcida pela <strong>OCUPANTE</strong> das despesas incorridas, sem prejuízo da cobrança da multa prevista no <strong>CONTRATO</strong>. Nesta hipótese, a <strong>OCUPANTE</strong> se responsabilizará por eventuais perdas e danos causados aos bens da <strong>OCUPANTE</strong> e/ou a terceiros.</p></div>
+  ${clausula_11_6_3 ? `<div class="cl-2"><p><strong>11.6.3</strong> ${escapeHtml(clausula_11_6_3)}</p></div>` : ""}
   <div class="bloco-legal"><p><strong>11.7</strong> A ausência de notificação da <strong>DETENTORA</strong> não exime a <strong>OCUPANTE</strong> de sua responsabilidade em manter a ocupação dos <strong>PONTOS DE FIXAÇÃO</strong> em plena conformidade com a legislação prevista na Cláusula 3.1 do <strong>CONTRATO</strong>, ou ainda, legislação superveniente.</p></div>
 
   <p><strong>4.</strong> Dessa forma, ante o todo acima exposto, a <strong>DETENTORA NOTIFICA</strong> a <strong>OCUPANTE</strong> para que, em até <span class="editable">${escapeHtml(prazo)}</span>, sane as irregularidades mencionadas nessa notificação, sob pena das sanções e consequências contratuais, regulatórias e legais cabíveis, sem prejuízo da aplicação, desde já, das penalidades estabelecidas em <strong>CONTRATO</strong>.</p>
@@ -257,7 +266,7 @@ export function buildNotificacaoHtml(notificacao: Notificacao) {
       <div class="docusign-wrap" style="margin-top:14px;">
         <div style="min-height:48px; min-width:260px;"></div>
         <div class="linha-assinatura"></div>
-        <div style="color:#fff; font-size:1px; user-select:none; line-height:0;">R1</div>
+        <div style="${r1Style}">R1</div>
         <div class="assinatura-label">Assinatura</div>
       </div>
     </div>

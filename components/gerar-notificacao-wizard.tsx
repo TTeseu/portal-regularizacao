@@ -17,7 +17,7 @@ import {
   Search,
   Trash2
 } from "lucide-react";
-import { EDIT_RESTRICTED_MESSAGE } from "@/lib/constants";
+import { CLAUSULA_11_6_3_TEXT, EDIT_RESTRICTED_MESSAGE } from "@/lib/constants";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 
 type EmpresaOption = {
@@ -28,6 +28,8 @@ type EmpresaOption = {
   endereco: string | null;
   cidade: string | null;
   estado: string | null;
+  tem_clausula_11_6_3: boolean;
+  campo_11_6_3: string | null;
 };
 
 type AddressInput = {
@@ -119,7 +121,7 @@ function buildPreviewHtml(empresa: EmpresaOption | undefined, form: WizardForm, 
     bairro_rep: null,
     cidade_rep: null,
     estado_rep: null,
-    campo_11_6_3: null,
+    campo_11_6_3: empresa?.tem_clausula_11_6_3 ? (empresa.campo_11_6_3 || CLAUSULA_11_6_3_TEXT) : null,
     empresa_1: null,
     rua_empresa_1: null,
     cidade_empresa_1: null,
@@ -159,7 +161,7 @@ function buildPreviewHtml(empresa: EmpresaOption | undefined, form: WizardForm, 
     download_count: 0,
     last_downloaded_at: null,
     last_downloaded_by: null
-  });
+  }, { preview: true });
 }
 
 export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Props) {

@@ -15,7 +15,9 @@ export default async function NovaNotificacaoPage() {
         contrato_numero: true,
         endereco: true,
         cidade: true,
-        estado: true
+        estado: true,
+        tem_clausula_11_6_3: true,
+        campo_11_6_3: true
       }
     }),
     prisma.notificacao.findMany({
