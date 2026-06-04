@@ -1,23 +1,23 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  Bell,
   Building2,
+  Database,
   Download,
   FileText,
   LayoutDashboard,
   LogOut,
-  Users
+  Search
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 
 const nav = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/notificacoes/nova", label: "Gerar Notificação", icon: FileText },
-  { href: "/notificacoes", label: "Buscar Notificações", icon: Bell },
+  { href: "/notificacoes", label: "Buscar Notificações", icon: Search },
   { href: "/empresas", label: "Empresas", icon: Building2 },
-  { href: "/downloads", label: "Downloads", icon: Download },
-  { href: "/usuarios", label: "Usuários", icon: Users }
+  { href: "/notificacoes?origem=importacao", label: "Importar Dados", icon: Database },
+  { href: "https://github.com/TTeseu/portal-regularizacao", label: "Baixar Código", icon: Download }
 ];
 
 export async function AppShell({ children }: { children: React.ReactNode }) {

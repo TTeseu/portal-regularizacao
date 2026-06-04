@@ -23,6 +23,25 @@ function parseAnexos(formData: FormData) {
   return [{ nome, url }];
 }
 
+function parseEnderecosJson(formData: FormData) {
+  const raw = stringValue(formData, "enderecos_json");
+  if (!raw) return null;
+  try {
+    const rows = JSON.parse(raw);
+    if (!Array.isArray(rows)) return null;
+    const normalized = rows
+      .map((row) => ({
+        endereco: String(row?.endereco ?? "").trim(),
+        bairro: String(row?.bairro ?? "").trim(),
+        cidade: String(row?.cidade ?? "").trim()
+      }))
+      .filter((row) => row.endereco || row.bairro || row.cidade);
+    return normalized.length > 0 ? JSON.stringify(normalized) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function assertCanEdit() {
   const user = await requireUser();
   if (!canEdit(user)) {
@@ -131,7 +150,7 @@ export async function createNotificacoesWizard(formData: FormData) {
   const numeroOficio = stringValue(formData, "numero_oficio");
   const dataNotificacao = dateFromInput(stringValue(formData, "data_notificacao"));
   const prazoDias = stringValue(formData, "prazo_dias");
-  const enderecoNotificacao = stringValue(formData, "endereco_notificacao");
+  const enderecoNotificacao = parseEnderecosJson(formData) || stringValue(formData, "endereco_notificacao");
 
   for (const empresa of empresas) {
     const id = randomUUID();
