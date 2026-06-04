@@ -6,11 +6,11 @@ import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const loteId = url.searchParams.get("lote_id");
+  const loteId = url.searchParams.get("lote_id") || url.searchParams.get("lote");
   if (!loteId) return new NextResponse("lote_id obrigatorio", { status: 400 });
   const user = await getCurrentUser();
   const notificacoes = await prisma.notificacao.findMany({
-    where: { lote_id: loteId },
+    where: { OR: [{ lote_id: loteId }, { lote_nome: loteId }] },
     orderBy: { created_date: "asc" }
   });
   const ids = notificacoes.map((item) => item.id);

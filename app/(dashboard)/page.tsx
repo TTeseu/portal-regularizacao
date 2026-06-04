@@ -37,6 +37,7 @@ function groupLotes(items: LoteItem[]) {
   }
   return Array.from(map.entries()).slice(0, 10).map(([nome, rows]) => ({
     nome,
+    loteId: rows[0]?.lote_id || nome,
     rows,
     pendentes: rows.filter((row) => row.status === "Pendente").length,
     regularizadas: rows.filter((row) => row.status === "Regularizado").length,
@@ -159,7 +160,7 @@ function NotificationsPanel({ total, lotes }: { total: number; lotes: ReturnType
               </div>
               <div className="flex flex-wrap items-start gap-2">
                 <Link href={`/notificacoes?lote=${encodeURIComponent(lote.nome)}`} className="btn bg-blue-600 text-white hover:bg-blue-700"><Send size={16} />Enviar Portal</Link>
-                <Link href={`/api/downloads/lote?lote=${encodeURIComponent(lote.nome)}`} className="btn bg-violet-600 text-white hover:bg-violet-700"><Download size={16} />Baixar PDFs</Link>
+                <Link href={`/api/downloads/lote?lote_id=${encodeURIComponent(lote.loteId)}`} className="btn bg-violet-600 text-white hover:bg-violet-700"><Download size={16} />Baixar PDFs</Link>
                 <button className="btn bg-red-500 px-3 text-white hover:bg-red-600" title="Excluir lote"><Trash2 size={16} /></button>
               </div>
             </div>

@@ -178,6 +178,9 @@ export function buildNotificacaoHtml(notificacao: Notificacao, options: BuildOpt
   .assinatura-empresa { font-weight: 700; font-size: 10.5pt; margin-bottom: 20px; }
   .docusign-wrap { display: flex; flex-direction: column; align-items: center; }
   .linha-assinatura { width: 280px; border-top: 1px solid #000; margin: 0 auto 4px; }
+  .signature-line-wrap { position: relative; width: 280px; margin: 0 auto 4px; }
+  .signature-line-wrap .linha-assinatura { margin: 0; }
+  .r1-marker { position: absolute; left: -34px; top: -18px; }
   .assinatura-label { font-size: 10pt; font-weight: 700; margin-top: 3px; }
   .editable { display: inline; padding: 0 1mm; }
   @page { margin: 20mm 25mm; }
@@ -265,8 +268,10 @@ export function buildNotificacaoHtml(notificacao: Notificacao, options: BuildOpt
       <p class="assinatura-empresa" style="text-align:center;"><strong>EDP SÃO PAULO DISTRIBUIÇÃO DE ENERGIA S.A.</strong></p>
       <div class="docusign-wrap" style="margin-top:14px;">
         <div style="min-height:48px; min-width:260px;"></div>
-        <div class="linha-assinatura"></div>
-        <div style="${r1Style}">R1</div>
+        <div class="signature-line-wrap">
+          <span class="r1-marker" style="${r1Style}">R1</span>
+          <div class="linha-assinatura"></div>
+        </div>
         <div class="assinatura-label">Assinatura</div>
       </div>
     </div>
