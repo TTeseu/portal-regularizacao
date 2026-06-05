@@ -165,7 +165,7 @@ export function HomeLanding({ user }: { user: HomeUser }) {
       <EDPBackgroundPattern />
       <TransitionOverlay transition={transition} />
 
-      <header className="relative z-10 border-b border-[#E2E8F0]/80 bg-white/86 backdrop-blur-xl">
+      <header className="relative z-10 border-b border-[#E2E8F0]/80 bg-[#FFFFFF]/90 backdrop-blur-xl">
         <div className="mx-auto flex min-h-24 max-w-7xl items-center justify-between gap-4 px-4 lg:px-8">
           <div className="flex items-center gap-4">
             <div className="flex h-14 w-28 items-center justify-center rounded-2xl bg-[#1E2D44] px-4 shadow-lg shadow-slate-900/10">
@@ -178,12 +178,12 @@ export function HomeLanding({ user }: { user: HomeUser }) {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="hidden rounded-2xl border border-[#E2E8F0] bg-white px-4 py-2 text-right shadow-sm sm:block">
+            <div className="hidden rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 py-2 text-right shadow-sm sm:block">
               <div className="text-sm font-bold text-[#172033]">{user.name}</div>
               <div className="text-xs text-[#64748B]">{user.role === "admin" ? "Administrador" : "Usuario aprovado"}</div>
             </div>
             <form action="/api/auth/logout" method="post">
-              <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#E2E8F0] bg-white text-[#1E2D44] shadow-sm transition hover:border-[#00E676] hover:text-[#00A95C]" title="Sair">
+              <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] text-[#1E2D44] shadow-sm transition hover:border-[#00E676] hover:text-[#00A95C]" title="Sair">
                 <LogOut size={17} />
               </button>
             </form>
@@ -208,7 +208,7 @@ export function HomeLanding({ user }: { user: HomeUser }) {
               Acessar Portal de Regularizacao
               <ArrowRight size={17} />
             </button>
-            <button onClick={() => enterModule("Notifica Facil", "/notifica-facil")} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#1E2D44]/15 bg-white px-6 py-4 text-sm font-bold text-[#1E2D44] shadow-sm transition hover:-translate-y-0.5 hover:border-[#00E676] hover:text-[#008E4A]">
+            <button onClick={() => enterModule("Notifica Facil", "/notifica-facil")} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#1E2D44]/15 bg-[#FFFFFF] px-6 py-4 text-sm font-bold text-[#1E2D44] shadow-sm transition hover:-translate-y-0.5 hover:border-[#00E676] hover:text-[#008E4A]">
               Acessar Notifica Facil
               <BellRing size={17} />
             </button>
@@ -236,7 +236,7 @@ export function HomeLanding({ user }: { user: HomeUser }) {
         </div>
       </section>
 
-      <section className="relative z-10 bg-white py-14">
+      <section className="relative z-10 bg-[#FFFFFF] py-14">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
           <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
@@ -285,8 +285,8 @@ export function HomeLanding({ user }: { user: HomeUser }) {
 function HeroVisual() {
   return (
     <div className="relative mx-auto w-full max-w-xl">
-      <div className="absolute -inset-4 rounded-[36px] bg-gradient-to-br from-[#00E676]/20 via-white to-[#1E2D44]/10 blur-2xl" />
-      <div className="relative overflow-hidden rounded-[32px] border border-white bg-white p-5 shadow-2xl shadow-slate-900/10">
+      <div className="absolute -inset-4 rounded-[36px] bg-gradient-to-br from-[#00E676]/20 via-[#FFFFFF] to-[#1E2D44]/10 blur-2xl" />
+      <div className="relative overflow-hidden rounded-[32px] border border-[#FFFFFF] bg-[#FFFFFF] p-5 shadow-2xl shadow-slate-900/10">
         <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-br from-[#1E2D44] via-[#24354F] to-[#00A95C]" />
         <div className="relative rounded-[26px] border border-white/20 bg-white/10 p-5 backdrop-blur">
           <div className="mb-6 flex items-center justify-between">
@@ -302,7 +302,7 @@ function HeroVisual() {
             <div className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white">Online</div>
           </div>
 
-          <div className="rounded-3xl bg-white p-5 shadow-xl shadow-slate-900/10">
+          <div className="rounded-3xl bg-[#FFFFFF] p-5 shadow-xl shadow-slate-900/10">
             <div className="grid gap-3 sm:grid-cols-3">
               <MiniMetric label="Notificacoes" value="1.9k" tone="green" />
               <MiniMetric label="Pendencias" value="86" tone="blue" />
@@ -370,7 +370,7 @@ function ModuleSelectorCard({
   return (
     <button
       onClick={() => onEnter(module.title, module.href)}
-      className="group relative overflow-hidden rounded-[30px] border border-[#E2E8F0] bg-white p-6 text-left shadow-xl shadow-slate-900/7 transition duration-300 hover:-translate-y-1 hover:border-[#00E676]/60 hover:shadow-2xl hover:shadow-emerald-900/10"
+      className="group relative overflow-hidden rounded-[30px] border border-[#E2E8F0] bg-[#FFFFFF] p-6 text-left shadow-xl shadow-slate-900/7 transition duration-300 hover:-translate-y-1 hover:border-[#00E676]/60 hover:shadow-2xl hover:shadow-emerald-900/10"
     >
       <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${module.accent}`} />
       <div className="flex items-start justify-between gap-5">
@@ -398,7 +398,7 @@ function ModuleSelectorCard({
 
 function SectorNewsCard({ item }: { item: EnergyNewsArticle }) {
   return (
-    <article className="group overflow-hidden rounded-[26px] border border-[#E2E8F0] bg-white shadow-sm transition hover:-translate-y-1 hover:border-[#00E676]/50 hover:shadow-xl hover:shadow-slate-900/10">
+    <article className="group overflow-hidden rounded-[26px] border border-[#E2E8F0] bg-[#FFFFFF] shadow-sm transition hover:-translate-y-1 hover:border-[#00E676]/50 hover:shadow-xl hover:shadow-slate-900/10">
       <a href={item.url} target="_blank" rel="noreferrer" className="block">
         <div className="relative h-44 overflow-hidden bg-[#1E2D44]">
           <img
