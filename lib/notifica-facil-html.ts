@@ -1,4 +1,15 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { NotificaFacilNotification } from "@prisma/client";
+
+let cachedTemplate: string | null = null;
+
+function loadTemplate() {
+  if (!cachedTemplate) {
+    cachedTemplate = readFileSync(join(process.cwd(), "public", "templates", "notifica-facil-template.html"), "utf8");
+  }
+  return cachedTemplate;
+}
 
 function esc(value?: string | number | null) {
   return String(value ?? "")
@@ -8,108 +19,126 @@ function esc(value?: string | number | null) {
     .replaceAll('"', "&quot;");
 }
 
-function money(value?: number | null) {
-  if (value === null || value === undefined || Number.isNaN(value)) return "-";
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+function text(value?: string | number | null, fallback = "") {
+  return esc(value ?? fallback);
 }
 
-function dateText(value?: string | null) {
-  if (!value) return "-";
-  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
-  return value;
+function textBlock(value?: string | null) {
+  return esc(value || "").replace(/\r?\n/g, "<br>");
+}
+
+function parseDate(value?: string | null) {
+  if (!value) return null;
+  const clean = value.trim();
+  const iso = clean.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+  const br = clean.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (br) return new Date(Number(br[3]), Number(br[2]) - 1, Number(br[1]));
+  const parsed = new Date(clean);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function longDate(value?: string | null) {
+  const parsed = parseDate(value);
+  if (!parsed) return text(value, "");
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(parsed);
+}
+
+function numberFromText(value?: string | number | null) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  const raw = String(value || "")
+    .replace(/[^\d,.-]/g, "")
+    .replace(/\.(?=\d{3}(\D|$))/g, "")
+    .replace(",", ".")
+    .trim();
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function moneyNumber(value?: string | number | null) {
+  const parsed = numberFromText(value);
+  if (parsed === null) return text(value, "0,00");
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(parsed);
+}
+
+function addressRows(notification: NotificaFacilNotification) {
+  const rows = Array.isArray(notification.enderecos_revelia) ? notification.enderecos_revelia : [];
+  const normalized = rows
+    .map((item) => {
+      const row = item as { endereco?: string; bairro?: string; cidade?: string };
+      return {
+        endereco: row.endereco || "",
+        bairro: row.bairro || "",
+        cidade: row.cidade || ""
+      };
+    })
+    .filter((row) => row.endereco || row.bairro || row.cidade);
+
+  const fallbackRows = normalized.length
+    ? normalized
+    : [{
+        endereco: notification.destinatario_endereco || notification.empresa_endereco || "",
+        bairro: notification.empresa_bairro || "",
+        cidade: notification.empresa_cidade || ""
+      }];
+
+  return fallbackRows
+    .map((row) => `                <tr>
+                  <td>${text(row.endereco)}</td>
+                  <td>${text(row.bairro)}</td>
+                  <td>${text(row.cidade)}</td>
+                </tr>`)
+    .join("\n");
+}
+
+function replaceAddressTable(template: string, rows: string) {
+  return template.replace(
+    /\s*<tr>\s*<td>\{\{ENDERECO_A_REVELIA\}\}<\/td>\s*<td>\{\{BAIRRO_A_REVELIA\}\}<\/td>\s*<td>\{\{MUNICIPIO_A_REVELIA\}\}<\/td>\s*<\/tr>/,
+    `\n${rows}`
+  );
 }
 
 export function buildNotificaFacilHtml(notification: NotificaFacilNotification) {
-  const enderecos = Array.isArray(notification.enderecos_revelia) ? notification.enderecos_revelia : [];
-  const rows = enderecos.length
-    ? enderecos
-        .map((item) => {
-          const row = item as { endereco?: string; bairro?: string; cidade?: string };
-          return `<tr><td>${esc(row.endereco)}</td><td>${esc(row.bairro)}</td><td>${esc(row.cidade)}</td></tr>`;
-        })
-        .join("")
-    : `<tr><td>${esc(notification.destinatario_endereco || notification.empresa_endereco)}</td><td>${esc(notification.empresa_bairro)}</td><td>${esc(notification.empresa_cidade)}</td></tr>`;
+  let html = loadTemplate();
 
-  return `<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <title>Notifica Facil - ${esc(notification.numero_notificacao || notification.empresa)}</title>
-  <style>
-    @page { size: A4; margin: 22mm 18mm; }
-    body { font-family: Arial, Helvetica, sans-serif; color: #111827; font-size: 12px; line-height: 1.45; }
-    .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #00a650; padding-bottom: 14px; margin-bottom: 24px; }
-    .brand { font-size: 22px; font-weight: 800; color: #1E2D44; }
-    .meta { text-align: right; font-size: 11px; color: #334155; }
-    h1 { font-size: 18px; color: #1E2D44; margin: 0 0 18px; text-align: center; }
-    h2 { font-size: 13px; color: #1E2D44; margin: 18px 0 8px; }
-    table { width: 100%; border-collapse: collapse; margin: 10px 0 18px; }
-    th, td { border: 1px solid #111827; padding: 7px; vertical-align: top; }
-    th { background: #eef2f7; font-weight: 700; text-align: center; }
-    .box { border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin: 12px 0; }
-    .signature { margin-top: 58px; text-align: center; }
-    .signature-line { width: 280px; border-top: 1px solid #111827; margin: 0 auto 6px; }
-    .r1 { color: #fff; font-size: 1px; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="brand">EDP</div>
-    <div class="meta">
-      <strong>Notifica Facil</strong><br/>
-      Notificacao: ${esc(notification.numero_notificacao || "-")}<br/>
-      Registro censo: ${esc(notification.numero_registro_censo || "-")}
-    </div>
-  </div>
+  if (!notification.mostrar_celebrado_em) {
+    html = html.replace(/, celebrado em \{\{CELEBRADO_EM\}\},/g, ",");
+  }
 
-  <h1>NOTIFICACAO OPERACIONAL</h1>
+  html = replaceAddressTable(html, addressRows(notification));
 
-  <p><strong>Empresa:</strong> ${esc(notification.empresa)}</p>
-  <p><strong>CNPJ:</strong> ${esc(notification.cnpj || "-")} &nbsp; <strong>Contrato:</strong> ${esc(notification.contrato_numero || "-")}</p>
-  ${notification.mostrar_celebrado_em && notification.celebrado_em ? `<p><strong>Celebrado em:</strong> ${esc(notification.celebrado_em)}</p>` : ""}
-  <p><strong>Tipo de servico:</strong> ${esc(notification.tipo_servico || "-")} &nbsp; <strong>Protocolo:</strong> ${esc(notification.numero_protocolo || "-")}</p>
-  <p><strong>Destinatario:</strong> ${esc(notification.destinatario_nome || notification.empresa)}</p>
+  const replacements: Record<string, string> = {
+    "{{DATA_NOTIFICACAO}}": longDate(notification.data_notificacao),
+    "{{NUMERO_DA_NOTIFICACAO}}": text(notification.numero_notificacao, "-"),
+    "{{NOME_DA_EMPRESA}}": text(notification.empresa, "-"),
+    "{{ENDERECO_DA_EMPRESA}}": text(notification.empresa_endereco, "-"),
+    "{{BAIRRO_DA_EMPRESA}}": text(notification.empresa_bairro, "-"),
+    "{{CIDADE_DA_EMPRESA}}": text(notification.empresa_cidade, "-"),
+    "{{ESTADO_DA_EMPRESA}}": text(notification.empresa_estado, "-"),
+    "{{NUMERO_CONTRATO}}": text(notification.contrato_numero, "-"),
+    "{{A_C}}": text(notification.ac, "-"),
+    "{{CELEBRADO_EM}}": text(notification.celebrado_em, "-"),
+    "{{CNPJ_DA_EMPRESA}}": text(notification.cnpj, "-"),
+    "{{TEXTO_CONTRATO_7_14}}": textBlock(notification.texto_contrato_7_14),
+    "{{TEXTO_OCUPACAO_REVELIA}}": textBlock(notification.texto_ocupacao_revelia),
+    "{{TEXTO_23_3}}": textBlock(notification.texto_23_3),
+    "{{TEXTO_24_1}}": textBlock(notification.texto_24_1),
+    "{{TEXTO_24_3}}": textBlock(notification.texto_24_3),
+    "{{VALOR_MULTA}}": moneyNumber(notification.valor_cobrado ?? notification.multa),
+    "{{VALOR_RETROATIVO_CALCULADO}}": text(notification.retroativo || moneyNumber(0))
+  };
 
-  <div class="box">
-    <strong>Status:</strong> ${esc(notification.status)}<br/>
-    <strong>Status para envio:</strong> ${esc(notification.status_envio_notificacao || "-")}<br/>
-    <strong>Data da notificacao:</strong> ${esc(dateText(notification.data_notificacao))}<br/>
-    <strong>Prazo de resposta:</strong> ${esc(dateText(notification.prazo_resposta))}<br/>
-    <strong>Data e-mail encaminhado:</strong> ${esc(dateText(notification.data_email_encaminhado))}<br/>
-    <strong>Valor cobrado:</strong> ${money(notification.valor_cobrado)}
-  </div>
+  for (const [placeholder, value] of Object.entries(replacements)) {
+    html = html.replaceAll(placeholder, value);
+  }
 
-  <h2>Enderecos / ativos identificados</h2>
-  <table>
-    <thead><tr><th>Endereco</th><th>Bairro</th><th>Cidade</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table>
-
-  <h2>Fundamentacao contratual</h2>
-  <p>${esc(notification.texto_contrato_7_14 || "Conforme contrato aplicavel, a ocupante devera regularizar as pendencias identificadas pela EDP.")}</p>
-  <p>${esc(notification.texto_ocupacao_revelia || "")}</p>
-  <p>${esc(notification.texto_23_3 || "")}</p>
-  <p>${esc(notification.texto_24_1 || "")}</p>
-  <p>${esc(notification.texto_24_3 || "")}</p>
-
-  <h2>Resumo do calculo</h2>
-  <div class="box">
-    <strong>Total de IDs identificados:</strong> ${esc(notification.total_ids_identificados ?? "-")}<br/>
-    <strong>Valor do ponto:</strong> ${money(notification.valor_atualizado)}<br/>
-    <strong>Multa final:</strong> ${money(notification.multa)}<br/>
-    <strong>Retroativo:</strong> ${esc(notification.retroativo || "-")}<br/>
-    <strong>Valor da multa:</strong> ${money(notification.valor_cobrado)}
-  </div>
-
-  <h2>Observacoes</h2>
-  <p>${esc(notification.observacoes || "Sem observacoes adicionais.")}</p>
-
-  <div class="signature">
-    <div class="r1">R1</div>
-    <div class="signature-line"></div>
-    <strong>Assinatura</strong>
-  </div>
-</body>
-</html>`;
+  return html;
 }

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notificação de Ocupação à Revelia</title>
+  <style>
+    /* ====================== TELA ====================== */
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #000;
+      font-size: 11pt;
+      max-width: 800px;
+      margin: 20px auto;
+      background-color: #f0f0f0;
+    }
+
+    .screen-logo { display: block; text-align: left; margin-bottom: 20px; }
+    .screen-logo img { width: 80px; height: auto; }
+    .print-logo { display: none; }
+
+    .content-wrapper {
+      background-color: #fff;
+      padding: 40px;
+      box-shadow: 0 0 10px rgba(0,0,0,.1);
+    }
+
+    p { margin-top: 0; margin-bottom: 1em; text-align: justify; }
+    .right-align { text-align: right; }
+    .bold { font-weight: bold; }
+    .indented { margin-left: 40px; text-align: justify; }
+    .center { text-align: center !important; }
+
+    .address-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-left: 40px;
+      margin-bottom: 1em;
+      font-size: 11pt;
+      font-family: Arial, sans-serif;
+      table-layout: fixed;
+    }
+    .address-table th { font-weight: bold; text-align: left; padding-bottom: 5px; width: 33.3%; }
+    .address-table td {
+      text-align: left;
+      vertical-align: top;
+      padding-bottom: 10px;
+      padding-right: 10px;
+      word-wrap: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    /* ==================== IMPRESSÃO (PDF) ===================== */
+    @media print {
+      @page { size: A4; margin: 14mm; }
+
+      html, body { background: #fff; }
+      body { max-width: none; margin: 0; font-size: 11pt; }
+
+      .screen-logo { display: none !important; }
+      .print-logo { display: none !important; }
+
+      .print-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 6mm;
+      }
+      .print-table thead {
+        display: table-header-group;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .print-table tbody { display: table-row-group; }
+
+      .print-header-cell { padding: 0; }
+      .print-header {
+        height: 22mm;
+        padding-left: 14mm;
+        padding-top: 6mm;
+      }
+      .print-header img { width: 80px; height: auto; display: block; }
+
+      .content-wrapper { box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
+
+      p {
+        margin: 0 0 4.2mm 0 !important;
+        orphans: 3;
+        widows: 3;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      .indented { margin-left: 12mm !important; }
+
+      .address-table {
+        margin-left: 12mm !important;
+        width: 100% !important;
+        table-layout: fixed;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        -webkit-column-break-inside: avoid;
+      }
+      .address-table thead, .address-table tbody, .address-table tr, .address-table th, .address-table td {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        -webkit-column-break-inside: avoid !important;
+      }
+      .address-table td {
+        padding-bottom: 2mm;
+        padding-right: 4mm;
+        vertical-align: top;
+        text-align: left;
+      }
+
+      .right-align, .center, .bold { page-break-inside: avoid; break-inside: avoid; }
+    }
+
+    .caps-bold { font-weight: 700 !important; }
+    @media print { .caps-bold { font-weight: 700 !important; } }
+  </style>
+</head>
+
+<body>
+  <div class="print-logo" id="pageHeader">
+    <img src="https://captadores.org.br/wp-content/uploads/2024/08/edp.png" alt="Logo EDP">
+  </div>
+
+  <table class="print-table" role="presentation" aria-hidden="true">
+    <thead>
+      <tr>
+        <td class="print-header-cell">
+          <div class="print-header">
+            <img src="https://captadores.org.br/wp-content/uploads/2024/08/edp.png" alt="Logo EDP">
+          </div>
+        </td>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td>
+          <div class="content-wrapper">
+            <div class="screen-logo">
+              <img src="https://captadores.org.br/wp-content/uploads/2024/08/edp.png" alt="Logo EDP">
+            </div>
+
+            <p class="right-align">São José dos Campos - SP, {{DATA_NOTIFICACAO}}</p>
+            <p class="right-align"><span class="bold">{{NUMERO_DA_NOTIFICACAO}}</span></p>
+            <p>A</p>
+            <p>{{NOME_DA_EMPRESA}}<br>
+              {{ENDERECO_DA_EMPRESA}}<br>
+              {{CIDADE_DA_EMPRESA}} - {{ESTADO_DA_EMPRESA}}</p>
+            <p><span class="bold">Referência:</span> Contrato Nº {{NUMERO_CONTRATO}}.</p>
+            <p><span class="bold">Assunto:</span> Ocupação à Revelia.</p>
+            <p><span class="bold">A/C</span> {{A_C}}</p>
+            <p>Prezada(o),</p>
+            <p><span class="bold">1. A EDP SÃO PAULO DISTRIBUIÇÃO DE ENERGIA SA</span>, fornecimento de serviço público de distribuição de energia elétrica, com sede na RUA WERBER VON SIEMENS, 111, CXPST 44191-0 CONJ. 22 BLOCO A SALA 1, LAPA DE BAIXO – SÃO PAULO – SP, inscrito no CNPJ/MF sob o n.º 02.302.100/0001-06, neste ato representado na forma de seu estatuto social (a "<span class="bold">DETENTORA</span>"), fazendo referência ao Contrato de Compartilhamento de Infraestrutura - Pontos de Fixação em Poste - Nº {{NUMERO_CONTRATO}}, celebrado em {{CELEBRADO_EM}}, (o "<span class="bold">Contrato</span>"), com <span class="bold">{{NOME_DA_EMPRESA}}</span>, <span class="bold">{{ENDERECO_DA_EMPRESA}}</span>, <span class="bold">{{BAIRRO_DA_EMPRESA}}</span>, <span class="bold">{{CIDADE_DA_EMPRESA}}</span>, estado de <span class="bold">{{ESTADO_DA_EMPRESA}}</span>, inscrito no CNPJ/MF sob o n.º <span class="bold">{{CNPJ_DA_EMPRESA}}</span> (a "<span class="bold">OCUPANTE</span>"), expõe e notifica acerca do que segue.</p>
+            <p><span class="bold">2. A DETENTORA</span> constatou à Revelia em sua infraestrutura de distribuição de energia elétrica por cabos, fios, cordoalha e equipamentos de telecomunicações da <span class="bold">OCUPANTE</span>, em claro descumprimento ao <span class="bold">Contrato</span> e às Normas Técnicas e Regulamentares aplicáveis, conforme o constatado e descrito no Anexo I dessa notificação, no(s) seguinte(s) endereço(s):</p>
+
+            <table class="address-table">
+              <thead>
+                <tr>
+                  <th>Endereço à Revelia</th>
+                  <th>Bairro à Revelia</th>
+                  <th>Município à Revelia</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{ENDERECO_A_REVELIA}}</td>
+                  <td>{{BAIRRO_A_REVELIA}}</td>
+                  <td>{{MUNICIPIO_A_REVELIA}}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <p>3. Nos termos da Resolução Normativa ANEEL n.º 1044/2022 (a "<span class="bold">REN 1044</span>"), e do <span class="bold">Contrato</span>, a ocupação à <span class="bold">revelia</span> se caracteriza quando a ocupação da infraestrutura é realizada sem que conste projeto técnico aprovado pela <span class="bold">DETENTORA</span>, ainda que exista contrato de compartilhamento vigente.</p>
+
+            <p class="bold">REN 1044</p>
+            <p class="indented">Art. 2º Para fins desta Resolução, aplique-se as seguintes definições:</p>
+            <p class="indented">III – ocupação à revelia: ocupação de infraestrutura que não conste de projeto técnico previamente aprovado pela distribuidora, mesmo que o ocupante tenha contrato de compartilhamento vigente com a distribuidora;</p>
+            <p>4. Nesse sentido, conforme o previsto na Resolução Conjunta ANEEL/ANATEL n.º 004/2014 (a "<span class="bold">RES 04</span>"), na <span class="bold">REN 1044</span> e no <span class="bold">Contrato</span> a ocupação à <span class="bold">revelia</span> é expressamente vedada.</p>
+
+            <p class="bold">RES 04</p>
+            <p class="indented">Art. 4º No compartilhamento de postes, as prestadoras de serviços de telecomunicações devem seguir o plano de ocupação de infraestrutura da infraestrutura de energia elétrica e as normas técnicas aplicáveis, em especial:</p>
+            <p class="indented">[...]</p>
+            <p class="indented">§ 9º Os projetos técnicos e/ou execução das obras para a viabilização do compartilhamento de poste devem ser previamente aprovados pela distribuidora de energia elétrica, sendo vedada a transferência de Pontos de Fixação à revelia da distribuidora de energia elétrica.</p>
+
+            <p class="bold">REN 1044</p>
+            <p class="indented">Art. 4º São vedados a ocupação à revelia e o uso da rede de distribuição como meio de transporte de sinais para comunicação sem aprovação prévia dos detentores.</p>
+            <p class="indented">Parágrafo único. Os projetos técnicos ou execução das obras necessários para o compartilhamento devem ser previamente aprovados pelos detentores.</p>
+
+            <p class="bold">Contrato</p>
+            <p class="indented">4.1 A <span class="bold">OCUPANTE</span>, neste ato, declara estar ciente e concordar com as seguintes condições, para ocupação da <span class="bold">INFRAESTRUTURA</span> da <span class="bold">DETENTORA</span>.</p>
+            <p class="indented">[...]</p>
+            <p class="indented">4.1.3 É vedada a ocupação de <span class="bold">PONTOS DE FIXAÇÃO</span> à <span class="bold">REVELIA</span> pela <span class="bold">OCUPANTE</span>.</p>
+            <p>5. Cumpre destacar que cabe à <span class="bold">OCUPANTE</span> regularizar e manter regulares as ocupações dos cabos, fios, cordoalha e equipamentos sob sua responsabilidade, em estrita observância às normas técnicas e regulamentares, arcando com os custos relacionados, independentemente de qualquer notificação, sem prejuízo de serem aplicadas as sanções cabíveis, nos termos do <span class="bold">Contrato</span> e dos regulamentos vigentes.</p>
+
+            <p class="bold">RES 04</p>
+            <p class="indented">Art. 4º No compartilhamento de postes, as prestadoras de serviços de telecomunicações devem seguir o plano de ocupação de infraestrutura da distribuidora de energia elétrica e as normas técnicas aplicáveis, em especial:</p>
+            <p class="indented">[...]</p>
+            <p class="indented">§ 3º As distribuidoras de energia elétrica devem notificar as prestadoras de serviços de telecomunicações sobre a necessidade de regularização, sempre que verificado o descumprimento ao disposto no caput deste artigo.</p>
+            <p class="indented">[...]</p>
+            <p class="indented">§ 5º A regularização das normas técnicas é de responsabilidade da prestadora de serviços de telecomunicações, inclusive quanto aos custos, conforme cronograma de execução acordado entre as partes.</p>
+            <p class="indented">[...]</p>
+            <p class="indented">§ 7º Toda e qualquer situação emergencial ou que envolva risco de acidente deve ser priorizada e regularizada imediatamente pelas prestadoras de serviços de telecomunicações, independentemente da notificação prévia da distribuidora de energia elétrica.</p>
+            <p class="indented">§ 8º A ausência de notificação da distribuidora de energia elétrica não exime as prestadoras de serviços de telecomunicações da responsabilidade em manter a ocupação dos Pontos de Fixação de acordo com as normas técnicas aplicáveis.</p>
+
+            <p class="bold">REN 1044</p>
+            <p class="indented">Art. 12 O detentor deverá notificar o ocupante sobre a necessidade de regularização da ocupação, nos termos do art. 4º da Resolução Conjunta ANEEL/Anatel nº 004, de 2014, sempre que for constatado:</p>
+            <p class="indented">I – Descumprimento às normas técnicas e regulamentares aplicáveis ao compartilhamento; ou</p>
+            <p class="indented">II – Ocupação à revelia.</p>
+            <p class="indented">§ 1º A regularização às normas técnicas e regulamentares é de responsabilidade do ocupante, inclusive quanto aos custos, conforme cronograma de execução acordado entre as partes.</p>
+            <p class="indented">§ 2º Para os casos de que trata o caput deste artigo,os detentores podem solicitar o traçado georreferenciado ou relatório fotográfico dos cabos já instalados em sua infraestrutura.</p>
+
+            <p class="bold">Contrato</p>
+            <p class="indented">{{TEXTO_CONTRATO_7_14}}</p>
+            <p class="indented">[...]</p>
+            <p class="indented">15.1 A <span class="bold">DETENTORA</span> pode, nas situações abaixo discriminadas, remover cabos e/ou equipamentos da <span class="bold">OCUPANTE</span>:</p>
+            <p class="indented">[...]</p>
+            <p class="indented">{{TEXTO_OCUPACAO_REVELIA}}</p>
+            <p class="indented">[...]</p>
+            <p class="indented">{{TEXTO_23_3}}</p>
+
+            <p class="indented">24.1 A <span class="bold">OCUPANTE</span> estará sujeito às multas e <span class="bold">sanções</span> abaixo das seguintes hipóteses de constatação:</p>
+            <p class="indented">{{TEXTO_24_1}}</p>
+            <p class="indented">[...]</p>
+            <p class="indented">{{TEXTO_24_3}}</p>
+
+            <p>6. Dessa forma, ante o todo acima exposto, a <span class="bold">DETENTORA</span>, por mera liberalidade, considerando as disposições constantes no <span class="bold">Contrato</span>, <span class="bold">NOTIFICA</span> a <span class="bold">OCUPANTE</span> para que, em até 10 (dez) dias, sejam apresentados os Projetos Técnicos das ocupações à <span class="bold">revelia</span> e, quando o caso, as regularize, sem prejuízo das sanções e consequências contratuais, regulatórias e legais cabíveis, conforme o acima relatado, como a aplicação imediata de multa no valor aproximado de R$ {{VALOR_MULTA}} (reais), bem como na cobrança retroativa estimada em {{VALOR_RETROATIVO_CALCULADO}} (reais) valores estes sujeitos a atualização e ajustes.</p>
+
+            <p>7. Por fim, a <span class="bold">DETENTORA</span> reforça que o <span class="bold">disposto</span> nessa notificação não altera ou representa a renúncia de quaisquer de seus direitos garantidos no <span class="bold">Contrato</span> e na regulamentação vigente, como a de reprovar os Projetos Técnicos aprovados e retirar os cabos à <span class="bold">revelia</span>, nos termos da Cláusula 15ª.</p>
+
+            <p><span class="bold">8. A DETENTORA</span> reserva os seus direitos e todos os direitos, contratuais, regulatórios e legais, com relação aos objetos desta correspondência.</p>
+
+            <p>Atenciosamente,</p>
+            <p class="center">EDP SÃO PAULO DISTRIBUIÇÃO DE ENERGIA SA</p>
+            <p class="center">___________________________________________________</p>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var isAllCapsWord = function(token) {
+        var core = token.replace(/^[^A-Z0-9ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ]+|[^A-Z0-9ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ]+$/gi, '');
+        if (core.length < 2) return false;
+        if (!/[A-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ]/.test(core)) return false;
+        if (/[a-zàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþ]/.test(core)) return false;
+        return true;
+      };
+
+      var walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode: function(node) {
+            var text = node.nodeValue;
+            if (!text || !text.trim()) return NodeFilter.FILTER_REJECT;
+            var el = node.parentElement;
+            if (!el) return NodeFilter.FILTER_REJECT;
+            if (el.closest('script,style,head,title')) return NodeFilter.FILTER_REJECT;
+            if (el.closest('b,strong,.bold,.negrito')) return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_ACCEPT;
+          }
+        }
+      );
+
+      var toProcess = [];
+      while (walker.nextNode()) toProcess.push(walker.currentNode);
+
+      toProcess.forEach(function(node) {
+        var parts = node.nodeValue.split(/(\s+)/);
+        var changed = false;
+        var frag = document.createDocumentFragment();
+
+        parts.forEach(function(part) {
+          if (part.trim() && isAllCapsWord(part)) {
+            var span = document.createElement('span');
+            span.className = 'caps-bold';
+            span.textContent = part;
+            frag.appendChild(span);
+            changed = true;
+          } else {
+            frag.appendChild(document.createTextNode(part));
+          }
+        });
+
+        if (changed) node.parentNode.replaceChild(frag, node);
+      });
+    });
+  </script>
+</body>
+</html>
