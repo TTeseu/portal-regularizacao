@@ -18,6 +18,17 @@ Copie `.env.example` para `.env` e configure:
 ```bash
 DATABASE_URL="postgresql://USER:PASSWORD@HOST/DB?sslmode=require"
 AUTH_SECRET="uma-chave-longa"
+NEXTAUTH_SECRET="uma-chave-longa"
+NEXTAUTH_URL="http://localhost:3000"
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+SUPER_ADMIN_EMAILS="jabasff159@gmail.com"
+EMAIL_FROM="Portal de Regularizacao <no-reply@seudominio.com>"
+SMTP_HOST=""
+SMTP_PORT="587"
+SMTP_USER=""
+SMTP_PASSWORD=""
+RESEND_API_KEY=""
 ADMIN_EMAIL="admin@example.com"
 ADMIN_PASSWORD="senha-inicial"
 ADMIN_NAME="Administrador"
@@ -26,7 +37,9 @@ BASE44_TOKEN=""
 BASE44_SERVER_URL="https://base44.app"
 ```
 
-`password_hash` e `AUTH_SECRET` sao novos no sistema independente. Eles nao existem no Base44; foram adicionados para substituir o Base44 Auth.
+`NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` habilitam o login Google/Auth.js. `AUTH_SECRET`, `ADMIN_EMAIL` e `ADMIN_PASSWORD` continuam disponiveis para o acesso legado local.
+
+`SUPER_ADMIN_EMAILS` aceita multiplos emails separados por virgula. O email `jabasff159@gmail.com` e sempre tratado como administrador principal aprovado.
 
 ## Rodar local
 
@@ -38,7 +51,13 @@ npm run seed
 npm run dev
 ```
 
-Acesse `http://localhost:3000` e entre com `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+Acesse `http://localhost:3000` e entre com Google. Para o OAuth local, cadastre no Google Cloud o callback:
+
+```bash
+http://localhost:3000/api/auth/callback/google
+```
+
+O acesso legado por senha ainda funciona com `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
 ## Banco Neon
 
@@ -75,7 +94,12 @@ Na migracao inicial foram importados 2.146 registros de `Notificacao`, 140 de `E
 
 ## Funcionalidades implementadas
 
-- Login por cookie assinado.
+- Login com Google via Auth.js/NextAuth e Prisma Adapter.
+- Fluxo de aprovacao manual para novos usuarios.
+- Telas de aguardando aprovacao e acesso recusado.
+- Administrador bootstrap por `SUPER_ADMIN_EMAILS`.
+- Envio de email para administradores via SMTP ou Resend quando houver novo pedido.
+- Login legado por cookie assinado para compatibilidade local.
 - Dashboard.
 - Listagem de notificacoes.
 - Busca textual.
@@ -104,7 +128,13 @@ A rota `/api/notificacoes/[id]/pdf` tenta gerar PDF usando `puppeteer-core` e `@
 1. Suba o repositorio para o GitHub.
 2. Importe o projeto na Vercel.
 3. Configure as variaveis de ambiente.
-4. Garanta que a migration rode antes do uso:
+4. No Google Cloud, cadastre tambem o callback de producao:
+
+```bash
+https://SEU_DOMINIO/api/auth/callback/google
+```
+
+5. Garanta que a migration rode antes do uso:
 
 ```bash
 npm run prisma:migrate

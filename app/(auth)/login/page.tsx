@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { ShieldCheck } from "lucide-react";
+import { Mail, ShieldCheck } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
+import { signInWithGoogle } from "./actions";
 
 export default async function LoginPage({
   searchParams
@@ -8,6 +9,8 @@ export default async function LoginPage({
   searchParams?: Promise<{ error?: string }>;
 }) {
   const user = await getCurrentUser();
+  if (user?.status === "rejected") redirect("/acesso-recusado");
+  if (user && (user.status !== "approved" || !user.accessApproved)) redirect("/aguardando-aprovacao");
   if (user) redirect("/");
   const params = await searchParams;
 
@@ -19,7 +22,7 @@ export default async function LoginPage({
             <img src="/edp-logo-white.svg" alt="EDP" className="h-12 w-auto" />
           </div>
         </div>
-        <form action="/api/auth/login" method="post" className="panel p-8">
+        <div className="panel p-8">
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-edp/30 bg-edp/10 text-edp">
               <ShieldCheck size={24} />
@@ -29,10 +32,24 @@ export default async function LoginPage({
           </div>
           {params?.error ? (
             <div className="mb-5 rounded-xl border border-red-300/25 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-              Email ou senha inválidos.
+              Não foi possível entrar. Verifique a conta utilizada.
             </div>
           ) : null}
-          <div className="space-y-5">
+
+          <form action={signInWithGoogle}>
+            <button className="btn-primary w-full" type="submit">
+              <Mail size={18} />
+              Entrar com Google
+            </button>
+          </form>
+
+          <div className="my-6 flex items-center gap-3 text-xs uppercase text-edp-muted">
+            <span className="h-px flex-1 bg-white/10" />
+            acesso legado
+            <span className="h-px flex-1 bg-white/10" />
+          </div>
+
+          <form action="/api/auth/login" method="post" className="space-y-5">
             <label className="block">
               <span className="label">Email</span>
               <input className="field mt-2" name="email" type="email" required />
@@ -41,11 +58,11 @@ export default async function LoginPage({
               <span className="label">Senha</span>
               <input className="field mt-2" name="password" type="password" required />
             </label>
-            <button className="btn-primary w-full" type="submit">
-              Entrar
+            <button className="btn-secondary w-full" type="submit">
+              Entrar com senha
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </main>
   );

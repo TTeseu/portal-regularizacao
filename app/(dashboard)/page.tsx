@@ -287,7 +287,7 @@ function PermissionsPanel({
           <Shield className="text-edp" size={22} />
           <h1 className="text-xl font-bold text-white">Permissões de Edição — Importar Dados</h1>
         </div>
-        <p className="mt-2 text-sm text-edp-muted">Ative para permitir que o usuário edite o banco de dados na página "Importar Dados"</p>
+        <p className="mt-2 text-sm text-edp-muted">Ative para permitir que o usuário edite o banco de dados na página &quot;Importar Dados&quot;</p>
       </div>
       <div className="divide-y divide-line px-6 py-4">
         {users.map((user) => {

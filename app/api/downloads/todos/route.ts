@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { canAccessPortal, getCurrentUser } from "@/lib/auth";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 
 export async function GET() {
   const user = await getCurrentUser();
+  if (!canAccessPortal(user)) return new NextResponse("Acesso nao aprovado", { status: 403 });
   const notificacoes = await prisma.notificacao.findMany({
     where: { arquivada: false },
     orderBy: { created_date: "asc" }

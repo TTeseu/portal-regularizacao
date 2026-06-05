@@ -17,7 +17,12 @@ await prisma.user.upsert({
   where: { email },
   update: {
     full_name: name,
+    name,
     role: "admin",
+    status: "approved",
+    accessApproved: true,
+    approvedAt: new Date(),
+    approvedBy: "seed",
     pode_editar_importar: true
   },
   create: {
@@ -26,7 +31,13 @@ await prisma.user.upsert({
     updated_date: new Date(),
     email,
     full_name: name,
+    name,
     role: "admin",
+    status: "approved",
+    accessApproved: true,
+    requestedAt: new Date(),
+    approvedAt: new Date(),
+    approvedBy: "seed",
     pode_editar_importar: true,
     password_hash: hashPassword(password)
   }

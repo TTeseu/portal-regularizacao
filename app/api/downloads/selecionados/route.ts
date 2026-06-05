@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { canAccessPortal, getCurrentUser } from "@/lib/auth";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 
 function bundleHtml(items: Array<{ id: string; html: string }>) {
@@ -14,6 +14,7 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const ids = formData.getAll("ids").map(String).filter(Boolean);
   const user = await getCurrentUser();
+  if (!canAccessPortal(user)) return new NextResponse("Acesso nao aprovado", { status: 403 });
   if (ids.length === 0) return NextResponse.redirect(new URL("/notificacoes", request.url), 303);
 
   const notificacoes = await prisma.notificacao.findMany({ where: { id: { in: ids } } });

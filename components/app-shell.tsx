@@ -1,26 +1,27 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import {
   Building2,
   Database,
   FileText,
   LayoutDashboard,
   LogOut,
-  Search
+  Search,
+  Users
 } from "lucide-react";
-import { getCurrentUser } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 
 const nav = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/notificacoes/nova", label: "Gerar Notificação", icon: FileText },
   { href: "/notificacoes", label: "Buscar Notificações", icon: Search },
   { href: "/empresas", label: "Empresas", icon: Building2 },
-  { href: "/notificacoes?origem=importacao", label: "Importar Dados", icon: Database }
+  { href: "/notificacoes?origem=importacao", label: "Importar Dados", icon: Database },
+  { href: "/usuarios", label: "Usuários", icon: Users, adminOnly: true }
 ];
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  const user = await requireUser();
+  const visibleNav = nav.filter((item) => !item.adminOnly || user.role === "admin");
 
   return (
     <div className="min-h-screen bg-edp-navy edp-technical-bg">
@@ -35,7 +36,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <nav className="space-y-2 px-4 py-6">
-          {nav.map((item) => {
+          {visibleNav.map((item) => {
             const Icon = item.icon;
             return (
               <Link
@@ -53,7 +54,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <div className="lg:pl-72">
         <header className="sticky top-0 z-20 flex min-h-20 items-center justify-between border-b border-line bg-edp-navy/88 px-4 backdrop-blur-xl lg:px-8">
           <nav className="flex gap-2 overflow-x-auto lg:hidden">
-            {nav.map((item) => {
+            {visibleNav.map((item) => {
               const Icon = item.icon;
               return (
                 <Link key={item.href} href={item.href} className="btn-secondary px-3">

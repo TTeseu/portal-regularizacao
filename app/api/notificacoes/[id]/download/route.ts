@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { canAccessPortal, getCurrentUser } from "@/lib/auth";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 
 export async function GET(
@@ -10,6 +10,7 @@ export async function GET(
 ) {
   const { id } = await params;
   const user = await getCurrentUser();
+  if (!canAccessPortal(user)) return new NextResponse("Acesso nao aprovado", { status: 403 });
   const notificacao = await prisma.notificacao.findUnique({ where: { id } });
   if (!notificacao) return new NextResponse("Notificacao nao encontrada", { status: 404 });
 

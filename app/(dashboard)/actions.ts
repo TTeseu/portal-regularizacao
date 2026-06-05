@@ -7,6 +7,7 @@ import { canEdit, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 import { CLAUSULA_11_6_3_TEXT } from "@/lib/constants";
+import { countActiveAdmins, isSuperAdminEmail } from "@/lib/super-admin";
 
 function stringValue(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -312,13 +313,118 @@ export async function updateEmpresa(id: string, formData: FormData) {
 }
 
 export async function updateUserPermission(id: string, formData: FormData) {
-  const user = await requireUser();
-  if (user.role !== "admin") throw new Error("Apenas administradores alteram usuarios.");
+  const admin = await requireAdmin();
+  const target = await prisma.user.findUnique({ where: { id } });
+  if (!target) throw new Error("Usuario nao encontrado.");
+
+  const requestedRole = stringValue(formData, "role") || "user";
+  const nextRole = isSuperAdminEmail(target.email) ? "admin" : requestedRole;
+  const nextStatus = isSuperAdminEmail(target.email) ? "approved" : target.status;
+  const nextAccessApproved = isSuperAdminEmail(target.email) ? true : target.accessApproved;
+  await assertAdminContinuity(target.id, {
+    currentRole: target.role,
+    currentStatus: target.status,
+    currentAccessApproved: target.accessApproved,
+    nextRole,
+    nextStatus,
+    nextAccessApproved
+  });
+
   await prisma.user.update({
     where: { id },
     data: {
-      role: stringValue(formData, "role") || "user",
-      pode_editar_importar: boolValue(formData, "pode_editar_importar")
+      role: nextRole,
+      status: nextStatus,
+      accessApproved: nextAccessApproved,
+      pode_editar_importar: isSuperAdminEmail(target.email) ? true : boolValue(formData, "pode_editar_importar"),
+      approvedAt: isSuperAdminEmail(target.email) ? new Date() : target.approvedAt,
+      approvedBy: isSuperAdminEmail(target.email) ? admin.email : target.approvedBy
+    }
+  });
+  revalidatePath("/usuarios");
+  revalidatePath("/");
+}
+
+async function requireAdmin() {
+  const user = await requireUser();
+  if (user.role !== "admin") throw new Error("Apenas administradores alteram usuarios.");
+  return user;
+}
+
+async function assertAdminContinuity(
+  targetId: string,
+  state: {
+    currentRole: string;
+    currentStatus: string;
+    currentAccessApproved: boolean;
+    nextRole: string;
+    nextStatus: string;
+    nextAccessApproved: boolean;
+  }
+) {
+  const currentlyActiveAdmin =
+    state.currentRole === "admin" &&
+    state.currentStatus === "approved" &&
+    state.currentAccessApproved;
+  const willRemainActiveAdmin =
+    state.nextRole === "admin" &&
+    state.nextStatus === "approved" &&
+    state.nextAccessApproved;
+
+  if (!currentlyActiveAdmin || willRemainActiveAdmin) return;
+
+  const remainingAdmins = await countActiveAdmins(targetId);
+  if (remainingAdmins === 0) {
+    throw new Error("Nao e permitido remover ou rebaixar o ultimo administrador ativo.");
+  }
+}
+
+export async function approveUser(id: string) {
+  const admin = await requireAdmin();
+  const target = await prisma.user.findUnique({ where: { id } });
+  if (!target) throw new Error("Usuario nao encontrado.");
+
+  await prisma.user.update({
+    where: { id },
+    data: {
+      role: isSuperAdminEmail(target.email) ? "admin" : target.role,
+      status: "approved",
+      accessApproved: true,
+      pode_editar_importar: isSuperAdminEmail(target.email) ? true : target.pode_editar_importar,
+      approvedAt: new Date(),
+      approvedBy: admin.email,
+      rejectedAt: null,
+      rejectedBy: null
+    }
+  });
+  revalidatePath("/usuarios");
+  revalidatePath("/");
+}
+
+export async function rejectUser(id: string) {
+  const admin = await requireAdmin();
+  const target = await prisma.user.findUnique({ where: { id } });
+  if (!target) throw new Error("Usuario nao encontrado.");
+  if (isSuperAdminEmail(target.email)) {
+    throw new Error("O administrador principal nao pode ser recusado.");
+  }
+
+  await assertAdminContinuity(target.id, {
+    currentRole: target.role,
+    currentStatus: target.status,
+    currentAccessApproved: target.accessApproved,
+    nextRole: target.role,
+    nextStatus: "rejected",
+    nextAccessApproved: false
+  });
+
+  await prisma.user.update({
+    where: { id },
+    data: {
+      status: "rejected",
+      accessApproved: false,
+      rejectedAt: new Date(),
+      rejectedBy: admin.email
     }
   });
   revalidatePath("/usuarios");

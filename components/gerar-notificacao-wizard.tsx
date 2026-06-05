@@ -9,13 +9,15 @@ import {
   Edit3,
   ExternalLink,
   FileText,
+  Lightbulb,
   Package,
   Plus,
   Printer,
   RotateCcw,
   Save,
   Search,
-  Trash2
+  Trash2,
+  X
 } from "lucide-react";
 import { CLAUSULA_11_6_3_TEXT, EDIT_RESTRICTED_MESSAGE } from "@/lib/constants";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
@@ -170,6 +172,8 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Pro
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [addressCount, setAddressCount] = useState("1");
   const [enderecos, setEnderecos] = useState<AddressInput[]>([makeAddress()]);
+  const [massPasteOpen, setMassPasteOpen] = useState(false);
+  const [massPaste, setMassPaste] = useState({ enderecos: "", bairros: "", cidades: "" });
   const [isPending, startTransition] = useTransition();
   const [form, setForm] = useState<WizardForm>({
     tipo_notificacao: tipos[0] || "",
@@ -243,18 +247,29 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Pro
   }
 
   function pasteMass() {
-    const text = window.prompt("Cole um endereço por linha. Use ponto e vírgula para separar Endereço; Bairro; Cidade.");
-    if (!text) return;
-    const rows = text
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .slice(0, 100)
-      .map((line) => {
-        const [endereco, bairro, cidade] = line.split(";").map((part) => part?.trim() || "");
-        return makeAddress({ endereco, bairro, cidade });
-      });
-    if (rows.length > 0) setEnderecos(rows);
+    setMassPasteOpen(true);
+  }
+
+  function importMassPaste() {
+    const enderecosLines = splitLines(massPaste.enderecos);
+    const bairrosLines = splitLines(massPaste.bairros);
+    const cidadesLines = splitLines(massPaste.cidades);
+    const count = Math.min(Math.max(enderecosLines.length, bairrosLines.length, cidadesLines.length), 100);
+    if (count === 0) return;
+
+    const rows = Array.from({ length: count }, (_, index) =>
+      makeAddress({
+        endereco: enderecosLines[index] || "",
+        bairro: bairrosLines[index] || bairrosLines[0] || "",
+        cidade: cidadesLines[index] || cidadesLines[0] || ""
+      })
+    ).filter((row) => row.endereco || row.bairro || row.cidade);
+
+    if (rows.length > 0) {
+      setEnderecos(rows);
+      setAddressCount(String(rows.length));
+      setMassPasteOpen(false);
+    }
   }
 
   function resetForm() {
@@ -364,17 +379,27 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Pro
             <div className="rounded-md bg-slate-50 px-4 py-4 font-semibold text-slate-700">
               {selectedIds.length} empresa(s) selecionada(s)
             </div>
-            <div className="max-h-80 overflow-auto rounded-md border border-line bg-white">
-              {filteredEmpresas.map((empresa) => (
-                <label key={empresa.id} className="flex cursor-pointer gap-3 border-b border-line px-4 py-4 last:border-b-0 hover:bg-slate-50">
-                  <input type="checkbox" className="mt-1 h-4 w-4 rounded border-slate-300" checked={selectedIds.includes(empresa.id)} onChange={() => toggleEmpresa(empresa.id)} />
-                  <span>
-                    <span className="block font-bold text-slate-800">{empresa.nome}</span>
-                    <span className="block text-sm text-slate-600">CNPJ: {empresa.cnpj || "-"} | Contrato: {empresa.contrato_numero || "-"}</span>
-                    <span className="block text-xs uppercase text-slate-500">{empresa.cidade || "-"}{empresa.estado ? ` - ${empresa.estado}` : ""}</span>
-                  </span>
-                </label>
-              ))}
+            <div className="max-h-80 overflow-auto rounded-md border border-line bg-card/80">
+              {filteredEmpresas.map((empresa) => {
+                const selected = selectedIds.includes(empresa.id);
+                return (
+                  <label
+                    key={empresa.id}
+                    className={`flex cursor-pointer gap-3 border-b border-line px-4 py-4 transition last:border-b-0 ${
+                      selected
+                        ? "bg-edp/12 text-white ring-1 ring-inset ring-edp/30"
+                        : "bg-card/40 text-edp-muted hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <input type="checkbox" className="mt-1 h-4 w-4 rounded border-white/20 bg-edp-navy accent-[#00E676]" checked={selected} onChange={() => toggleEmpresa(empresa.id)} />
+                    <span>
+                      <span className="block font-bold text-white">{empresa.nome}</span>
+                      <span className="block text-sm text-edp-muted">CNPJ: {empresa.cnpj || "-"} | Contrato: {empresa.contrato_numero || "-"}</span>
+                      <span className="block text-xs uppercase text-edp-muted/80">{empresa.cidade || "-"}{empresa.estado ? ` - ${empresa.estado}` : ""}</span>
+                    </span>
+                  </label>
+                );
+              })}
             </div>
           </WizardSection>
         ) : null}
@@ -415,7 +440,7 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Pro
                     <option>30 (trinta) dias</option>
                     <option>60 (sessenta) dias</option>
                   </select>
-                  <span className="mt-2 block text-xs text-edp">Este prazo aparecerá no texto: "em até X (por extenso) dias"</span>
+                  <span className="mt-2 block text-xs text-edp">Este prazo aparecerá no texto: &quot;em até X (por extenso) dias&quot;</span>
                 </label>
               </div>
 
@@ -508,7 +533,134 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Pro
           )}
         </footer>
       </form>
+      {massPasteOpen ? (
+        <MassPasteModal
+          value={massPaste}
+          onChange={setMassPaste}
+          onClose={() => setMassPasteOpen(false)}
+          onImport={importMassPaste}
+        />
+      ) : null}
     </div>
+  );
+}
+
+function splitLines(value: string) {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function MassPasteModal({
+  value,
+  onChange,
+  onClose,
+  onImport
+}: {
+  value: { enderecos: string; bairros: string; cidades: string };
+  onChange: (value: { enderecos: string; bairros: string; cidades: string }) => void;
+  onClose: () => void;
+  onImport: () => void;
+}) {
+  const enderecosCount = splitLines(value.enderecos).length;
+  const bairrosCount = splitLines(value.bairros).length;
+  const cidadesCount = splitLines(value.cidades).length;
+  const hasRows = enderecosCount > 0 || bairrosCount > 0 || cidadesCount > 0;
+
+  function update(key: keyof typeof value, nextValue: string) {
+    onChange({ ...value, [key]: nextValue });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 px-4 py-8 backdrop-blur-sm">
+      <div className="w-full max-w-4xl overflow-hidden rounded-2xl border border-line bg-card shadow-2xl shadow-black/30">
+        <div className="flex items-start justify-between gap-4 border-b border-line bg-surface px-6 py-5">
+          <div>
+            <div className="flex items-center gap-2 text-lg font-bold text-white">
+              <Package size={19} className="text-edp" />
+              Colar Endereços em Massa
+            </div>
+            <p className="mt-2 text-sm text-edp-muted">
+              Cole as colunas do Excel. Cada linha será usada como um endereço diferente.
+            </p>
+          </div>
+          <button type="button" className="btn-secondary h-9 w-9 px-0" onClick={onClose} aria-label="Fechar">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="space-y-5 px-6 py-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <MassPasteTextarea
+              label="Endereços (Ruas) *"
+              value={value.enderecos}
+              onChange={(nextValue) => update("enderecos", nextValue)}
+              placeholder={"Rua das Flores, 123\nAv. Brasil, 456\nRua do Sol, 789"}
+              count={enderecosCount}
+            />
+            <MassPasteTextarea
+              label="Bairros"
+              value={value.bairros}
+              onChange={(nextValue) => update("bairros", nextValue)}
+              placeholder={"Centro\nJardim América\nVila Nova"}
+              count={bairrosCount}
+              hint="Se tiver menos, o primeiro será usado para todos."
+            />
+            <MassPasteTextarea
+              label="Cidades"
+              value={value.cidades}
+              onChange={(nextValue) => update("cidades", nextValue)}
+              placeholder={"São Paulo\nSão Paulo\nSão Paulo"}
+              count={cidadesCount}
+              hint="Se tiver menos, a primeira será usada para todos."
+            />
+          </div>
+
+          <div className="flex items-start gap-3 rounded-xl border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+            <Lightbulb size={17} className="mt-0.5 shrink-0 text-amber-300" />
+            <span><strong>Dica:</strong> copie as colunas do Excel e cole aqui. Cada célula vira uma linha.</span>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-line bg-surface px-6 py-5">
+          <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn-primary" onClick={onImport} disabled={!hasRows}>
+            Importar Endereços
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MassPasteTextarea({
+  label,
+  value,
+  onChange,
+  placeholder,
+  count,
+  hint
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  count: number;
+  hint?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="label">{label}</span>
+      <textarea
+        className="field mt-2 min-h-40 resize-y leading-relaxed"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+      />
+      <span className="mt-2 block text-xs text-edp-muted">{count} linha{count === 1 ? "" : "s"}</span>
+      {hint ? <span className="mt-1 block text-xs text-edp">{hint}</span> : null}
+    </label>
   );
 }
 
