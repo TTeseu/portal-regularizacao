@@ -121,31 +121,31 @@ export function HomeLanding({ user }: { user: HomeUser }) {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#04111f] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-[#030b17] text-white">
       <TransitionOverlay transition={transition} />
 
       <div className="fixed inset-0 z-0">
         <Image
-          src="/edp-home-hero.jpg"
+          src="/edp-home-hero.webp"
           alt=""
           fill
           priority
           sizes="100vw"
-          className="object-cover"
+          className="object-cover object-[center_18%]"
         />
-        <div className="absolute inset-0 bg-[#061427]/75" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_22%,rgba(0,230,118,0.28),transparent_30%),linear-gradient(90deg,rgba(2,8,18,0.95)_0%,rgba(4,16,31,0.72)_46%,rgba(3,10,21,0.88)_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:72px_72px] opacity-35" />
+        <div className="absolute inset-0 bg-[#061427]/58" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_68%_18%,rgba(0,230,118,0.24),transparent_24%),linear-gradient(90deg,rgba(2,8,18,0.92)_0%,rgba(4,16,31,0.50)_48%,rgba(3,10,21,0.86)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-[48%] bg-gradient-to-b from-transparent via-[#061427]/82 to-[#030b17]" />
       </div>
 
-      <header className="relative z-20 border-b border-white/10 bg-[#07172b]/64 backdrop-blur-2xl">
-        <div className="mx-auto flex min-h-20 max-w-[1680px] items-center justify-between gap-4 px-5 md:px-10">
+      <header className="relative z-20 border-b border-white/8 bg-[#07172b]/72 backdrop-blur-2xl">
+        <div className="mx-auto flex min-h-[78px] max-w-[1680px] items-center justify-between gap-4 px-6 md:px-10">
           <div className="flex items-center gap-5">
-            <div className="flex h-14 w-32 items-center justify-center rounded-3xl border border-white/10 bg-white/[0.07] px-4 shadow-2xl shadow-black/20 backdrop-blur-xl">
-              <Image src="/edp-logo-white.svg" alt="EDP" width={94} height={40} className="h-10 w-auto" priority />
+            <div className="flex h-14 w-30 items-center justify-center rounded-3xl px-1">
+              <Image src="/edp-logo-white.svg" alt="EDP" width={108} height={46} className="h-12 w-auto" priority />
             </div>
-            <div className="border-l border-white/10 pl-5">
-              <div className="text-base font-bold text-white">Portal de Notificacoes EDP</div>
+            <div className="border-l border-white/12 pl-6">
+              <div className="text-lg font-bold text-white">Portal de Notificacoes EDP</div>
               <div className="text-sm font-semibold text-[#00E676]">Ambiente corporativo integrado</div>
             </div>
           </div>
@@ -164,28 +164,28 @@ export function HomeLanding({ user }: { user: HomeUser }) {
         </div>
       </header>
 
-      <section className="relative z-10 flex min-h-[calc(100vh-80px)] flex-col">
-        <div className="mx-auto grid w-full max-w-[1680px] flex-1 items-center gap-10 px-5 py-10 md:px-10 lg:grid-cols-[1fr_0.82fr] lg:py-8">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#00E676]/40 bg-[#00E676]/10 px-4 py-2 text-xs font-bold uppercase tracking-wide text-[#00E676] shadow-lg shadow-[#00E676]/10 backdrop-blur-xl">
+      <section className="relative z-10 flex min-h-[calc(100vh-78px)] flex-col">
+        <div className="mx-auto grid w-full max-w-[1680px] items-center gap-10 px-6 pb-8 pt-[92px] md:px-10 lg:grid-cols-[1fr_0.79fr] xl:min-h-[555px]">
+          <div className="ml-0 max-w-3xl lg:ml-20">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#00E676]/34 bg-[#00E676]/10 px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-[#00E676] shadow-lg shadow-[#00E676]/10 backdrop-blur-xl">
               <Sparkles size={15} />
               Gestao integrada de notificacoes
             </div>
 
-            <h1 className="mt-6 text-5xl font-bold leading-[0.98] tracking-[-0.02em] text-white drop-shadow-2xl sm:text-6xl xl:text-7xl">
+            <h1 className="mt-6 text-[56px] font-bold leading-[0.96] tracking-[-0.025em] text-white drop-shadow-2xl sm:text-[68px] xl:text-[76px]">
               Portal de<br />
               Notificacoes EDP
             </h1>
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-white/88 drop-shadow md:text-xl">
+            <p className="mt-7 max-w-[690px] text-xl leading-8 text-white/92 drop-shadow">
               Centralize regularizacoes, notificacoes, fluxos documentais e acompanhamento operacional em uma unica plataforma.
             </p>
 
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-              <button onClick={() => enterModule("Portal de Regularizacao", "/regularizacao")} className="group inline-flex items-center justify-center gap-3 rounded-2xl bg-[#00E676] px-7 py-4 text-sm font-bold text-[#061427] shadow-2xl shadow-[#00E676]/25 transition hover:-translate-y-0.5 hover:bg-[#00C853]">
+              <button onClick={() => enterModule("Portal de Regularizacao", "/regularizacao")} className="group inline-flex min-w-[276px] items-center justify-center gap-3 rounded-2xl bg-[#00E676] px-7 py-4 text-sm font-bold text-[#061427] shadow-2xl shadow-[#00E676]/25 transition hover:-translate-y-0.5 hover:bg-[#00C853]">
                 Acessar Portal de Regularizacao
                 <ArrowRight size={18} className="transition group-hover:translate-x-1" />
               </button>
-              <button onClick={() => enterModule("Notifica Facil", "/notifica-facil")} className="group inline-flex items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/[0.08] px-7 py-4 text-sm font-bold text-white shadow-2xl shadow-black/15 backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-[#00E676]/70 hover:bg-white/[0.13]">
+              <button onClick={() => enterModule("Notifica Facil", "/notifica-facil")} className="group inline-flex min-w-[216px] items-center justify-center gap-3 rounded-2xl border border-white/22 bg-white/[0.08] px-7 py-4 text-sm font-bold text-white shadow-2xl shadow-black/15 backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-[#00E676]/70 hover:bg-white/[0.13]">
                 Acessar Notifica Facil
                 <BellRing size={18} className="transition group-hover:text-[#00E676]" />
               </button>
@@ -195,12 +195,12 @@ export function HomeLanding({ user }: { user: HomeUser }) {
           <HeroDashboard />
         </div>
 
-        <div className="mx-auto grid w-full max-w-[1680px] gap-8 px-5 pb-7 md:px-10 xl:grid-cols-[0.96fr_1fr]">
+        <div className="mx-auto grid w-full max-w-[1680px] gap-8 px-6 pb-4 md:px-10 xl:grid-cols-[0.97fr_1fr]">
           <section>
             <div className="mb-5 grid gap-3 md:grid-cols-[1fr_0.7fr] md:items-end">
               <div>
                 <div className="text-xs font-bold uppercase tracking-wide text-[#00E676]">Escolha o sistema</div>
-                <h2 className="mt-2 text-2xl font-bold text-white md:text-3xl">Dois modulos, uma experiencia integrada</h2>
+                <h2 className="mt-2 text-[27px] font-bold leading-tight text-white md:text-[31px]">Dois modulos, uma experiencia integrada</h2>
               </div>
               <p className="text-xs leading-5 text-[#C7D0DA]">
                 Entre no modulo ideal para sua operacao. A Home permanece clara e institucional; os sistemas internos mantem o ambiente operacional EDP.
@@ -234,7 +234,7 @@ export function HomeLanding({ user }: { user: HomeUser }) {
           </section>
         </div>
 
-        <section className="mx-auto w-full max-w-[1680px] px-5 pb-5 md:px-10">
+        <section className="mx-auto w-full max-w-[1680px] px-6 pb-5 pt-0 md:px-10">
           <div className="grid gap-0 overflow-hidden rounded-[28px] border border-white/12 bg-white/[0.06] shadow-2xl shadow-black/20 backdrop-blur-2xl md:grid-cols-2 xl:grid-cols-4">
             {operations.map((item) => {
               const Icon = item.icon;
@@ -259,15 +259,15 @@ export function HomeLanding({ user }: { user: HomeUser }) {
 
 function HeroDashboard() {
   return (
-    <div className="relative mx-auto w-full max-w-[620px]">
+    <div className="relative mx-auto w-full max-w-[590px] xl:max-w-[610px]">
       <div className="absolute -inset-5 rounded-[38px] bg-[#00E676]/20 blur-3xl" />
-      <div className="relative overflow-hidden rounded-[34px] border border-white/18 bg-[#0c1d35]/58 p-7 shadow-2xl shadow-black/30 backdrop-blur-2xl">
-        <div className="absolute inset-x-0 top-20 h-px bg-[#00E676]/65 shadow-[0_0_36px_rgba(0,230,118,0.7)]" />
+      <div className="relative overflow-hidden rounded-[32px] border border-white/20 bg-[#0c1d35]/62 p-7 shadow-2xl shadow-black/30 backdrop-blur-2xl">
+        <div className="absolute inset-x-0 top-[90px] h-px bg-[#00E676]/70 shadow-[0_0_36px_rgba(0,230,118,0.7)]" />
         <div className="absolute right-8 top-8 h-36 w-56 rounded-full bg-[#00E676]/20 blur-3xl" />
 
         <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#00E676] text-[#061427]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#00E676] text-[#061427] shadow-lg shadow-[#00E676]/25">
               <CloudLightning size={24} />
             </div>
             <div>
@@ -290,7 +290,7 @@ function HeroDashboard() {
               <div className="text-xs font-bold uppercase text-white/80">Rede operacional</div>
               <Zap size={17} className="text-[#00E676]" />
             </div>
-            <div className="relative h-28 overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b2532] to-[#16324e]">
+            <div className="relative h-[108px] overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b2532] to-[#16324e]">
               <div className="absolute left-9 top-6 h-20 w-px bg-white/32" />
               <div className="absolute left-8 top-5 h-2.5 w-2.5 rounded-full bg-[#00E676] shadow-[0_0_20px_rgba(0,230,118,0.9)]" />
               <div className="absolute left-12 top-6 h-px w-[72%] rotate-[14deg] bg-[#00E676]/75" />
@@ -340,7 +340,7 @@ function ModuleSelectorCard({
   return (
     <button
       onClick={() => onEnter(module.title, module.href)}
-      className="group relative min-h-64 overflow-hidden rounded-[26px] border border-white/16 bg-[#0c1d35]/58 p-7 text-left shadow-2xl shadow-black/20 backdrop-blur-2xl transition duration-300 hover:-translate-y-1 hover:border-[#00E676]/70 hover:bg-[#102744]/72"
+      className="group relative min-h-[246px] overflow-hidden rounded-[24px] border border-white/16 bg-[#0c1d35]/58 p-7 text-left shadow-2xl shadow-black/20 backdrop-blur-2xl transition duration-300 hover:-translate-y-1 hover:border-[#00E676]/70 hover:bg-[#102744]/72"
     >
       <div className="absolute inset-x-0 top-0 h-px bg-[#00E676] opacity-90 shadow-[0_0_24px_rgba(0,230,118,0.85)]" />
       <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-[#00E676]/10 blur-3xl transition group-hover:bg-[#00E676]/20" />
@@ -350,8 +350,8 @@ function ModuleSelectorCard({
         </div>
         <ArrowRight className="text-white/65 transition group-hover:translate-x-1 group-hover:text-[#00E676]" size={24} />
       </div>
-      <h3 className="mt-8 text-2xl font-bold text-white">{module.title}</h3>
-      <p className="mt-4 max-w-md text-sm leading-7 text-[#C7D0DA]">{module.description}</p>
+      <h3 className="mt-7 text-xl font-bold text-white md:text-2xl">{module.title}</h3>
+      <p className="mt-4 max-w-md text-sm leading-6 text-[#C7D0DA]">{module.description}</p>
     </button>
   );
 }
@@ -360,7 +360,7 @@ function SectorNewsCard({ item }: { item: EnergyNewsArticle }) {
   return (
     <article className="group overflow-hidden rounded-2xl border border-white/16 bg-[#0c1d35]/58 shadow-2xl shadow-black/20 backdrop-blur-2xl transition hover:-translate-y-1 hover:border-[#00E676]/60">
       <a href={item.url} target="_blank" rel="noreferrer" className="block">
-        <div className="relative h-32 overflow-hidden bg-[#061427]">
+        <div className="relative h-[126px] overflow-hidden bg-[#061427]">
           <img
             src={item.imageUrl || "/edp-energy-hero.svg"}
             alt=""
