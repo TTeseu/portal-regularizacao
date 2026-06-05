@@ -146,6 +146,12 @@ model User {
   status                String    @default("pending")
   accessApproved        Boolean   @default(false)
   pode_editar_importar  Boolean   @default(false)
+  pode_acessar_regularizacao Boolean @default(true)
+  pode_acessar_notifica_facil Boolean @default(true)
+  pode_editar_regularizacao Boolean @default(false)
+  pode_editar_notifica_facil Boolean @default(false)
+  pode_importar_dados   Boolean   @default(false)
+  pode_gerenciar_usuarios Boolean @default(false)
   requestedAt           DateTime?
   approvedAt            DateTime?
   approvedBy            String?
@@ -213,4 +219,218 @@ model Authenticator {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, credentialID])
+}
+
+model NotificaFacilNotification {
+  id                            String    @id
+  created_date                  DateTime?
+  updated_date                  DateTime?
+  created_by_id                 String?
+  created_by                    String?
+  is_sample                     Boolean   @default(false)
+
+  empresa                       String
+  tipo_servico                  String?
+  numero_protocolo              String?
+  numero_notificacao            String?
+  numero_registro_censo         String?
+  destinatario_nome             String?
+  destinatario_cpf              String?
+  destinatario_endereco         String?
+  valor_cobrado                 Float?
+  data_notificacao              String?
+  prazo_resposta                String?
+  data_email_encaminhado        String?
+  qtd_notificacoes_enviadas     Int       @default(0)
+  status                        String    @default("Aguardando assinatura Gestor")
+  is_draft                      Boolean   @default(false)
+  is_standby                    Boolean   @default(false)
+  pendencia_tecnica             Boolean   @default(false)
+  pt_notificado                 Boolean   @default(false)
+  pt_data_notificado            String?
+  pdf_url                       String?
+  pdf_base64                    String?
+  html_content                  String?
+  regularizacao_assinada_url    String?
+  notificacao_assinada_anexos   Json?
+  anexos_resposta_email         Json?
+  observacoes                   String?
+  status_envio_notificacao      String?
+  vencimento_contrato           String?
+  ano_vencimento_contrato       String?
+  celebrado_em                  String?
+  mostrar_celebrado_em          Boolean   @default(true)
+  empresa_endereco              String?
+  empresa_bairro                String?
+  empresa_cidade                String?
+  empresa_estado                String?
+  empresa_incorporada           String?
+  contrato_numero               String?
+  ac                            String?
+  numero_nome_empresa           String?
+  numero_parceiro               String?
+  cnpj                          String?
+  texto_contrato_7_14           String?
+  texto_ocupacao_revelia        String?
+  texto_23_3                    String?
+  texto_24_1                    String?
+  texto_24_3                    String?
+  valor_atualizado              Float?
+  multa                         Float?
+  retroativo                    String?
+  enderecos_revelia             Json?
+  total_ids_identificados       Int?
+  ordem_venda                   String?
+  censo_registro_id             String?
+  censo_draft_id                String?
+  censo_finalizado              Boolean   @default(false)
+  numero_poste                  String?
+  dados_plaqueta                String?
+  latitude                      Float?
+  longitude                     Float?
+  fotos_censo                   Json?
+  ocr_legendas                  Json?
+  download_count                Int       @default(0)
+  last_downloaded_at            DateTime?
+  last_downloaded_by            String?
+
+  @@index([empresa])
+  @@index([status])
+  @@index([numero_notificacao])
+  @@index([numero_registro_censo])
+  @@index([is_draft])
+  @@index([is_standby])
+  @@index([pendencia_tecnica])
+  @@index([created_date])
+}
+
+model NotificaFacilBaseNotificacao {
+  id                       String    @id
+  created_date             DateTime?
+  updated_date             DateTime?
+  created_by_id            String?
+  created_by               String?
+  is_sample                Boolean   @default(false)
+
+  empresa                  String
+  status_envio_notificacao String?
+  vencimento_contrato      String?
+  ano_vencimento_contrato  String?
+  empresa_endereco         String?
+  empresa_bairro           String?
+  empresa_cidade           String?
+  empresa_estado           String?
+  contrato_numero          String?
+  ac                       String?
+  numero_nome_empresa      String?
+  celebrado_em             String?
+  repetido_empresa         String?
+  repetido_endereco        String?
+  repetido_bairro          String?
+  repetido_cidade          String?
+  repetido_estado          String?
+  numero_parceiro          String?
+  cnpj                     String?
+  texto_contrato_7_14      String?
+  texto_ocupacao_revelia   String?
+  texto_23_3               String?
+  texto_24_1               String?
+  texto_24_3               String?
+  valor_atualizado         String?
+  multa                    String?
+  retroativo               String?
+
+  @@index([empresa])
+  @@index([cnpj])
+  @@index([contrato_numero])
+  @@index([empresa_cidade])
+}
+
+model NotificaFacilEmpresa {
+  id                    String    @id
+  created_date          DateTime?
+  updated_date          DateTime?
+  created_by_id         String?
+  created_by            String?
+  is_sample             Boolean   @default(false)
+
+  nome                  String
+  cnpj                  String?
+  contrato_numero       String?
+  endereco              String?
+  cidade                String?
+  estado                String?
+  celebrado_em          String?
+  tem_clausula_11_6_3   Boolean   @default(false)
+  campo_11_6_3          String?
+
+  @@index([nome])
+  @@index([cnpj])
+  @@index([contrato_numero])
+}
+
+model NotificaFacilActivityLog {
+  id                   String    @id
+  created_date         DateTime?
+  updated_date         DateTime?
+  created_by_id        String?
+  created_by           String?
+  is_sample            Boolean   @default(false)
+
+  notification_id      String
+  notification_number  String?
+  action               String
+  field_changed        String?
+  old_value            String?
+  new_value            String?
+  user_email           String
+  user_name            String?
+  timestamp            DateTime
+  details              String?
+
+  @@index([notification_id])
+  @@index([action])
+  @@index([timestamp])
+  @@index([user_email])
+}
+
+model NotificaFacilNotificationCounter {
+  id            String    @id
+  created_date  DateTime?
+  updated_date  DateTime?
+  created_by_id String?
+  created_by    String?
+  is_sample     Boolean   @default(false)
+  year          String    @unique
+  current       Int
+}
+
+model NotificaFacilRelatorioEmpresaClandestina {
+  id                    String    @id
+  created_date          DateTime?
+  updated_date          DateTime?
+  created_by_id         String?
+  created_by            String?
+  is_sample             Boolean   @default(false)
+
+  empresa               String
+  numero_registro_censo String?
+  endereco              String?
+  bairro                String?
+  cidade                String?
+  numero_poste          String?
+  latitude              Float?
+  longitude             Float?
+  fotos_censo           Json?
+  motivo                String?
+  status                String    @default("Pendente")
+  observacoes           String?
+  data_relatorio        String?
+  responsaveis          String?
+  data_envio_email      String?
+  censo_draft_id        String?
+
+  @@index([empresa])
+  @@index([status])
+  @@index([numero_registro_censo])
 }

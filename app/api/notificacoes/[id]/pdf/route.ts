@@ -2,26 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { canAccessPortal, getCurrentUser } from "@/lib/auth";
-import { buildNotificacaoHtml } from "@/lib/notificacao-html";
-
-async function renderPdf(html: string) {
-  try {
-    const chromium = await import("@sparticuz/chromium");
-    const puppeteer = await import("puppeteer-core");
-    const browser = await puppeteer.launch({
-      args: chromium.default.args,
-      executablePath: await chromium.default.executablePath(),
-      headless: true
-    });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "load" });
-    const pdf = await page.pdf({ format: "A4", printBackground: true });
-    await browser.close();
-    return pdf;
-  } catch {
-    return null;
-  }
-}
+import { ensurePdfForNotificacao, pdfResponse } from "@/lib/pdf-cache";
 
 export async function GET(
   request: Request,
@@ -30,11 +11,11 @@ export async function GET(
   const { id } = await params;
   const user = await getCurrentUser();
   if (!canAccessPortal(user)) return new NextResponse("Acesso nao aprovado", { status: 403 });
+
   const notificacao = await prisma.notificacao.findUnique({ where: { id } });
   if (!notificacao) return new NextResponse("Notificacao nao encontrada", { status: 404 });
 
-  const html = buildNotificacaoHtml(notificacao);
-  const pdf = await renderPdf(html);
+  const cachedPdf = await ensurePdfForNotificacao(notificacao);
 
   await prisma.$transaction([
     prisma.notificacao.update({
@@ -43,7 +24,7 @@ export async function GET(
         download_count: { increment: 1 },
         last_downloaded_at: new Date(),
         last_downloaded_by: user?.full_name || user?.email || "Sistema",
-        pdfUrl: `/api/notificacoes/${id}/pdf`
+        pdfUrl: cachedPdf.url
       }
     }),
     prisma.historicoDownload.create({
@@ -62,20 +43,9 @@ export async function GET(
     })
   ]);
 
-  if (!pdf) {
-    return new NextResponse(html, {
-      headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "Content-Disposition": `attachment; filename="notificacao-${id}.html"`
-      }
-    });
+  if (cachedPdf.source === "blob") {
+    return NextResponse.redirect(cachedPdf.url);
   }
 
-  const body = pdf.buffer.slice(pdf.byteOffset, pdf.byteOffset + pdf.byteLength) as ArrayBuffer;
-  return new NextResponse(body, {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="notificacao-${id}.pdf"`
-    }
-  });
+  return pdfResponse(cachedPdf.bytes, `notificacao-${id}.pdf`);
 }

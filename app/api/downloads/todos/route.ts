@@ -2,11 +2,12 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { canAccessPortal, getCurrentUser } from "@/lib/auth";
-import { buildNotificacaoHtml } from "@/lib/notificacao-html";
+import { buildPdfZip, zipResponse } from "@/lib/pdf-bundle";
 
 export async function GET() {
   const user = await getCurrentUser();
   if (!canAccessPortal(user)) return new NextResponse("Acesso nao aprovado", { status: 403 });
+
   const notificacoes = await prisma.notificacao.findMany({
     where: { arquivada: false },
     orderBy: { created_date: "asc" }
@@ -38,14 +39,6 @@ export async function GET() {
     })
   ]);
 
-  const body = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Todas as notificações</title><style>.doc{break-after:page;page-break-after:always}.doc:last-child{break-after:auto;page-break-after:auto}</style></head><body>${notificacoes
-    .map((item) => `<section class="doc">${buildNotificacaoHtml(item)}</section>`)
-    .join("")}</body></html>`;
-
-  return new NextResponse(body, {
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Content-Disposition": `attachment; filename="notificacoes-todas.html"`
-    }
-  });
+  const zip = await buildPdfZip(notificacoes);
+  return zipResponse(zip, "notificacoes-todas.zip");
 }

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { canAccessPortal, getCurrentUser } from "@/lib/auth";
-import { buildNotificacaoHtml } from "@/lib/notificacao-html";
+import { buildPdfZip, zipResponse } from "@/lib/pdf-bundle";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -43,14 +43,6 @@ export async function GET(request: Request) {
     })
   ]);
 
-  const body = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Lote ${loteId}</title><style>.doc{break-after:page;page-break-after:always}.doc:last-child{break-after:auto;page-break-after:auto}</style></head><body>${notificacoes
-    .map((item) => `<section class="doc">${buildNotificacaoHtml(item)}</section>`)
-    .join("")}</body></html>`;
-
-  return new NextResponse(body, {
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Content-Disposition": `attachment; filename="lote-${loteId}.html"`
-    }
-  });
+  const zip = await buildPdfZip(notificacoes);
+  return zipResponse(zip, `lote-${loteId}.zip`);
 }

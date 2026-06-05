@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { canEdit, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
+import { storePdfForNotificacao } from "@/lib/pdf-cache";
 import { CLAUSULA_11_6_3_TEXT } from "@/lib/constants";
 import { countActiveAdmins, isSuperAdminEmail } from "@/lib/super-admin";
 
@@ -105,13 +106,7 @@ export async function createNotificacao(formData: FormData) {
   };
 
   const created = await prisma.notificacao.create({ data });
-  await prisma.notificacao.update({
-    where: { id },
-    data: {
-      html_content: buildNotificacaoHtml(created),
-      pdfUrl: `/api/notificacoes/${id}/pdf`
-    }
-  });
+  await storePdfForNotificacao(created, buildNotificacaoHtml(created));
 
   revalidatePath("/notificacoes");
   redirect(`/notificacoes/${id}`);
@@ -183,13 +178,7 @@ export async function createNotificacoesWizard(formData: FormData) {
     };
 
     const created = await prisma.notificacao.create({ data });
-    await prisma.notificacao.update({
-      where: { id },
-      data: {
-        html_content: buildNotificacaoHtml(created),
-        pdfUrl: `/api/notificacoes/${id}/pdf`
-      }
-    });
+    await storePdfForNotificacao(created, buildNotificacaoHtml(created));
     createdIds.push(id);
   }
 
@@ -204,10 +193,13 @@ export async function createNotificacoesWizard(formData: FormData) {
 export async function updateNotificacao(id: string, formData: FormData) {
   await assertCanEdit();
   const anexos = parseAnexos(formData);
-  await prisma.notificacao.update({
+  const updated = await prisma.notificacao.update({
     where: { id },
     data: {
       updated_date: new Date(),
+      html_content: null,
+      pdfUrl: null,
+      pdf_base64: null,
       tipo_notificacao: stringValue(formData, "tipo_notificacao"),
       numero_oficio: stringValue(formData, "numero_oficio"),
       data_notificacao: stringValue(formData, "data_notificacao"),
@@ -250,6 +242,7 @@ export async function updateNotificacao(id: string, formData: FormData) {
       encaminhado_prefeitura: boolValue(formData, "encaminhado_prefeitura")
     }
   });
+  await storePdfForNotificacao(updated, buildNotificacaoHtml(updated));
   revalidatePath("/notificacoes");
   revalidatePath(`/notificacoes/${id}`);
   redirect(`/notificacoes/${id}`);

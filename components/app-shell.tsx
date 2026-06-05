@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  BellRing,
   Building2,
   Database,
   FileText,
@@ -12,7 +13,9 @@ import { requireUser } from "@/lib/auth";
 import { SidebarWeather } from "@/components/sidebar-weather";
 
 const nav = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/home", label: "Início", icon: LayoutDashboard },
+  { href: "/regularizacao", label: "Regularização", icon: FileText },
+  { href: "/notifica-facil", label: "Notifica Fácil", icon: BellRing },
   { href: "/notificacoes/nova", label: "Gerar Notificação", icon: FileText },
   { href: "/notificacoes", label: "Buscar Notificações", icon: Search },
   { href: "/empresas", label: "Empresas", icon: Building2 },
@@ -33,7 +36,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <div>
             <div className="text-sm font-bold text-white">Portal</div>
-            <div className="text-xs font-medium text-edp">Regularização</div>
+            <div className="text-xs font-medium text-edp">Notificações EDP</div>
           </div>
         </div>
         <nav className="flex-1 space-y-2 px-4 py-6">
