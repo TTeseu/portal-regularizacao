@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   BellRing,
@@ -23,6 +23,17 @@ type HomeUser = {
   name: string;
   email: string;
   role: string;
+};
+
+type EnergyNewsArticle = {
+  id: string;
+  category: string;
+  title: string;
+  summary: string;
+  date: string;
+  imageUrl: string;
+  url: string;
+  sourceName?: string;
 };
 
 const modules = [
@@ -46,42 +57,60 @@ const modules = [
   }
 ];
 
-const news = [
+const fallbackNews: EnergyNewsArticle[] = [
   {
+    id: "fallback-inovacao",
     category: "Inovacao",
     title: "Automacao operacional acelera a gestao documental no setor eletrico",
     summary: "Plataformas integradas reduzem retrabalho, melhoram rastreabilidade e aproximam areas tecnicas e administrativas.",
-    date: "05/06/2026"
+    date: "05/06/2026",
+    imageUrl: "/edp-energy-hero.svg",
+    url: "https://www.edp.com.br/"
   },
   {
+    id: "fallback-redes-inteligentes",
     category: "Redes Inteligentes",
     title: "Distribuidoras ampliam monitoramento digital de ativos em campo",
     summary: "Telemetria, historico visual e leitura operacional passam a apoiar decisoes sobre infraestrutura compartilhada.",
-    date: "05/06/2026"
+    date: "05/06/2026",
+    imageUrl: "/edp-energy-hero.svg",
+    url: "https://www.edp.com.br/"
   },
   {
+    id: "fallback-mercado-livre",
     category: "Mercado Livre",
     title: "Digitalizacao ganha espaco em processos regulados e contratos",
     summary: "Governanca documental vira diferencial para organizar evidencias, prazos e notificacoes em escala.",
-    date: "05/06/2026"
+    date: "05/06/2026",
+    imageUrl: "/edp-energy-hero.svg",
+    url: "https://www.edp.com.br/"
   },
   {
+    id: "fallback-infraestrutura",
     category: "Infraestrutura",
     title: "Compartilhamento de postes exige padronizacao e acompanhamento continuo",
     summary: "Fluxos centralizados ajudam a conectar censo, regularizacao, pendencias tecnicas e respostas de clientes.",
-    date: "05/06/2026"
+    date: "05/06/2026",
+    imageUrl: "/edp-energy-hero.svg",
+    url: "https://www.edp.com.br/"
   },
   {
+    id: "fallback-regulacao",
     category: "Regulacao",
     title: "Rastreabilidade se torna pilar para auditorias e comunicacoes formais",
     summary: "Historicos, anexos e PDFs consistentes fortalecem a governanca em todo o ciclo de notificacao.",
-    date: "05/06/2026"
+    date: "05/06/2026",
+    imageUrl: "/edp-energy-hero.svg",
+    url: "https://www.edp.com.br/"
   },
   {
+    id: "fallback-seguranca",
     category: "Seguranca Operacional",
     title: "Controle de ocupacoes ajuda a reduzir risco em redes de distribuicao",
     summary: "Informacao centralizada melhora priorizacao, resposta e acompanhamento de tratativas criticas.",
-    date: "05/06/2026"
+    date: "05/06/2026",
+    imageUrl: "/edp-energy-hero.svg",
+    url: "https://www.edp.com.br/"
   }
 ];
 
@@ -95,6 +124,35 @@ const operations = [
 export function HomeLanding({ user }: { user: HomeUser }) {
   const router = useRouter();
   const [transition, setTransition] = useState<{ label: string; href: string } | null>(null);
+  const [news, setNews] = useState<EnergyNewsArticle[]>(fallbackNews);
+  const [newsSource, setNewsSource] = useState<"gnews" | "fallback">("fallback");
+  const [newsLoading, setNewsLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/news/energy")
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("news_fetch_failed")))
+      .then((data: { articles?: EnergyNewsArticle[]; source?: "gnews" | "fallback" }) => {
+        if (!active) return;
+        if (data.articles?.length) {
+          setNews(data.articles);
+          setNewsSource(data.source || "fallback");
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setNews(fallbackNews);
+          setNewsSource("fallback");
+        }
+      })
+      .finally(() => {
+        if (active) setNewsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function enterModule(label: string, href: string) {
     if (transition) return;
@@ -192,7 +250,7 @@ export function HomeLanding({ user }: { user: HomeUser }) {
               </p>
             </div>
             <div className="rounded-2xl border border-[#E2E8F0] bg-[#F4F7FA] px-4 py-3 text-sm font-semibold text-[#64748B]">
-              Conteudo estatico preparado para futura API
+              {newsLoading ? "Atualizando noticias..." : newsSource === "gnews" ? "Noticias reais via GNews" : "Exibindo fallback institucional"}
             </div>
           </div>
 
@@ -338,18 +396,37 @@ function ModuleSelectorCard({
   );
 }
 
-function SectorNewsCard({ item }: { item: typeof news[number] }) {
+function SectorNewsCard({ item }: { item: EnergyNewsArticle }) {
   return (
-    <article className="group rounded-[26px] border border-[#E2E8F0] bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-[#00E676]/50 hover:shadow-xl hover:shadow-slate-900/10">
-      <div className="flex items-center justify-between gap-4">
-        <span className="rounded-full bg-[#F0FDF5] px-3 py-1 text-xs font-bold uppercase text-[#008E4A]">{item.category}</span>
-        <span className="text-xs font-semibold text-[#94A3B8]">{item.date}</span>
-      </div>
-      <h3 className="mt-4 text-lg font-bold leading-snug text-[#172033]">{item.title}</h3>
-      <p className="mt-3 text-sm leading-6 text-[#64748B]">{item.summary}</p>
-      <div className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#008E4A]">
-        Ver detalhes
-        <ArrowRight size={15} className="transition group-hover:translate-x-1" />
+    <article className="group overflow-hidden rounded-[26px] border border-[#E2E8F0] bg-white shadow-sm transition hover:-translate-y-1 hover:border-[#00E676]/50 hover:shadow-xl hover:shadow-slate-900/10">
+      <a href={item.url} target="_blank" rel="noreferrer" className="block">
+        <div className="relative h-44 overflow-hidden bg-[#1E2D44]">
+          <img
+            src={item.imageUrl || "/edp-energy-hero.svg"}
+            alt=""
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            referrerPolicy="no-referrer"
+            onError={(event) => {
+              event.currentTarget.src = "/edp-energy-hero.svg";
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1E2D44]/55 via-transparent to-transparent" />
+        </div>
+      </a>
+      <div className="p-5">
+        <div className="flex items-center justify-between gap-4">
+          <span className="rounded-full bg-[#F0FDF5] px-3 py-1 text-xs font-bold uppercase text-[#008E4A]">{item.category}</span>
+          <span className="text-xs font-semibold text-[#94A3B8]">{item.date}</span>
+        </div>
+        <h3 className="mt-4 text-lg font-bold leading-snug text-[#172033]">{item.title}</h3>
+        <p className="mt-3 line-clamp-3 text-sm leading-6 text-[#64748B]">{item.summary}</p>
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <span className="truncate text-xs font-semibold text-[#94A3B8]">{item.sourceName || "Setor eletrico"}</span>
+          <a href={item.url} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center gap-2 text-sm font-bold text-[#008E4A]">
+            Ver detalhes
+            <ArrowRight size={15} className="transition group-hover:translate-x-1" />
+          </a>
+        </div>
       </div>
     </article>
   );

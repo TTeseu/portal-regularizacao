@@ -28,6 +28,7 @@ O projeto foi migrado/recriado a partir dos apps Base44 usando Next.js, TypeScri
 - `/notifica-facil/nova`: criacao de notificacao do Notifica Facil.
 - `/notifica-facil/[id]`: detalhe, preview, historico e edicao.
 - `/api/notifica-facil/integracoes/coleta`: endpoint preparado para integracao futura com Coleta de Dados.
+- `/api/news/energy`: noticias do setor eletrico via GNews com cache de 6 horas e fallback seguro.
 
 ## Variaveis de ambiente
 
@@ -55,6 +56,7 @@ BASE44_TOKEN=""
 BASE44_SERVER_URL="https://base44.app"
 BLOB_READ_WRITE_TOKEN=""
 NOTIFICA_FACIL_INTEGRATION_TOKEN=""
+GNEWS_API_KEY=""
 ```
 
 `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` habilitam o login Google/Auth.js. `AUTH_SECRET`, `ADMIN_EMAIL` e `ADMIN_PASSWORD` continuam disponiveis para o acesso legado local.
@@ -64,6 +66,8 @@ NOTIFICA_FACIL_INTEGRATION_TOKEN=""
 `BLOB_READ_WRITE_TOKEN` habilita armazenamento permanente de PDFs no Vercel Blob. Sem essa variavel, o sistema usa fallback no banco (`pdf_base64`) e continua evitando regeracao em cada download.
 
 `NOTIFICA_FACIL_INTEGRATION_TOKEN` protege o endpoint futuro do Coleta de Dados.
+
+`GNEWS_API_KEY` habilita noticias reais no Radar do Setor Eletrico da Home. A chave e lida somente pela rota backend `/api/news/energy`; o frontend nunca recebe esse segredo. Se a variavel estiver ausente ou a API falhar, a Home usa noticias institucionais de fallback.
 
 ## Rodar local
 
