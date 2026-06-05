@@ -94,6 +94,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       if (!superAdmin) {
         await notifyAdminsNewAccessRequest({
+          id: updated.id,
           name: updated.name || updated.full_name,
           email: updated.email,
           requestedAt: updated.requestedAt

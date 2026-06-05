@@ -434,6 +434,7 @@ export async function resendAccessRequestEmail(id: string) {
   }
 
   await notifyAdminsNewAccessRequest({
+    id: target.id,
     name: target.name || target.full_name,
     email: target.email,
     requestedAt: target.requestedAt || target.created_date
