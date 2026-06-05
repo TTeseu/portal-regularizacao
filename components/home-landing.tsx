@@ -124,7 +124,21 @@ export function HomeLanding({ user }: { user: HomeUser }) {
     <main className="relative min-h-screen overflow-hidden bg-[#030b17] text-white">
       <TransitionOverlay transition={transition} />
 
-      <header className="fixed inset-x-0 top-0 z-40 border-b border-white/8 bg-[#07172b]/72 backdrop-blur-2xl">
+      <div className="fixed inset-0 z-0">
+        <Image
+          src="/edp-home-hero.webp"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[center_18%]"
+        />
+        <div className="absolute inset-0 bg-[#061427]/58" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_68%_18%,rgba(0,230,118,0.24),transparent_24%),linear-gradient(90deg,rgba(2,8,18,0.92)_0%,rgba(4,16,31,0.50)_48%,rgba(3,10,21,0.86)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-[48%] bg-gradient-to-b from-transparent via-[#061427]/82 to-[#030b17]" />
+      </div>
+
+      <header className="relative z-20 border-b border-white/8 bg-[#07172b]/72 backdrop-blur-2xl">
         <div className="mx-auto flex min-h-[78px] max-w-[1680px] items-center justify-between gap-4 px-6 md:px-10">
           <div className="flex items-center gap-5">
             <div className="flex h-14 w-30 items-center justify-center rounded-3xl px-1">
@@ -150,22 +164,8 @@ export function HomeLanding({ user }: { user: HomeUser }) {
         </div>
       </header>
 
-      <section className="relative z-10 flex min-h-screen flex-col overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="/edp-home-hero.webp"
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-[center_18%]"
-          />
-          <div className="absolute inset-0 bg-[#061427]/64" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_68%_18%,rgba(0,230,118,0.25),transparent_24%),linear-gradient(90deg,rgba(2,8,18,0.94)_0%,rgba(4,16,31,0.55)_48%,rgba(3,10,21,0.88)_100%)]" />
-          <div className="absolute inset-x-0 bottom-0 h-[36%] bg-gradient-to-b from-transparent via-[#061427]/76 to-[#061427]" />
-        </div>
-
-        <div className="relative z-10 mx-auto grid w-full max-w-[1680px] flex-1 items-center gap-10 px-6 pb-20 pt-[150px] md:px-10 lg:grid-cols-[1fr_0.79fr] xl:min-h-[720px]">
+      <section className="relative z-10 flex min-h-[calc(100vh-78px)] flex-col">
+        <div className="mx-auto grid w-full max-w-[1680px] items-center gap-10 px-6 pb-8 pt-[92px] md:px-10 lg:grid-cols-[1fr_0.79fr] xl:min-h-[555px]">
           <div className="ml-0 max-w-3xl lg:ml-20">
             <div className="inline-flex items-center gap-2 rounded-full border border-[#00E676]/34 bg-[#00E676]/10 px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-[#00E676] shadow-lg shadow-[#00E676]/10 backdrop-blur-xl">
               <Sparkles size={15} />
@@ -194,55 +194,47 @@ export function HomeLanding({ user }: { user: HomeUser }) {
 
           <HeroDashboard />
         </div>
-      </section>
 
-      <section className="relative z-20 bg-[#061427] px-6 py-16 md:px-10">
-        <div className="absolute inset-x-0 -top-24 h-24 bg-gradient-to-b from-transparent to-[#061427]" />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_10%,rgba(0,230,118,0.12),transparent_30%),linear-gradient(180deg,#061427_0%,#071a30_100%)]" />
-        <div className="relative mx-auto max-w-[1460px]">
-          <div className="mb-8 grid gap-4 md:grid-cols-[1fr_0.55fr] md:items-end">
-            <div>
-              <div className="text-xs font-bold uppercase tracking-wide text-[#00E676]">Escolha o sistema</div>
-              <h2 className="mt-2 text-[30px] font-bold leading-tight text-white md:text-[38px]">Dois modulos, uma experiencia integrada</h2>
-            </div>
-            <p className="text-sm leading-6 text-[#C7D0DA]">
-              Entre no modulo ideal para sua operacao. A Home permanece institucional; os sistemas internos mantem o ambiente operacional EDP.
-            </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            {modules.map((module) => (
-              <ModuleSelectorCard key={module.href} module={module} onEnter={enterModule} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="relative z-20 bg-[#08182c] px-6 py-16 md:px-10">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(0,230,118,0.1),transparent_28%)]" />
-        <div className="relative mx-auto max-w-[1460px]">
-          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <div className="text-xs font-bold uppercase tracking-wide text-[#00E676]">Radar do Setor Eletrico</div>
-              <h2 className="mt-2 text-[30px] font-bold text-white md:text-[38px]">Tendencias e movimentacoes do setor</h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-[#C7D0DA]">
-                Acompanhe noticias e movimentos relevantes para distribuicao de energia, infraestrutura compartilhada e regularizacao.
+        <div className="mx-auto grid w-full max-w-[1680px] gap-8 px-6 pb-4 md:px-10 xl:grid-cols-[0.97fr_1fr]">
+          <section>
+            <div className="mb-5 grid gap-3 md:grid-cols-[1fr_0.7fr] md:items-end">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wide text-[#00E676]">Escolha o sistema</div>
+                <h2 className="mt-2 text-[27px] font-bold leading-tight text-white md:text-[31px]">Dois modulos, uma experiencia integrada</h2>
+              </div>
+              <p className="text-xs leading-5 text-[#C7D0DA]">
+                Entre no modulo ideal para sua operacao. A Home permanece clara e institucional; os sistemas internos mantem o ambiente operacional EDP.
               </p>
             </div>
-            <div className="w-fit rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-2 text-xs font-bold text-white backdrop-blur-xl">
-              {newsLoading ? "Atualizando" : "Ver todas as noticias"}
-              <ArrowRight size={14} className="ml-2 inline text-[#00E676]" />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {modules.map((module) => (
+                <ModuleSelectorCard key={module.href} module={module} onEnter={enterModule} />
+              ))}
             </div>
-          </div>
+          </section>
 
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {news.slice(0, 3).map((item) => <SectorNewsCard key={item.id || item.title} item={item} />)}
-          </div>
+          <section>
+            <div className="mb-5 flex items-end justify-between gap-4">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wide text-[#00E676]">Radar do Setor Eletrico</div>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-[#C7D0DA]">
+                  Acompanhe tendencias e movimentacoes relevantes.
+                </p>
+              </div>
+              <div className="hidden rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-2 text-xs font-bold text-white backdrop-blur-xl sm:block">
+                {newsLoading ? "Atualizando" : "Ver todas as noticias"}
+                <ArrowRight size={14} className="ml-2 inline text-[#00E676]" />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              {news.slice(0, 3).map((item) => <SectorNewsCard key={item.id || item.title} item={item} />)}
+            </div>
+          </section>
         </div>
-      </section>
 
-      <section className="relative z-20 bg-[#061427] px-6 pb-16 pt-4 md:px-10">
-        <div className="mx-auto max-w-[1460px]">
+        <section className="mx-auto w-full max-w-[1680px] px-6 pb-5 pt-0 md:px-10">
           <div className="grid gap-0 overflow-hidden rounded-[28px] border border-white/12 bg-white/[0.06] shadow-2xl shadow-black/20 backdrop-blur-2xl md:grid-cols-2 xl:grid-cols-4">
             {operations.map((item) => {
               const Icon = item.icon;
@@ -259,7 +251,7 @@ export function HomeLanding({ user }: { user: HomeUser }) {
               );
             })}
           </div>
-        </div>
+        </section>
       </section>
     </main>
   );
