@@ -2,24 +2,27 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
+import { logAuthEnvStatus } from "@/lib/auth-env";
 import { notifyAdminsNewAccessRequest } from "@/lib/email";
 import { applySuperAdminPrivileges, isSuperAdminEmail } from "@/lib/super-admin";
+
+const authEnv = logAuthEnvStatus("startup");
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "database" },
   trustHost: true,
-  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+  secret: authEnv.nextAuthSecret,
   pages: {
     signIn: "/login"
   },
-  providers: [
+  providers: authEnv.googleConfigured ? [
     Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientId: authEnv.googleClientId,
+      clientSecret: authEnv.googleClientSecret,
       allowDangerousEmailAccountLinking: true
     })
-  ],
+  ] : [],
   callbacks: {
     async signIn({ user }) {
       if (!user.email) return false;

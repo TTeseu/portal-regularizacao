@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Mail, ShieldCheck } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
+import { isGoogleAuthConfigured } from "@/lib/auth-env";
 import { signInWithGoogle } from "./actions";
 
 export default async function LoginPage({
@@ -13,6 +14,7 @@ export default async function LoginPage({
   if (user && (user.status !== "approved" || !user.accessApproved)) redirect("/aguardando-aprovacao");
   if (user) redirect("/");
   const params = await searchParams;
+  const googleConfigured = isGoogleAuthConfigured();
 
   return (
     <main className="grid min-h-screen place-items-center bg-edp-navy px-4 py-10">
@@ -32,16 +34,23 @@ export default async function LoginPage({
           </div>
           {params?.error ? (
             <div className="mb-5 rounded-xl border border-red-300/25 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-              Não foi possível entrar. Verifique a conta utilizada.
+              {params.error === "google_not_configured"
+                ? "Login Google ainda nao esta configurado no ambiente de producao."
+                : "Nao foi possivel entrar. Verifique a conta utilizada."}
             </div>
           ) : null}
 
           <form action={signInWithGoogle}>
-            <button className="btn-primary w-full" type="submit">
+            <button className="btn-primary w-full" type="submit" disabled={!googleConfigured}>
               <Mail size={18} />
               Entrar com Google
             </button>
           </form>
+          {!googleConfigured ? (
+            <p className="mt-3 rounded-xl border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-xs text-amber-100">
+              Configure GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET na Vercel para habilitar o login Google.
+            </p>
+          ) : null}
 
           <div className="my-6 flex items-center gap-3 text-xs uppercase text-edp-muted">
             <span className="h-px flex-1 bg-white/10" />
