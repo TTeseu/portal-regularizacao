@@ -2,14 +2,70 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { canEdit, requireUser } from "@/lib/auth";
 import { NotificaFacilForm } from "@/components/notifica-facil-form";
+import { prisma } from "@/lib/prisma";
 import { createNotificaFacilNotification } from "../actions";
+
+function parseRegNumber(value: string | null | undefined) {
+  const match = String(value || "").match(/^REG(\d+)\/(\d{4})$/i);
+  if (!match) return null;
+  return { sequence: Number(match[1]), year: match[2] };
+}
 
 export default async function NovaNotificaFacilPage() {
   const user = await requireUser();
   const mayEdit = canEdit(user);
+  const [baseCompanies, existingNumbers, counters] = await Promise.all([
+    prisma.notificaFacilBaseNotificacao.findMany({
+      orderBy: { empresa: "asc" },
+      select: {
+        id: true,
+        empresa: true,
+        status_envio_notificacao: true,
+        vencimento_contrato: true,
+        ano_vencimento_contrato: true,
+        empresa_endereco: true,
+        empresa_bairro: true,
+        empresa_cidade: true,
+        empresa_estado: true,
+        contrato_numero: true,
+        ac: true,
+        numero_nome_empresa: true,
+        celebrado_em: true,
+        numero_parceiro: true,
+        cnpj: true,
+        texto_contrato_7_14: true,
+        texto_ocupacao_revelia: true,
+        texto_23_3: true,
+        texto_24_1: true,
+        texto_24_3: true,
+        valor_atualizado: true,
+        multa: true,
+        retroativo: true
+      }
+    }),
+    prisma.notificaFacilNotification.findMany({
+      where: { numero_notificacao: { startsWith: "REG" } },
+      select: { numero_notificacao: true }
+    }),
+    prisma.notificaFacilNotificationCounter.findMany({ select: { year: true, current: true } })
+  ]);
+
+  const nextByYear = new Map<string, number>();
+  for (const counter of counters) {
+    nextByYear.set(counter.year, Math.max(nextByYear.get(counter.year) || 0, counter.current + 1));
+  }
+  for (const item of existingNumbers) {
+    const parsed = parseRegNumber(item.numero_notificacao);
+    if (parsed) nextByYear.set(parsed.year, Math.max(nextByYear.get(parsed.year) || 1, parsed.sequence + 1));
+  }
+  const currentYear = String(new Date().getFullYear());
+  if (!nextByYear.has(currentYear)) nextByYear.set(currentYear, 1);
+  const nextByYearObject = Object.fromEntries(nextByYear);
+  const nextSequence = nextByYearObject[currentYear] || 1;
+  const nextNumero = `REG${String(nextSequence).padStart(4, "0")}/${currentYear}`;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <Link className="btn-secondary mb-4" href="/notifica-facil">
@@ -20,7 +76,13 @@ export default async function NovaNotificaFacilPage() {
           <p className="mt-2 text-sm text-edp-muted">Ao salvar, o HTML e o PDF serao gerados e armazenados para downloads futuros.</p>
         </div>
       </div>
-      <NotificaFacilForm action={createNotificaFacilNotification} canEdit={mayEdit} />
+      <NotificaFacilForm
+        action={createNotificaFacilNotification}
+        canEdit={mayEdit}
+        companyOptions={baseCompanies}
+        nextNumero={nextNumero}
+        nextByYear={nextByYearObject}
+      />
     </div>
   );
 }

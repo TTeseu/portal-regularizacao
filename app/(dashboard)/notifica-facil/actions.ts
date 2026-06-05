@@ -15,14 +15,44 @@ function text(formData: FormData, key: string) {
 }
 
 function numberValue(formData: FormData, key: string) {
-  const raw = String(formData.get(key) || "").replace(",", ".").trim();
+  const raw = String(formData.get(key) || "")
+    .replace(/[^\d,.-]/g, "")
+    .replace(/\.(?=\d{3}(\D|$))/g, "")
+    .replace(",", ".")
+    .trim();
   if (!raw) return null;
   const parsed = Number(raw);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function intValue(formData: FormData, key: string) {
+  const raw = String(formData.get(key) || "").trim();
+  if (!raw) return null;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function checked(formData: FormData, key: string) {
   return formData.get(key) === "on";
+}
+
+function parseRegNumber(value: string | null | undefined) {
+  const match = String(value || "").match(/^REG(\d+)\/(\d{4})$/i);
+  if (!match) return null;
+  return { sequence: Number(match[1]), year: match[2] };
+}
+
+function yearFromDateText(value: string | null | undefined) {
+  const clean = String(value || "").trim();
+  const iso = clean.match(/^(\d{4})-\d{2}-\d{2}$/);
+  if (iso) return iso[1];
+  const br = clean.match(/^\d{2}\/\d{2}\/(\d{4})$/);
+  if (br) return br[1];
+  return String(new Date().getFullYear());
+}
+
+function formatRegNumber(sequence: number, year: string) {
+  return `REG${String(sequence).padStart(4, "0")}/${year}`;
 }
 
 function parseEnderecos(value: string | null): Prisma.JsonArray | undefined {
@@ -68,26 +98,79 @@ function formToData(formData: FormData): Prisma.NotificaFacilNotificationUncheck
     data_notificacao: text(formData, "data_notificacao"),
     prazo_resposta: text(formData, "prazo_resposta"),
     data_email_encaminhado: text(formData, "data_email_encaminhado"),
+    qtd_notificacoes_enviadas: intValue(formData, "qtd_notificacoes_enviadas") ?? 0,
     status: text(formData, "status") || "Aguardando assinatura Gestor",
     is_draft: checked(formData, "is_draft"),
     is_standby: checked(formData, "is_standby"),
     pendencia_tecnica: checked(formData, "pendencia_tecnica"),
     pt_notificado: checked(formData, "pt_notificado"),
+    pt_data_notificado: text(formData, "pt_data_notificado"),
+    status_envio_notificacao: text(formData, "status_envio_notificacao"),
+    vencimento_contrato: text(formData, "vencimento_contrato"),
+    ano_vencimento_contrato: text(formData, "ano_vencimento_contrato"),
+    celebrado_em: text(formData, "celebrado_em"),
+    mostrar_celebrado_em: checked(formData, "mostrar_celebrado_em"),
     cnpj: text(formData, "cnpj"),
     contrato_numero: text(formData, "contrato_numero"),
     ac: text(formData, "ac"),
+    numero_nome_empresa: text(formData, "numero_nome_empresa"),
     numero_parceiro: text(formData, "numero_parceiro"),
     empresa_endereco: text(formData, "empresa_endereco"),
     empresa_bairro: text(formData, "empresa_bairro"),
     empresa_cidade: text(formData, "empresa_cidade"),
     empresa_estado: text(formData, "empresa_estado"),
+    empresa_incorporada: text(formData, "empresa_incorporada"),
     ordem_venda: text(formData, "ordem_venda"),
     texto_contrato_7_14: text(formData, "texto_contrato_7_14"),
     texto_ocupacao_revelia: text(formData, "texto_ocupacao_revelia"),
+    texto_23_3: text(formData, "texto_23_3"),
+    texto_24_1: text(formData, "texto_24_1"),
+    texto_24_3: text(formData, "texto_24_3"),
+    valor_atualizado: numberValue(formData, "valor_atualizado"),
+    multa: numberValue(formData, "multa"),
+    retroativo: text(formData, "retroativo"),
     enderecos_revelia: parseEnderecos(text(formData, "enderecos_revelia")),
+    total_ids_identificados: intValue(formData, "total_ids_identificados"),
     anexos_resposta_email: parseAnexos(text(formData, "anexos_resposta_email")),
     observacoes: text(formData, "observacoes")
   };
+}
+
+async function generateNextNotificationNumber(tx: Prisma.TransactionClient, year: string) {
+  const yearNumber = Number.parseInt(year, 10) || new Date().getFullYear();
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(680037, ${yearNumber})`;
+
+  const [existing, counter] = await Promise.all([
+    tx.notificaFacilNotification.findMany({
+      where: { numero_notificacao: { endsWith: `/${year}` } },
+      select: { numero_notificacao: true }
+    }),
+    tx.notificaFacilNotificationCounter.findUnique({ where: { year } })
+  ]);
+
+  const maxExisting = existing.reduce((max, item) => {
+    const parsed = parseRegNumber(item.numero_notificacao);
+    if (!parsed || parsed.year !== year) return max;
+    return Math.max(max, parsed.sequence);
+  }, 0);
+  const next = Math.max(maxExisting, counter?.current ?? 0) + 1;
+
+  await tx.notificaFacilNotificationCounter.upsert({
+    where: { year },
+    create: {
+      id: randomUUID(),
+      created_date: new Date(),
+      updated_date: new Date(),
+      year,
+      current: next
+    },
+    update: {
+      updated_date: new Date(),
+      current: next
+    }
+  });
+
+  return formatRegNumber(next, year);
 }
 
 async function logAction(notificationId: string, action: string, details?: string) {
@@ -115,7 +198,11 @@ export async function createNotificaFacilNotification(formData: FormData) {
   data.created_by_id = user.id;
   data.created_by = user.email;
 
-  const created = await prisma.notificaFacilNotification.create({ data });
+  const created = await prisma.$transaction(async (tx) => {
+    const year = yearFromDateText(data.data_notificacao);
+    data.numero_notificacao = await generateNextNotificationNumber(tx, year);
+    return tx.notificaFacilNotification.create({ data });
+  });
   await storePdfForNotificaFacil(created, buildNotificaFacilHtml(created));
   await logAction(created.id, "criacao", "Notificacao criada no modulo Notifica Facil");
 

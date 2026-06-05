@@ -13,6 +13,13 @@ function money(value?: number | null) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
 
+function dateText(value?: string | null) {
+  if (!value) return "-";
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  return value;
+}
+
 export function buildNotificaFacilHtml(notification: NotificaFacilNotification) {
   const enderecos = Array.isArray(notification.enderecos_revelia) ? notification.enderecos_revelia : [];
   const rows = enderecos.length
@@ -60,13 +67,16 @@ export function buildNotificaFacilHtml(notification: NotificaFacilNotification) 
 
   <p><strong>Empresa:</strong> ${esc(notification.empresa)}</p>
   <p><strong>CNPJ:</strong> ${esc(notification.cnpj || "-")} &nbsp; <strong>Contrato:</strong> ${esc(notification.contrato_numero || "-")}</p>
+  ${notification.mostrar_celebrado_em && notification.celebrado_em ? `<p><strong>Celebrado em:</strong> ${esc(notification.celebrado_em)}</p>` : ""}
   <p><strong>Tipo de servico:</strong> ${esc(notification.tipo_servico || "-")} &nbsp; <strong>Protocolo:</strong> ${esc(notification.numero_protocolo || "-")}</p>
   <p><strong>Destinatario:</strong> ${esc(notification.destinatario_nome || notification.empresa)}</p>
 
   <div class="box">
     <strong>Status:</strong> ${esc(notification.status)}<br/>
-    <strong>Data da notificacao:</strong> ${esc(notification.data_notificacao || "-")}<br/>
-    <strong>Prazo de resposta:</strong> ${esc(notification.prazo_resposta || "-")}<br/>
+    <strong>Status para envio:</strong> ${esc(notification.status_envio_notificacao || "-")}<br/>
+    <strong>Data da notificacao:</strong> ${esc(dateText(notification.data_notificacao))}<br/>
+    <strong>Prazo de resposta:</strong> ${esc(dateText(notification.prazo_resposta))}<br/>
+    <strong>Data e-mail encaminhado:</strong> ${esc(dateText(notification.data_email_encaminhado))}<br/>
     <strong>Valor cobrado:</strong> ${money(notification.valor_cobrado)}
   </div>
 
@@ -82,6 +92,15 @@ export function buildNotificaFacilHtml(notification: NotificaFacilNotification) 
   <p>${esc(notification.texto_23_3 || "")}</p>
   <p>${esc(notification.texto_24_1 || "")}</p>
   <p>${esc(notification.texto_24_3 || "")}</p>
+
+  <h2>Resumo do calculo</h2>
+  <div class="box">
+    <strong>Total de IDs identificados:</strong> ${esc(notification.total_ids_identificados ?? "-")}<br/>
+    <strong>Valor do ponto:</strong> ${money(notification.valor_atualizado)}<br/>
+    <strong>Multa final:</strong> ${money(notification.multa)}<br/>
+    <strong>Retroativo:</strong> ${esc(notification.retroativo || "-")}<br/>
+    <strong>Valor da multa:</strong> ${money(notification.valor_cobrado)}
+  </div>
 
   <h2>Observacoes</h2>
   <p>${esc(notification.observacoes || "Sem observacoes adicionais.")}</p>
