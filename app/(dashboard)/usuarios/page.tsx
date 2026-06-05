@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { ROLE_OPTIONS } from "@/lib/constants";
 import { isSuperAdminEmail } from "@/lib/super-admin";
 import { PageTitle } from "@/components/page-title";
-import { approveUser, rejectUser, updateUserPermission } from "../actions";
+import { approveUser, rejectUser, resendAccessRequestEmail, updateUserPermission } from "../actions";
 
 export default async function UsuariosPage() {
   const currentUser = await requireUser();
@@ -111,6 +111,11 @@ function UserSection({
                   {user.status !== "approved" ? (
                     <form action={approveUser.bind(null, user.id)}>
                       <button className="btn-primary" type="submit">Aprovar</button>
+                    </form>
+                  ) : null}
+                  {user.status === "pending" ? (
+                    <form action={resendAccessRequestEmail.bind(null, user.id)}>
+                      <button className="btn-secondary" type="submit">Reenviar e-mail</button>
                     </form>
                   ) : null}
                   {user.status !== "rejected" && !isSuperAdminEmail(user.email) ? (

@@ -69,6 +69,22 @@ GNEWS_API_KEY=""
 
 `GNEWS_API_KEY` habilita noticias reais no Radar do Setor Eletrico da Home. A chave e lida somente pela rota backend `/api/news/energy`; o frontend nunca recebe esse segredo. Se a variavel estiver ausente ou a API falhar, a Home usa noticias institucionais de fallback.
 
+### Email de aprovacao de usuarios
+
+Novos usuarios pendentes disparam email para os administradores aprovados e para `SUPER_ADMIN_EMAILS`.
+
+Para enviar usando Gmail SMTP, crie uma senha de app na conta Google e configure na Vercel:
+
+```bash
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="465"
+SMTP_USER="jabasff159@gmail.com"
+SMTP_PASSWORD="senha-de-app-do-gmail"
+EMAIL_FROM="Portal de Notificacoes EDP <jabasff159@gmail.com>"
+```
+
+Como alternativa, configure `RESEND_API_KEY` e `EMAIL_FROM` com um remetente autorizado no Resend. Depois de alterar variaveis na Vercel, faca um novo deploy para a producao carregar os novos valores.
+
 ## Rodar local
 
 ```bash

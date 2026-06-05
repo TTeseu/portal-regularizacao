@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 import { storePdfForNotificacao } from "@/lib/pdf-cache";
 import { CLAUSULA_11_6_3_TEXT } from "@/lib/constants";
+import { notifyAdminsNewAccessRequest } from "@/lib/email";
 import { countActiveAdmins, isSuperAdminEmail } from "@/lib/super-admin";
 
 function stringValue(formData: FormData, key: string) {
@@ -422,4 +423,21 @@ export async function rejectUser(id: string) {
   });
   revalidatePath("/usuarios");
   revalidatePath("/");
+}
+
+export async function resendAccessRequestEmail(id: string) {
+  await requireAdmin();
+  const target = await prisma.user.findUnique({ where: { id } });
+  if (!target) throw new Error("Usuario nao encontrado.");
+  if (target.status !== "pending") {
+    throw new Error("Somente solicitacoes pendentes podem ser reenviadas.");
+  }
+
+  await notifyAdminsNewAccessRequest({
+    name: target.name || target.full_name,
+    email: target.email,
+    requestedAt: target.requestedAt || target.created_date
+  });
+
+  revalidatePath("/usuarios");
 }
