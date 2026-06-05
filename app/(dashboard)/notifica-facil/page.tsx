@@ -1,27 +1,33 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Prisma } from "@prisma/client";
-import { BellRing, ClipboardCheck, Download, Eye, FilePlus2, PauseCircle, Search, ShieldAlert, Zap } from "lucide-react";
+import {
+  BarChart3,
+  Building2,
+  ClipboardCheck,
+  DollarSign,
+  FileText,
+  Plus,
+  RefreshCw,
+  Search,
+  TrendingUp,
+  Upload,
+  Users
+} from "lucide-react";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { formatDateTime } from "@/lib/format";
 
 const statuses = [
   "Aguardando assinatura Gestor",
-  "Notificacao Encaminhada por E-mail.",
+  "Notificação Encaminhada por E-mail.",
   "Resposta do Cliente - Anexo do E-mail.",
   "Entrega do Projeto ou Projeto Pendente. (10 dias)",
-  "Nao houve resposta do Cliente - Valores Informar o Faturamento.",
-  "Finalizar Notificacao."
+  "Não houve resposta do Cliente - Valores Informar o Faturamento.",
+  "Finalizar Notificação."
 ];
 
-function statusClass(status: string) {
-  if (status.includes("Finalizar")) return "border-edp/30 bg-edp/10 text-edp";
-  if (status.includes("Resposta")) return "border-sky-300/30 bg-sky-300/10 text-sky-200";
-  if (status.includes("Projeto")) return "border-violet-300/30 bg-violet-300/10 text-violet-200";
-  if (status.includes("Nao houve")) return "border-red-300/30 bg-red-300/10 text-red-200";
-  if (status.includes("E-mail")) return "border-blue-300/30 bg-blue-300/10 text-blue-200";
-  return "border-amber-300/30 bg-amber-300/10 text-amber-200";
+function money(value: number) {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
 
 export default async function NotificaFacilPage({
@@ -35,8 +41,8 @@ export default async function NotificaFacilPage({
   const where: Prisma.NotificaFacilNotificationWhereInput = {};
 
   if (values.status) where.status = values.status;
-  if (values.standby === "true") where.is_standby = true;
-  if (values.pendencia === "true") where.pendencia_tecnica = true;
+  if (values.empresa) where.empresa = { contains: values.empresa, mode: "insensitive" };
+  if (values.cidade) where.empresa_cidade = { contains: values.cidade, mode: "insensitive" };
   if (values.q) {
     const q = { contains: values.q, mode: "insensitive" as const };
     where.OR = [
@@ -51,161 +57,187 @@ export default async function NotificaFacilPage({
     ];
   }
 
-  const [total, aguardando, standby, pendencias, items] = await Promise.all([
-    prisma.notificaFacilNotification.count({ where }),
-    prisma.notificaFacilNotification.count({ where: { ...where, status: "Aguardando assinatura Gestor" } }),
-    prisma.notificaFacilNotification.count({ where: { ...where, is_standby: true } }),
-    prisma.notificaFacilNotification.count({ where: { ...where, pendencia_tecnica: true } }),
+  const [items, total, concluidas, empresas, emailEnviados, retroativoAgg, multaAgg] = await Promise.all([
     prisma.notificaFacilNotification.findMany({
       where,
       orderBy: [{ created_date: "desc" }, { id: "desc" }],
       take: 100
-    })
+    }),
+    prisma.notificaFacilNotification.count({ where }),
+    prisma.notificaFacilNotification.count({ where: { ...where, status: "Finalizar Notificação." } }),
+    prisma.notificaFacilNotification.groupBy({ by: ["empresa"], where }),
+    prisma.notificaFacilNotification.count({ where: { ...where, data_email_encaminhado: { not: null } } }),
+    prisma.notificaFacilNotification.aggregate({ where, _sum: { valor_atualizado: true } }),
+    prisma.notificaFacilNotification.aggregate({ where, _sum: { multa: true } })
   ]);
 
+  const userName = (user.full_name || user.name || user.email).split(" ")[0];
+  const totalRetroativo = retroativoAgg._sum.valor_atualizado || 0;
+  const totalMultas = multaAgg._sum.multa || 0;
+  const naoRegularizados = Math.max(total - concluidas, 0);
+
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
-      <section className="relative overflow-hidden rounded-[28px] border border-line bg-card p-7 shadow-2xl shadow-black/10">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(0,230,118,0.16),transparent_28%),linear-gradient(120deg,rgba(255,255,255,0.08),transparent_40%)]" />
-        <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
-          <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-edp/25 bg-edp/10 px-4 py-2 text-xs font-bold uppercase text-edp">
-              <BellRing size={15} />
-              Modulo documental
+    <div className="mx-auto max-w-[1500px] space-y-8 text-[#0F172A]">
+      <section className="flex flex-col justify-between gap-5 xl:flex-row xl:items-start">
+        <div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-[#0F172A]">Olá, {userName}! <span aria-hidden>👋</span></h1>
+          <p className="mt-2 text-base text-[#64748B]">Visão geral das notificações</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button className="inline-flex items-center gap-2 rounded-xl border border-purple-300 bg-[#FFFFFF] px-4 py-2.5 text-sm font-semibold text-purple-700 shadow-sm">
+            <RefreshCw size={16} />
+            Popular Histórico
+          </button>
+          <button className="inline-flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 py-2.5 text-sm font-semibold text-[#0F172A] shadow-sm">
+            <RefreshCw size={16} />
+            Zerar contador (REG/0001-2025)
+          </button>
+          <button className="inline-flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 py-2.5 text-sm font-semibold text-[#0F172A] shadow-sm">
+            <FileText size={16} />
+            Notificação Teste
+          </button>
+          {canEdit ? (
+            <Link href="/notifica-facil/nova" className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/20">
+              <Plus size={16} />
+              Nova Notificação
+            </Link>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-3 text-sm font-medium text-[#334155]">
+          Filtrar por mês:
+          <select className="h-11 min-w-56 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 text-sm text-[#0F172A] shadow-sm">
+            <option>Todos os meses</option>
+          </select>
+        </label>
+        <button className="inline-flex h-11 items-center gap-2 rounded-xl border border-blue-400 bg-[#FFFFFF] px-4 text-sm font-semibold text-blue-600">
+          <BarChart3 size={16} />
+          Gráfico
+        </button>
+      </section>
+
+      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <Metric label="Pontos Regularizados" value={concluidas} icon={<ClipboardCheck size={26} />} tone="green" />
+        <Metric label="Pontos Não Regularizados" value={naoRegularizados} icon={<FileText size={26} />} tone="yellow" />
+        <Metric label="Valor Total RETROATIVO" value={money(totalRetroativo)} icon={<TrendingUp size={26} />} tone="purple" />
+        <Metric label="Total Multas" value={money(totalMultas)} icon={<DollarSign size={28} />} tone="red" />
+        <Metric label="Multa + Retroativo" value={money(totalRetroativo + totalMultas)} icon={<DollarSign size={26} />} tone="green" />
+        <Metric label="Total de Notificações" value={total} icon={<FileText size={26} />} tone="blue" />
+        <Metric label="Empresas Notificadas" value={empresas.length} icon={<Building2 size={26} />} tone="gray" />
+        <Metric label="E-mails Enviados" value={emailEnviados} icon={<Users size={26} />} tone="indigo" />
+      </section>
+
+      <section className="grid gap-7 xl:grid-cols-[1fr_360px]">
+        <div className="space-y-5">
+          <section className="rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] shadow-xl shadow-slate-900/5">
+            <div className="border-b border-[#E2E8F0] px-6 py-6">
+              <div className="flex items-center gap-3">
+                <FileText className="text-blue-600" size={24} />
+                <h2 className="text-2xl font-extrabold text-[#0F172A]">Notificações</h2>
+              </div>
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                <button className="rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 py-2 text-sm font-semibold text-[#0F172A] shadow-sm">Recentes ({items.length})</button>
+                <button className="rounded-xl border border-transparent px-4 py-2 text-sm font-semibold text-[#64748B]">Concluídas ({concluidas})</button>
+              </div>
+
+              <form className="mt-5 grid gap-3">
+                <div className="flex flex-wrap gap-2">
+                  <StatusChip href="/notifica-facil" active label="Todas" />
+                  {statuses.map((status) => (
+                    <StatusChip key={status} href={`/notifica-facil?status=${encodeURIComponent(status)}`} label={status} />
+                  ))}
+                </div>
+                <div className="grid gap-3 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]">
+                  <select className="h-11 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 text-sm text-[#0F172A]" name="empresa" defaultValue={values.empresa || ""}>
+                    <option value="">Todas as empresas</option>
+                    {empresas.map((empresa) => <option key={empresa.empresa} value={empresa.empresa}>{empresa.empresa}</option>)}
+                  </select>
+                  <select className="h-11 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 text-sm text-[#0F172A]" name="cidade" defaultValue={values.cidade || ""}>
+                    <option value="">Todos os municípios</option>
+                  </select>
+                  <select className="h-11 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 text-sm text-[#0F172A]">
+                    <option>Todos os usuários</option>
+                  </select>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
+                    <input className="h-11 w-full rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] pl-9 pr-3 text-sm text-[#0F172A]" name="q" defaultValue={values.q || ""} placeholder="Buscar nº ou empresa" />
+                  </div>
+                  <button className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 text-sm font-semibold text-[#0F172A]">
+                    <Upload size={15} />
+                    Exportar Excel
+                  </button>
+                </div>
+              </form>
             </div>
-            <h1 className="text-4xl font-bold text-white">Notifica Facil</h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-edp-muted">
-              Gestao de notificacoes vindas do censo, pendencias tecnicas, respostas de clientes, anexos, assinaturas e fluxo documental.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link className="btn-secondary" href="/home">Portal central</Link>
-            {canEdit ? (
-              <Link className="btn-primary" href="/notifica-facil/nova">
-                <FilePlus2 size={16} />
-                Nova notificacao
-              </Link>
-            ) : null}
-          </div>
-        </div>
-      </section>
 
-      <section className="grid gap-4 md:grid-cols-4">
-        <Metric label="Total filtrado" value={total} icon={<Zap size={24} />} />
-        <Metric label="Aguardando gestor" value={aguardando} icon={<ClipboardCheck size={24} />} />
-        <Metric label="Stand-by" value={standby} icon={<PauseCircle size={24} />} />
-        <Metric label="Pendencia tecnica" value={pendencias} icon={<ShieldAlert size={24} />} />
-      </section>
+            <div className="m-6 flex min-h-32 items-center justify-center rounded-2xl border border-[#CBD5E1] bg-[#FFFFFF] text-sm text-[#64748B]">
+              {items.length === 0 ? "Nenhuma notificação encontrada." : `${items.length} notificação(ões) encontrada(s).`}
+            </div>
+          </section>
+        </div>
 
-      <form className="panel grid gap-3 p-4 md:grid-cols-[2fr_1fr_1fr_1fr_auto]">
-        <label>
-          <span className="label">Busca</span>
-          <div className="relative mt-1">
-            <Search size={16} className="absolute left-3 top-2.5 text-edp-muted" />
-            <input className="field pl-9" name="q" defaultValue={values.q || ""} placeholder="Empresa, censo, contrato, protocolo..." />
-          </div>
-        </label>
-        <label>
-          <span className="label">Status</span>
-          <select className="field mt-1" name="status" defaultValue={values.status || ""}>
-            <option value="">Todos</option>
-            {statuses.map((status) => <option key={status}>{status}</option>)}
-          </select>
-        </label>
-        <label>
-          <span className="label">Stand-by</span>
-          <select className="field mt-1" name="standby" defaultValue={values.standby || ""}>
-            <option value="">Todos</option>
-            <option value="true">Somente stand-by</option>
-          </select>
-        </label>
-        <label>
-          <span className="label">Pendencia</span>
-          <select className="field mt-1" name="pendencia" defaultValue={values.pendencia || ""}>
-            <option value="">Todas</option>
-            <option value="true">Com pendencia tecnica</option>
-          </select>
-        </label>
-        <div className="flex items-end">
-          <button className="btn-secondary h-10">Filtrar</button>
-        </div>
-      </form>
+        <aside className="space-y-7">
+          <section className="rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-6 shadow-xl shadow-slate-900/5">
+            <div className="flex items-center gap-3">
+              <TrendingUp className="text-blue-600" size={20} />
+              <h3 className="font-bold text-[#0F172A]">Status das Notificações</h3>
+            </div>
+            <div className="flex min-h-64 items-center justify-center text-sm text-[#94A3B8]">
+              {total === 0 ? "Sem dados para exibir" : `${total} registros no filtro atual`}
+            </div>
+          </section>
 
-      <section className="panel overflow-hidden">
-        <div className="flex items-center justify-between border-b border-line bg-surface px-5 py-4">
-          <div>
-            <h2 className="text-lg font-bold text-white">Notificacoes recentes</h2>
-            <p className="mt-1 text-sm text-edp-muted">Ultimos 100 registros do modulo Notifica Facil.</p>
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr>
-                <th className="px-4 py-3">Notificacao</th>
-                <th className="px-4 py-3">Empresa</th>
-                <th className="px-4 py-3">Registro censo</th>
-                <th className="px-4 py-3">Cidade</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Flags</th>
-                <th className="px-4 py-3">Criada</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {items.map((item) => (
-                <tr key={item.id}>
-                  <td className="px-4 py-3 font-bold text-white">{item.numero_notificacao || item.numero_protocolo || "-"}</td>
-                  <td className="px-4 py-3">{item.empresa}</td>
-                  <td className="px-4 py-3">{item.numero_registro_censo || "-"}</td>
-                  <td className="px-4 py-3">{item.empresa_cidade || "-"}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${statusClass(item.status)}`}>{item.status}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
-                      {item.is_draft ? <span className="rounded-full bg-white/10 px-2 py-1 text-xs">Draft</span> : null}
-                      {item.is_standby ? <span className="rounded-full bg-amber-300/10 px-2 py-1 text-xs text-amber-200">Stand-by</span> : null}
-                      {item.pendencia_tecnica ? <span className="rounded-full bg-red-300/10 px-2 py-1 text-xs text-red-200">PT</span> : null}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">{formatDateTime(item.created_date)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-2">
-                      <a className="btn-secondary px-3" href={`/api/notifica-facil/notifications/${item.id}/pdf`} title="Baixar PDF">
-                        <Download size={15} />
-                      </a>
-                      <Link className="btn-secondary px-3" href={`/notifica-facil/${item.id}`} title="Abrir">
-                        <Eye size={15} />
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {items.length === 0 ? (
-                <tr>
-                  <td className="px-4 py-8 text-center text-edp-muted" colSpan={8}>Nenhuma notificacao encontrada.</td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
+          <section className="rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] shadow-xl shadow-slate-900/5">
+            <div className="border-b border-[#E2E8F0] px-6 py-5">
+              <div className="flex items-center gap-3">
+                <Building2 className="text-blue-600" size={20} />
+                <h3 className="font-bold text-[#0F172A]">Total de IDs por Empresa</h3>
+              </div>
+            </div>
+            <div className="p-6">
+              <label className="text-sm font-medium text-[#334155]">Buscar empresa</label>
+              <input className="mt-2 h-11 w-full rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 text-sm text-[#0F172A]" placeholder="Digite o nome da empresa..." />
+            </div>
+          </section>
+        </aside>
       </section>
     </div>
   );
 }
 
-function Metric({ label, value, icon }: { label: string; value: number; icon: ReactNode }) {
+function Metric({ label, value, icon, tone }: { label: string; value: number | string; icon: ReactNode; tone: "green" | "yellow" | "purple" | "red" | "blue" | "gray" | "indigo" }) {
+  const tones = {
+    green: "bg-emerald-100 text-emerald-700",
+    yellow: "bg-yellow-100 text-yellow-700",
+    purple: "bg-purple-100 text-purple-700",
+    red: "bg-red-100 text-red-700",
+    blue: "bg-blue-100 text-blue-700",
+    gray: "bg-[#F1F5F9] text-[#334155]",
+    indigo: "bg-indigo-100 text-indigo-700"
+  };
+
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-card to-surface p-5 shadow-xl shadow-black/10">
-      <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-edp/10 blur-2xl" />
-      <div className="relative flex items-start justify-between gap-4">
-        <div>
-          <div className="text-xs font-bold uppercase tracking-wide text-edp-muted">{label}</div>
-          <div className="mt-3 text-3xl font-bold text-white">{value}</div>
-        </div>
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-edp/25 bg-edp/10 text-edp">{icon}</div>
+    <div className="flex items-center justify-between rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-6 shadow-xl shadow-slate-900/7">
+      <div>
+        <div className="text-sm font-semibold text-[#64748B]">{label}</div>
+        <div className="mt-3 text-3xl font-extrabold text-[#0F172A]">{value}</div>
       </div>
+      <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ${tones[tone]}`}>{icon}</div>
     </div>
+  );
+}
+
+function StatusChip({ href, label, active = false }: { href: string; label: string; active?: boolean }) {
+  return (
+    <Link
+      href={href}
+      className={`rounded-full border px-4 py-2 text-xs font-semibold shadow-sm transition ${
+        active ? "border-[#0F172A] bg-[#0F172A] text-white" : "border-[#E2E8F0] bg-[#FFFFFF] text-[#0F172A] hover:border-blue-300 hover:text-blue-600"
+      }`}
+    >
+      {label}
+    </Link>
   );
 }
