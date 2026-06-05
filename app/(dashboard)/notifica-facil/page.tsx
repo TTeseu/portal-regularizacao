@@ -27,6 +27,14 @@ const statuses = [
   "Finalizar Notifica\u00e7\u00e3o."
 ];
 
+const pendenciaTecnicaWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  OR: [
+    { pendencia_tecnica: true },
+    { pt_notificado: true },
+    { pt_data_notificado: { not: null } }
+  ]
+};
+
 function money(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
@@ -67,7 +75,7 @@ export default async function NotificaFacilPage({
     prisma.notificaFacilNotification.count({ where }),
     prisma.notificaFacilNotification.count({ where: { ...where, status: "Finalizar Notifica\u00e7\u00e3o." } }),
     prisma.notificaFacilNotification.count({ where: { ...where, is_standby: true } }),
-    prisma.notificaFacilNotification.count({ where: { ...where, pendencia_tecnica: true } }),
+    prisma.notificaFacilNotification.count({ where: { AND: [where, pendenciaTecnicaWhere] } }),
     prisma.notificaFacilNotification.groupBy({ by: ["empresa"], where, _count: { empresa: true }, orderBy: { _count: { empresa: "desc" } } }),
     prisma.notificaFacilNotification.count({ where: { ...where, data_email_encaminhado: { not: null } } }),
     prisma.notificaFacilNotification.aggregate({ where, _sum: { valor_atualizado: true } }),
@@ -213,9 +221,9 @@ export default async function NotificaFacilPage({
                       <td className="px-5 py-4">
                         <div className="flex flex-wrap gap-2">
                           {item.is_standby ? <SmallBadge label="Stand-by" /> : null}
-                          {item.pendencia_tecnica ? <SmallBadge label="Pendencia tecnica" /> : null}
+                          {item.pendencia_tecnica || item.pt_notificado || item.pt_data_notificado ? <SmallBadge label="Pendencia tecnica" /> : null}
                           {item.is_draft ? <SmallBadge label="Rascunho" /> : null}
-                          {!item.is_standby && !item.pendencia_tecnica && !item.is_draft ? <span className="text-edp-muted">-</span> : null}
+                          {!item.is_standby && !item.pendencia_tecnica && !item.pt_notificado && !item.pt_data_notificado && !item.is_draft ? <span className="text-edp-muted">-</span> : null}
                         </div>
                       </td>
                     </tr>

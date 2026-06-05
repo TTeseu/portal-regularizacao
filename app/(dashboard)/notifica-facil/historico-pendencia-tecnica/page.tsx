@@ -1,12 +1,18 @@
 import { History } from "lucide-react";
-import { NotificaFacilProcessPage } from "@/components/notifica-facil-process-page";
+import { NotificaFacilPendenciasPage } from "@/components/notifica-facil-pendencias-page";
 
-export default function HistoricoPendenciaTecnicaPage() {
+export default function HistoricoPendenciaTecnicaPage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | undefined>>;
+}) {
   return (
-    <NotificaFacilProcessPage
-      title="Histórico Pendência Técnica"
-      description="Histórico das pendências técnicas, mudanças de status, responsáveis e tratativas realizadas."
+    <NotificaFacilPendenciasPage
+      title="Historico Pendencia Tecnica"
+      description="Historico das tratativas de pendencia tecnica, incluindo PT notificado, datas, logs e documentos vinculados."
+      mode="historico"
       icon={<History size={24} />}
+      searchParams={searchParams}
     />
   );
 }

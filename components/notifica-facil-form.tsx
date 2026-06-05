@@ -151,6 +151,93 @@ function formatMoney(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
 
+function plainMoney(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+}
+
+function escapeHtml(value?: string | number | null) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function textBlock(value: string) {
+  return escapeHtml(value).replace(/\r?\n/g, "<br>");
+}
+
+function longDate(value: string) {
+  const parsed = parseDate(value);
+  if (!parsed) return escapeHtml(value);
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(parsed);
+}
+
+function previewAddressRows(values: FormValues) {
+  const rows = values.enderecos_revelia
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [endereco = "", bairro = "", cidade = ""] = line.split(";").map((part) => part.trim());
+      return { endereco, bairro, cidade };
+    });
+  const normalized = rows.length ? rows : [{
+    endereco: values.destinatario_endereco || values.empresa_endereco,
+    bairro: values.empresa_bairro,
+    cidade: values.empresa_cidade
+  }];
+  return normalized
+    .map((row) => `                <tr>
+                  <td>${escapeHtml(row.endereco)}</td>
+                  <td>${escapeHtml(row.bairro)}</td>
+                  <td>${escapeHtml(row.cidade)}</td>
+                </tr>`)
+    .join("\n");
+}
+
+function replaceAddressTable(template: string, rows: string) {
+  return template.replace(
+    /\s*<tr>\s*<td>\{\{ENDERECO_A_REVELIA\}\}<\/td>\s*<td>\{\{BAIRRO_A_REVELIA\}\}<\/td>\s*<td>\{\{MUNICIPIO_A_REVELIA\}\}<\/td>\s*<\/tr>/,
+    `\n${rows}`
+  );
+}
+
+function buildPreviewHtml(templateHtml: string, values: FormValues, previewNumber: string, mostrarCelebradoEm: boolean, valorMulta: number) {
+  let html = templateHtml || "<html><body><p>Template nao encontrado.</p></body></html>";
+  if (!mostrarCelebradoEm) html = html.replace(/, celebrado em \{\{CELEBRADO_EM\}\},/g, ",");
+  html = replaceAddressTable(html, previewAddressRows(values));
+  const replacements: Record<string, string> = {
+    "{{DATA_NOTIFICACAO}}": longDate(values.data_notificacao),
+    "{{NUMERO_DA_NOTIFICACAO}}": escapeHtml(previewNumber || "-"),
+    "{{NOME_DA_EMPRESA}}": escapeHtml(values.empresa || "-"),
+    "{{ENDERECO_DA_EMPRESA}}": escapeHtml(values.empresa_endereco || "-"),
+    "{{BAIRRO_DA_EMPRESA}}": escapeHtml(values.empresa_bairro || "-"),
+    "{{CIDADE_DA_EMPRESA}}": escapeHtml(values.empresa_cidade || "-"),
+    "{{ESTADO_DA_EMPRESA}}": escapeHtml(values.empresa_estado || "-"),
+    "{{NUMERO_CONTRATO}}": escapeHtml(values.contrato_numero || "-"),
+    "{{A_C}}": escapeHtml(values.ac || "-"),
+    "{{CELEBRADO_EM}}": escapeHtml(values.celebrado_em || "-"),
+    "{{CNPJ_DA_EMPRESA}}": escapeHtml(values.cnpj || "-"),
+    "{{TEXTO_CONTRATO_7_14}}": textBlock(values.texto_contrato_7_14),
+    "{{TEXTO_OCUPACAO_REVELIA}}": textBlock(values.texto_ocupacao_revelia),
+    "{{TEXTO_23_3}}": textBlock(values.texto_23_3),
+    "{{TEXTO_24_1}}": textBlock(values.texto_24_1),
+    "{{TEXTO_24_3}}": textBlock(values.texto_24_3),
+    "{{VALOR_MULTA}}": plainMoney(valorMulta),
+    "{{VALOR_RETROATIVO_CALCULADO}}": escapeHtml(values.retroativo || "0,00")
+  };
+  for (const [placeholder, value] of Object.entries(replacements)) html = html.replaceAll(placeholder, value);
+  return html;
+}
+
 function isContractExpired(value: string, year: string) {
   const parsed = parseDate(value);
   if (parsed) return parsed.getTime() < new Date().setHours(0, 0, 0, 0);
@@ -209,7 +296,8 @@ export function NotificaFacilForm({
   canEdit = true,
   companyOptions = [],
   nextNumero = "",
-  nextByYear = {}
+  nextByYear = {},
+  templateHtml = ""
 }: {
   notification?: NotificaFacilNotification | null;
   action: (formData: FormData) => void | Promise<void>;
@@ -217,11 +305,13 @@ export function NotificaFacilForm({
   companyOptions?: NotificaFacilCompanyOption[];
   nextNumero?: string;
   nextByYear?: Record<string, number>;
+  templateHtml?: string;
 }) {
   const [values, setValues] = useState(() => initialValues(notification, nextNumero));
   const [companyQuery, setCompanyQuery] = useState(notification?.empresa || "");
   const [showCompanyResults, setShowCompanyResults] = useState(false);
   const [prazoTouched, setPrazoTouched] = useState(Boolean(notification?.prazo_resposta));
+  const [mostrarCelebradoEm, setMostrarCelebradoEm] = useState(notification?.mostrar_celebrado_em ?? true);
   const isEditing = Boolean(notification);
   const currentYear = yearFromDate(values.data_notificacao);
   const previewNumber = isEditing
@@ -255,6 +345,10 @@ export function NotificaFacilForm({
   const resultado = valorPonto * totalIds;
   const valorMulta = resultado + multa + retroativo;
   const contractExpired = isContractExpired(values.vencimento_contrato, values.ano_vencimento_contrato);
+  const previewHtml = useMemo(
+    () => buildPreviewHtml(templateHtml, values, previewNumber, mostrarCelebradoEm, valorMulta),
+    [templateHtml, values, previewNumber, mostrarCelebradoEm, valorMulta]
+  );
 
   function setField(field: keyof FormValues, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
@@ -363,6 +457,12 @@ export function NotificaFacilForm({
           </Section>
         ) : null}
 
+        <Section title="Previa da Notificacao" description="A previa aparece desde o inicio e acompanha os campos preenchidos antes de gerar o PDF.">
+          <div className="overflow-hidden rounded-2xl border border-line bg-white">
+            <iframe className="h-[760px] w-full bg-white" sandbox="" srcDoc={previewHtml} title="Previa da notificacao Notifica Facil" />
+          </div>
+        </Section>
+
         <Section title="Dados da notificacao" description="Datas e identificadores principais do fluxo documental.">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <Field label="Numero da notificacao">
@@ -413,7 +513,12 @@ export function NotificaFacilForm({
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <label className="inline-flex items-center gap-2 rounded-xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-white">
-              <input type="checkbox" name="mostrar_celebrado_em" defaultChecked={notification?.mostrar_celebrado_em ?? true} />
+              <input
+                type="checkbox"
+                name="mostrar_celebrado_em"
+                checked={mostrarCelebradoEm}
+                onChange={(event) => setMostrarCelebradoEm(event.target.checked)}
+              />
               Mostrar &quot;Celebrado em&quot; no PDF
             </label>
             {contractExpired ? (

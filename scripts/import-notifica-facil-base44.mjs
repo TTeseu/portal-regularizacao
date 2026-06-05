@@ -40,6 +40,21 @@ function floatValue(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function boolValue(value) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+  const normalized = String(value ?? "").trim().toLowerCase();
+  return ["true", "sim", "yes", "1", "x"].includes(normalized);
+}
+
+function hasTechnicalPending(row) {
+  const text = `${row.status ?? ""} ${row.tipo_servico ?? ""}`.toLowerCase();
+  return boolValue(row.pendencia_tecnica)
+    || boolValue(row.pt_notificado)
+    || Boolean(row.pt_data_notificado)
+    || (text.includes("pend") && (text.includes("tecn") || text.includes("técn")));
+}
+
 function jsonValue(value) {
   return value === undefined || value === null ? Prisma.JsonNull : value;
 }
@@ -167,12 +182,12 @@ await createManyInBatches(prisma.notificaFacilNotification, (await readJson("Not
     valor_atualizado: floatValue(row.valor_atualizado),
     multa: floatValue(row.multa),
     qtd_notificacoes_enviadas: intValue(row.qtd_notificacoes_enviadas),
-    is_draft: Boolean(row.is_draft),
-    is_standby: Boolean(row.is_standby),
-    pendencia_tecnica: Boolean(row.pendencia_tecnica),
-    pt_notificado: Boolean(row.pt_notificado),
+    is_draft: boolValue(row.is_draft),
+    is_standby: boolValue(row.is_standby),
+    pendencia_tecnica: hasTechnicalPending(row),
+    pt_notificado: boolValue(row.pt_notificado),
     mostrar_celebrado_em: row.mostrar_celebrado_em !== false,
-    censo_finalizado: Boolean(row.censo_finalizado),
+    censo_finalizado: boolValue(row.censo_finalizado),
     total_ids_identificados: row.total_ids_identificados == null ? null : intValue(row.total_ids_identificados),
     latitude: floatValue(row.latitude),
     longitude: floatValue(row.longitude),

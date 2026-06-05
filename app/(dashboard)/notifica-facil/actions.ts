@@ -247,3 +247,26 @@ export async function deleteNotificaFacilNotification(id: string) {
   revalidatePath("/notifica-facil");
   redirect("/notifica-facil");
 }
+
+export async function markNotificaFacilPtNotificado(id: string) {
+  const user = await requireUser();
+  if (!canEdit(user)) redirect("/notifica-facil/pendencia-tecnica");
+
+  const today = new Date().toISOString().slice(0, 10);
+  await prisma.notificaFacilNotification.update({
+    where: { id },
+    data: {
+      pendencia_tecnica: true,
+      pt_notificado: true,
+      pt_data_notificado: today,
+      updated_date: new Date()
+    }
+  });
+
+  await logAction(id, "pendencia_tecnica", "PT marcado como notificado");
+  revalidatePath("/notifica-facil");
+  revalidatePath("/notifica-facil/pendencia-tecnica");
+  revalidatePath("/notifica-facil/historico-pendencia-tecnica");
+  revalidatePath("/notifica-facil/notificacao-pendencias");
+  redirect("/notifica-facil/pendencia-tecnica");
+}

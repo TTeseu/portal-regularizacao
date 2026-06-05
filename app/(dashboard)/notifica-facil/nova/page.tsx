@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { canEdit, requireUser } from "@/lib/auth";
@@ -14,7 +16,7 @@ function parseRegNumber(value: string | null | undefined) {
 export default async function NovaNotificaFacilPage() {
   const user = await requireUser();
   const mayEdit = canEdit(user);
-  const [baseCompanies, existingNumbers, counters] = await Promise.all([
+  const [baseCompanies, existingNumbers, counters, templateHtml] = await Promise.all([
     prisma.notificaFacilBaseNotificacao.findMany({
       orderBy: { empresa: "asc" },
       select: {
@@ -47,7 +49,8 @@ export default async function NovaNotificaFacilPage() {
       where: { numero_notificacao: { startsWith: "REG" } },
       select: { numero_notificacao: true }
     }),
-    prisma.notificaFacilNotificationCounter.findMany({ select: { year: true, current: true } })
+    prisma.notificaFacilNotificationCounter.findMany({ select: { year: true, current: true } }),
+    readFile(join(process.cwd(), "public", "templates", "notifica-facil-template.html"), "utf8").catch(() => "")
   ]);
 
   const nextByYear = new Map<string, number>();
@@ -82,6 +85,7 @@ export default async function NovaNotificaFacilPage() {
         companyOptions={baseCompanies}
         nextNumero={nextNumero}
         nextByYear={nextByYearObject}
+        templateHtml={templateHtml}
       />
     </div>
   );

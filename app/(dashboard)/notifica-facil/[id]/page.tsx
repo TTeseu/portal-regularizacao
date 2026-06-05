@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Download, FileText, Trash2 } from "lucide-react";
@@ -14,13 +16,14 @@ export default async function NotificaFacilDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const [{ id }, user] = await Promise.all([params, requireUser()]);
-  const [notification, logs] = await Promise.all([
+  const [notification, logs, templateHtml] = await Promise.all([
     prisma.notificaFacilNotification.findUnique({ where: { id } }),
     prisma.notificaFacilActivityLog.findMany({
       where: { notification_id: id },
       orderBy: { timestamp: "desc" },
       take: 20
-    })
+    }),
+    readFile(join(process.cwd(), "public", "templates", "notifica-facil-template.html"), "utf8").catch(() => "")
   ]);
 
   if (!notification) notFound();
@@ -105,6 +108,7 @@ export default async function NotificaFacilDetailPage({
         notification={notification}
         action={updateNotificaFacilNotification.bind(null, notification.id)}
         canEdit={mayEdit}
+        templateHtml={templateHtml}
       />
     </div>
   );

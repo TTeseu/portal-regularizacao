@@ -1,12 +1,18 @@
 import { AlertTriangle } from "lucide-react";
-import { NotificaFacilProcessPage } from "@/components/notifica-facil-process-page";
+import { NotificaFacilPendenciasPage } from "@/components/notifica-facil-pendencias-page";
 
-export default function PendenciaTecnicaPage() {
+export default function PendenciaTecnicaPage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | undefined>>;
+}) {
   return (
-    <NotificaFacilProcessPage
-      title="Pendência Técnica"
-      description="Controle das notificações com pendência técnica, incluindo análise, status, registros de PT e acompanhamento."
+    <NotificaFacilPendenciasPage
+      title="Pendencia Tecnica"
+      description="Controle operacional das notificacoes marcadas com pendencia tecnica no Base44, incluindo status de PT, data de notificacao e acompanhamento."
+      mode="ativas"
       icon={<AlertTriangle size={24} />}
+      searchParams={searchParams}
     />
   );
 }
