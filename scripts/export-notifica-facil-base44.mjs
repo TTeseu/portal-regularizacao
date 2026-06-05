@@ -20,7 +20,8 @@ const entities = [
   "ActivityLog",
   "NotificationCounter",
   "RelatorioEmpresaClandestina",
-  "Notificacao"
+  "Notificacao",
+  "User"
 ];
 
 await mkdir(outDir, { recursive: true });

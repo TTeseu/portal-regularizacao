@@ -1,10 +1,21 @@
 import { Prisma, PrismaClient } from "@prisma/client";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 const prisma = new PrismaClient();
 const appId = process.env.NOTIFICA_FACIL_BASE44_APP_ID || "68ee37fd420f50f0c3ee471e";
-const sourceDir = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve("exports", `base44-notifica-facil-${appId}`);
+const args = process.argv.slice(2);
+const replaceExisting = args.includes("--replace");
+const sourceArg = args.find((arg) => !arg.startsWith("--"));
+const sourcePath = sourceArg ? path.resolve(sourceArg) : path.resolve("exports", `base44-notifica-facil-${appId}`);
+const sourceInfo = await stat(sourcePath);
+let consolidatedExport = null;
+const importedAt = new Date();
+
+if (sourceInfo.isFile()) {
+  const parsed = JSON.parse(await readFile(sourcePath, "utf8"));
+  consolidatedExport = parsed.data && typeof parsed.data === "object" ? parsed.data : parsed;
+}
 
 function dt(value) {
   if (!value) return null;
@@ -33,31 +44,37 @@ function jsonValue(value) {
   return value === undefined || value === null ? Prisma.JsonNull : value;
 }
 
+function cleanValue(value) {
+  if (typeof value === "string") return value.replace(/\u0000/g, "");
+  if (Array.isArray(value)) return value.map(cleanValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, cleanValue(item)]));
+  }
+  return value;
+}
+
 function pick(row, fields) {
   return Object.fromEntries(fields.map((field) => [field, row[field] ?? null]));
 }
 
 async function readJson(name) {
-  return JSON.parse(await readFile(path.join(sourceDir, `${name}.json`), "utf8"));
+  if (consolidatedExport) {
+    const rows = consolidatedExport[name];
+    return Array.isArray(rows) ? rows.map(cleanValue) : [];
+  }
+
+  return JSON.parse(await readFile(path.join(sourcePath, `${name}.json`), "utf8")).map(cleanValue);
 }
 
-async function saveRaw(entityName, row) {
-  await prisma.notificaFacilRawEntity.upsert({
-    where: { entity_name_base44_id: { entity_name: entityName, base44_id: row.id } },
-    update: {
-      payload: row,
-      created_date: dt(row.created_date),
-      updated_date: dt(row.updated_date),
-      imported_at: new Date()
-    },
-    create: {
-      entity_name: entityName,
-      base44_id: row.id,
-      payload: row,
-      created_date: dt(row.created_date),
-      updated_date: dt(row.updated_date)
-    }
-  });
+function saveRaw(entityName, row) {
+  return {
+    entity_name: entityName,
+    base44_id: row.id,
+    payload: row,
+    created_date: dt(row.created_date),
+    updated_date: dt(row.updated_date),
+    imported_at: importedAt
+  };
 }
 
 function baseFields(row) {
@@ -93,24 +110,56 @@ const baseNotificacaoFields = [
   "texto_23_3", "texto_24_1", "texto_24_3", "valor_atualizado", "multa", "retroativo"
 ];
 
-for (const entityName of [
+const rawEntityNames = [
   "Notification",
   "BaseNotificacao",
   "Empresa",
   "ActivityLog",
   "NotificationCounter",
   "RelatorioEmpresaClandestina",
-  "Notificacao"
-]) {
-  const rows = await readJson(entityName);
-  for (const row of rows) {
-    await saveRaw(entityName, row);
+  "Notificacao",
+  "User"
+];
+
+async function createManyInBatches(model, rows, label, batchSize = 500) {
+  let total = 0;
+  for (let index = 0; index < rows.length; index += batchSize) {
+    const batch = rows.slice(index, index + batchSize);
+    if (batch.length === 0) continue;
+    const result = await model.createMany({
+      data: batch,
+      skipDuplicates: true
+    });
+    total += result.count;
   }
-  console.log(`${entityName}: ${rows.length} registro(s) brutos preservados`);
+  console.log(`${label}: ${total} registro(s) importados`);
 }
 
-for (const row of await readJson("Notification")) {
-  const common = {
+if (replaceExisting) {
+  await prisma.$transaction([
+    prisma.notificaFacilRawEntity.deleteMany({ where: { entity_name: { in: rawEntityNames } } }),
+    prisma.notificaFacilActivityLog.deleteMany(),
+    prisma.notificaFacilNotificationCounter.deleteMany(),
+    prisma.notificaFacilRelatorioEmpresaClandestina.deleteMany(),
+    prisma.notificaFacilNotification.deleteMany(),
+    prisma.notificaFacilBaseNotificacao.deleteMany(),
+    prisma.notificaFacilEmpresa.deleteMany()
+  ]);
+  console.log("Registros anteriores do Notifica Facil removidos para importacao completa");
+}
+
+for (const entityName of rawEntityNames) {
+  const rows = await readJson(entityName);
+  await createManyInBatches(
+    prisma.notificaFacilRawEntity,
+    rows.filter((row) => row.id).map((row) => saveRaw(entityName, row)),
+    `${entityName} bruto`
+  );
+}
+
+await createManyInBatches(prisma.notificaFacilNotification, (await readJson("Notification")).map((row) => {
+  return {
+    id: row.id,
     ...baseFields(row),
     empresa: row.empresa || "Sem empresa",
     ...pick(row, notificationStringFields),
@@ -135,29 +184,20 @@ for (const row of await readJson("Notification")) {
     fotos_censo: jsonValue(row.fotos_censo),
     ocr_legendas: jsonValue(row.ocr_legendas)
   };
+}), "Notification");
 
-  await prisma.notificaFacilNotification.upsert({
-    where: { id: row.id },
-    update: common,
-    create: { id: row.id, ...common }
-  });
-}
-
-for (const row of await readJson("BaseNotificacao")) {
-  const common = {
+await createManyInBatches(prisma.notificaFacilBaseNotificacao, (await readJson("BaseNotificacao")).map((row) => {
+  return {
+    id: row.id,
     ...baseFields(row),
     empresa: row.empresa || "Sem empresa",
     ...pick(row, baseNotificacaoFields)
   };
-  await prisma.notificaFacilBaseNotificacao.upsert({
-    where: { id: row.id },
-    update: common,
-    create: { id: row.id, ...common }
-  });
-}
+}), "BaseNotificacao");
 
-for (const row of await readJson("Empresa")) {
-  const common = {
+await createManyInBatches(prisma.notificaFacilEmpresa, (await readJson("Empresa")).map((row) => {
+  return {
+    id: row.id,
     ...baseFields(row),
     nome: row.nome || row.empresa || "Sem nome",
     cnpj: row.cnpj ?? null,
@@ -169,15 +209,11 @@ for (const row of await readJson("Empresa")) {
     tem_clausula_11_6_3: Boolean(row.tem_clausula_11_6_3),
     campo_11_6_3: row.campo_11_6_3 ?? null
   };
-  await prisma.notificaFacilEmpresa.upsert({
-    where: { id: row.id },
-    update: common,
-    create: { id: row.id, ...common }
-  });
-}
+}), "Empresa");
 
-for (const row of await readJson("ActivityLog")) {
-  const common = {
+await createManyInBatches(prisma.notificaFacilActivityLog, (await readJson("ActivityLog")).map((row) => {
+  return {
+    id: row.id,
     ...baseFields(row),
     notification_id: row.notification_id || "sem-notificacao",
     notification_number: row.notification_number ?? null,
@@ -190,28 +226,20 @@ for (const row of await readJson("ActivityLog")) {
     timestamp: dt(row.timestamp) || dt(row.created_date) || new Date(),
     details: row.details ?? null
   };
-  await prisma.notificaFacilActivityLog.upsert({
-    where: { id: row.id },
-    update: common,
-    create: { id: row.id, ...common }
-  });
-}
+}), "ActivityLog");
 
-for (const row of await readJson("NotificationCounter")) {
-  const common = {
+await createManyInBatches(prisma.notificaFacilNotificationCounter, (await readJson("NotificationCounter")).map((row) => {
+  return {
+    id: row.id,
     ...baseFields(row),
     year: String(row.year || new Date().getFullYear()),
     current: intValue(row.current)
   };
-  await prisma.notificaFacilNotificationCounter.upsert({
-    where: { year: common.year },
-    update: common,
-    create: { id: row.id, ...common }
-  });
-}
+}), "NotificationCounter");
 
-for (const row of await readJson("RelatorioEmpresaClandestina")) {
-  const common = {
+await createManyInBatches(prisma.notificaFacilRelatorioEmpresaClandestina, (await readJson("RelatorioEmpresaClandestina")).map((row) => {
+  return {
+    id: row.id,
     ...baseFields(row),
     empresa: row.empresa || "Sem empresa",
     numero_registro_censo: row.numero_registro_censo ?? null,
@@ -230,12 +258,7 @@ for (const row of await readJson("RelatorioEmpresaClandestina")) {
     data_envio_email: row.data_envio_email ?? null,
     censo_draft_id: row.censo_draft_id ?? null
   };
-  await prisma.notificaFacilRelatorioEmpresaClandestina.upsert({
-    where: { id: row.id },
-    update: common,
-    create: { id: row.id, ...common }
-  });
-}
+}), "RelatorioEmpresaClandestina");
 
 console.log("Importacao do Notifica Facil concluida");
 await prisma.$disconnect();

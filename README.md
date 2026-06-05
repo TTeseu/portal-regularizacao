@@ -162,9 +162,12 @@ Importar para o banco configurado em `DATABASE_URL`:
 
 ```bash
 npm run import:notifica-facil
+
+# ou, quando o Base44 gerar um arquivo unico consolidado:
+npm run import:notifica-facil -- C:\Users\davis\Downloads\base-completa-notifica-facil-1780680279940.json
 ```
 
-O importador faz upsert nas tabelas operacionais `NotificaFacil*` e tambem grava todos os registros originais em `NotificaFacilRawEntity`, preservando campos, anexos, URLs de arquivos, OCR, historico e entidades legadas.
+O importador faz upsert nas tabelas operacionais `NotificaFacil*` e tambem grava todos os registros originais em `NotificaFacilRawEntity`, preservando campos, anexos, URLs de arquivos, OCR, historico e entidades legadas. A entidade `User` do Base44 e preservada como payload bruto para auditoria/migracao, sem sobrescrever os usuarios de autenticacao Google do portal.
 
 ## Funcionalidades implementadas
 
