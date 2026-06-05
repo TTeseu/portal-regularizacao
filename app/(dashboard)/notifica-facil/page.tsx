@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Prisma } from "@prisma/client";
 import {
   BarChart3,
+  Bell,
   Building2,
   ClipboardCheck,
   DollarSign,
@@ -10,8 +11,8 @@ import {
   Plus,
   RefreshCw,
   Search,
+  ShieldAlert,
   TrendingUp,
-  Upload,
   Users
 } from "lucide-react";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
@@ -19,11 +20,11 @@ import { prisma } from "@/lib/prisma";
 
 const statuses = [
   "Aguardando assinatura Gestor",
-  "Notificação Encaminhada por E-mail.",
+  "Notifica\u00e7\u00e3o Encaminhada por E-mail.",
   "Resposta do Cliente - Anexo do E-mail.",
   "Entrega do Projeto ou Projeto Pendente. (10 dias)",
-  "Não houve resposta do Cliente - Valores Informar o Faturamento.",
-  "Finalizar Notificação."
+  "N\u00e3o houve resposta do Cliente - Valores Informar o Faturamento.",
+  "Finalizar Notifica\u00e7\u00e3o."
 ];
 
 function money(value: number) {
@@ -57,148 +58,200 @@ export default async function NotificaFacilPage({
     ];
   }
 
-  const [items, total, concluidas, empresas, emailEnviados, retroativoAgg, multaAgg] = await Promise.all([
+  const [items, total, concluidas, standby, pendencias, empresas, emailEnviados, retroativoAgg, multaAgg] = await Promise.all([
     prisma.notificaFacilNotification.findMany({
       where,
       orderBy: [{ created_date: "desc" }, { id: "desc" }],
       take: 100
     }),
     prisma.notificaFacilNotification.count({ where }),
-    prisma.notificaFacilNotification.count({ where: { ...where, status: "Finalizar Notificação." } }),
-    prisma.notificaFacilNotification.groupBy({ by: ["empresa"], where }),
+    prisma.notificaFacilNotification.count({ where: { ...where, status: "Finalizar Notifica\u00e7\u00e3o." } }),
+    prisma.notificaFacilNotification.count({ where: { ...where, is_standby: true } }),
+    prisma.notificaFacilNotification.count({ where: { ...where, pendencia_tecnica: true } }),
+    prisma.notificaFacilNotification.groupBy({ by: ["empresa"], where, _count: { empresa: true }, orderBy: { _count: { empresa: "desc" } } }),
     prisma.notificaFacilNotification.count({ where: { ...where, data_email_encaminhado: { not: null } } }),
     prisma.notificaFacilNotification.aggregate({ where, _sum: { valor_atualizado: true } }),
     prisma.notificaFacilNotification.aggregate({ where, _sum: { multa: true } })
   ]);
 
-  const userName = (user.full_name || user.name || user.email).split(" ")[0];
   const totalRetroativo = retroativoAgg._sum.valor_atualizado || 0;
   const totalMultas = multaAgg._sum.multa || 0;
   const naoRegularizados = Math.max(total - concluidas, 0);
 
   return (
-    <div className="mx-auto max-w-[1500px] space-y-8 text-[#0F172A]">
-      <section className="flex flex-col justify-between gap-5 xl:flex-row xl:items-start">
-        <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-[#0F172A]">Olá, {userName}! <span aria-hidden>👋</span></h1>
-          <p className="mt-2 text-base text-[#64748B]">Visão geral das notificações</p>
+    <div className="mx-auto max-w-[1500px] space-y-8">
+      <section className="panel overflow-hidden">
+        <div className="relative p-8 md:p-10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_10%,rgba(0,230,118,0.22),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.05),transparent_55%)]" />
+          <div className="relative flex flex-col justify-between gap-8 xl:flex-row xl:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-edp/25 bg-edp/10 px-4 py-2 text-xs font-bold uppercase tracking-wide text-edp">
+                <Bell size={15} />
+                Modulo documental
+              </div>
+              <h1 className="mt-5 text-4xl font-bold tracking-tight text-white md:text-5xl">Notifica Facil</h1>
+              <p className="mt-4 max-w-3xl text-base leading-7 text-edp-muted">
+                Backend, dados e fluxo do Base44 com identidade visual EDP: notificacoes do censo, pendencias tecnicas,
+                respostas de clientes, anexos, assinaturas e acompanhamento documental.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/home" className="btn-secondary">Portal central</Link>
+              {canEdit ? (
+                <Link href="/notifica-facil/nova" className="btn-primary">
+                  <Plus size={16} />
+                  Nova notificacao
+                </Link>
+              ) : null}
+            </div>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button className="inline-flex items-center gap-2 rounded-xl border border-purple-300 bg-[#FFFFFF] px-4 py-2.5 text-sm font-semibold text-purple-700 shadow-sm">
-            <RefreshCw size={16} />
-            Popular Histórico
-          </button>
-          <button className="inline-flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 py-2.5 text-sm font-semibold text-[#0F172A] shadow-sm">
-            <RefreshCw size={16} />
-            Zerar contador (REG/0001-2025)
-          </button>
-          <button className="inline-flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 py-2.5 text-sm font-semibold text-[#0F172A] shadow-sm">
-            <FileText size={16} />
-            Notificação Teste
-          </button>
-          {canEdit ? (
-            <Link href="/notifica-facil/nova" className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/20">
-              <Plus size={16} />
-              Nova Notificação
-            </Link>
-          ) : null}
-        </div>
-      </section>
-
-      <section className="flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-3 text-sm font-medium text-[#334155]">
-          Filtrar por mês:
-          <select className="h-11 min-w-56 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 text-sm text-[#0F172A] shadow-sm">
-            <option>Todos os meses</option>
-          </select>
-        </label>
-        <button className="inline-flex h-11 items-center gap-2 rounded-xl border border-blue-400 bg-[#FFFFFF] px-4 text-sm font-semibold text-blue-600">
-          <BarChart3 size={16} />
-          Gráfico
-        </button>
       </section>
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Pontos Regularizados" value={concluidas} icon={<ClipboardCheck size={26} />} tone="green" />
-        <Metric label="Pontos Não Regularizados" value={naoRegularizados} icon={<FileText size={26} />} tone="yellow" />
-        <Metric label="Valor Total RETROATIVO" value={money(totalRetroativo)} icon={<TrendingUp size={26} />} tone="purple" />
-        <Metric label="Total Multas" value={money(totalMultas)} icon={<DollarSign size={28} />} tone="red" />
-        <Metric label="Multa + Retroativo" value={money(totalRetroativo + totalMultas)} icon={<DollarSign size={26} />} tone="green" />
-        <Metric label="Total de Notificações" value={total} icon={<FileText size={26} />} tone="blue" />
-        <Metric label="Empresas Notificadas" value={empresas.length} icon={<Building2 size={26} />} tone="gray" />
-        <Metric label="E-mails Enviados" value={emailEnviados} icon={<Users size={26} />} tone="indigo" />
+        <Metric label="Total filtrado" value={total} hint="Base documental ativa" icon={<FileText size={24} />} tone="blue" />
+        <Metric label="Nao regularizados" value={naoRegularizados} hint="Aguardando tratativa" icon={<ShieldAlert size={24} />} tone="yellow" />
+        <Metric label="Stand-by" value={standby} hint="Fluxo pausado" icon={<ClipboardCheck size={24} />} tone="purple" />
+        <Metric label="Pendencia tecnica" value={pendencias} hint="Requer analise operacional" icon={<Bell size={24} />} tone="green" />
+        <Metric label="Valor retroativo" value={money(totalRetroativo)} hint="Soma no filtro atual" icon={<TrendingUp size={24} />} tone="green" />
+        <Metric label="Total multas" value={money(totalMultas)} hint="Soma no filtro atual" icon={<DollarSign size={24} />} tone="red" />
+        <Metric label="Empresas notificadas" value={empresas.length} hint="Empresas unicas" icon={<Building2 size={24} />} tone="blue" />
+        <Metric label="E-mails enviados" value={emailEnviados} hint="Com data de envio" icon={<Users size={24} />} tone="purple" />
       </section>
 
-      <section className="grid gap-7 xl:grid-cols-[1fr_360px]">
-        <div className="space-y-5">
-          <section className="rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] shadow-xl shadow-slate-900/5">
-            <div className="border-b border-[#E2E8F0] px-6 py-6">
-              <div className="flex items-center gap-3">
-                <FileText className="text-blue-600" size={24} />
-                <h2 className="text-2xl font-extrabold text-[#0F172A]">Notificações</h2>
-              </div>
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
-                <button className="rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 py-2 text-sm font-semibold text-[#0F172A] shadow-sm">Recentes ({items.length})</button>
-                <button className="rounded-xl border border-transparent px-4 py-2 text-sm font-semibold text-[#64748B]">Concluídas ({concluidas})</button>
-              </div>
-
-              <form className="mt-5 grid gap-3">
-                <div className="flex flex-wrap gap-2">
-                  <StatusChip href="/notifica-facil" active label="Todas" />
-                  {statuses.map((status) => (
-                    <StatusChip key={status} href={`/notifica-facil?status=${encodeURIComponent(status)}`} label={status} />
-                  ))}
-                </div>
-                <div className="grid gap-3 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]">
-                  <select className="h-11 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 text-sm text-[#0F172A]" name="empresa" defaultValue={values.empresa || ""}>
-                    <option value="">Todas as empresas</option>
-                    {empresas.map((empresa) => <option key={empresa.empresa} value={empresa.empresa}>{empresa.empresa}</option>)}
-                  </select>
-                  <select className="h-11 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 text-sm text-[#0F172A]" name="cidade" defaultValue={values.cidade || ""}>
-                    <option value="">Todos os municípios</option>
-                  </select>
-                  <select className="h-11 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 text-sm text-[#0F172A]">
-                    <option>Todos os usuários</option>
-                  </select>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
-                    <input className="h-11 w-full rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] pl-9 pr-3 text-sm text-[#0F172A]" name="q" defaultValue={values.q || ""} placeholder="Buscar nº ou empresa" />
-                  </div>
-                  <button className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 text-sm font-semibold text-[#0F172A]">
-                    <Upload size={15} />
-                    Exportar Excel
-                  </button>
-                </div>
-              </form>
+      <section className="panel p-5">
+        <form className="grid gap-4 xl:grid-cols-[1.4fr_1fr_1fr_1fr_auto] xl:items-end">
+          <label className="space-y-2">
+            <span className="label">Busca</span>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-edp-muted" size={16} />
+              <input className="field pl-9" name="q" defaultValue={values.q || ""} placeholder="Empresa, censo, contrato, protocolo..." />
             </div>
+          </label>
+          <label className="space-y-2">
+            <span className="label">Status</span>
+            <select className="field" name="status" defaultValue={values.status || ""}>
+              <option value="">Todos</option>
+              {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
+            </select>
+          </label>
+          <label className="space-y-2">
+            <span className="label">Empresa</span>
+            <select className="field" name="empresa" defaultValue={values.empresa || ""}>
+              <option value="">Todas as empresas</option>
+              {empresas.map((empresa) => <option key={empresa.empresa} value={empresa.empresa}>{empresa.empresa}</option>)}
+            </select>
+          </label>
+          <label className="space-y-2">
+            <span className="label">Cidade</span>
+            <input className="field" name="cidade" defaultValue={values.cidade || ""} placeholder="Todas" />
+          </label>
+          <button className="btn-primary h-[42px]">Filtrar</button>
+        </form>
+      </section>
 
-            <div className="m-6 flex min-h-32 items-center justify-center rounded-2xl border border-[#CBD5E1] bg-[#FFFFFF] text-sm text-[#64748B]">
-              {items.length === 0 ? "Nenhuma notificação encontrada." : `${items.length} notificação(ões) encontrada(s).`}
+      <section className="grid gap-7 xl:grid-cols-[1fr_380px]">
+        <div className="panel overflow-hidden">
+          <div className="border-b border-line px-6 py-5">
+            <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+              <div>
+                <div className="flex items-center gap-3">
+                  <FileText className="text-edp" size={23} />
+                  <h2 className="text-2xl font-bold text-white">Notificacoes</h2>
+                </div>
+                <p className="mt-1 text-sm text-edp-muted">Ultimos 100 registros do modulo Notifica Facil.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button className="btn-secondary">
+                  <RefreshCw size={16} />
+                  Popular Historico
+                </button>
+                <button className="btn-secondary">
+                  <BarChart3 size={16} />
+                  Grafico
+                </button>
+              </div>
             </div>
-          </section>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <StatusChip href="/notifica-facil" active={!values.status} label="Todas" />
+              {statuses.map((status) => (
+                <StatusChip key={status} href={`/notifica-facil?status=${encodeURIComponent(status)}`} active={values.status === status} label={status} />
+              ))}
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px] text-left text-sm">
+              <thead>
+                <tr>
+                  <th className="px-5 py-4 font-semibold">Notificacao</th>
+                  <th className="px-5 py-4 font-semibold">Empresa</th>
+                  <th className="px-5 py-4 font-semibold">Registro censo</th>
+                  <th className="px-5 py-4 font-semibold">Cidade</th>
+                  <th className="px-5 py-4 font-semibold">Status</th>
+                  <th className="px-5 py-4 font-semibold">Flags</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-12 text-center text-edp-muted">Nenhuma notificacao encontrada.</td>
+                  </tr>
+                ) : (
+                  items.map((item) => (
+                    <tr key={item.id} className="border-t border-line">
+                      <td className="px-5 py-4">
+                        <Link href={`/notifica-facil/${item.id}`} className="font-bold text-edp hover:text-edp-hover">
+                          {item.numero_notificacao || item.numero_protocolo || item.id}
+                        </Link>
+                        <div className="mt-1 text-xs text-edp-muted">{item.created_date ? item.created_date.toLocaleDateString("pt-BR") : "Sem data"}</div>
+                      </td>
+                      <td className="px-5 py-4 text-white">{item.empresa}</td>
+                      <td className="px-5 py-4 text-edp-muted">{item.numero_registro_censo || "-"}</td>
+                      <td className="px-5 py-4 text-edp-muted">{item.empresa_cidade || "-"}</td>
+                      <td className="px-5 py-4"><StatusBadge status={item.status} /></td>
+                      <td className="px-5 py-4">
+                        <div className="flex flex-wrap gap-2">
+                          {item.is_standby ? <SmallBadge label="Stand-by" /> : null}
+                          {item.pendencia_tecnica ? <SmallBadge label="Pendencia tecnica" /> : null}
+                          {item.is_draft ? <SmallBadge label="Rascunho" /> : null}
+                          {!item.is_standby && !item.pendencia_tecnica && !item.is_draft ? <span className="text-edp-muted">-</span> : null}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <aside className="space-y-7">
-          <section className="rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-6 shadow-xl shadow-slate-900/5">
+          <section className="panel p-6">
             <div className="flex items-center gap-3">
-              <TrendingUp className="text-blue-600" size={20} />
-              <h3 className="font-bold text-[#0F172A]">Status das Notificações</h3>
+              <TrendingUp className="text-edp" size={21} />
+              <h3 className="font-bold text-white">Status das notificacoes</h3>
             </div>
-            <div className="flex min-h-64 items-center justify-center text-sm text-[#94A3B8]">
-              {total === 0 ? "Sem dados para exibir" : `${total} registros no filtro atual`}
+            <div className="mt-6 space-y-3">
+              <Progress label="Concluidas" value={concluidas} total={Math.max(total, 1)} />
+              <Progress label="Stand-by" value={standby} total={Math.max(total, 1)} />
+              <Progress label="Pendencia tecnica" value={pendencias} total={Math.max(total, 1)} />
             </div>
           </section>
 
-          <section className="rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] shadow-xl shadow-slate-900/5">
-            <div className="border-b border-[#E2E8F0] px-6 py-5">
-              <div className="flex items-center gap-3">
-                <Building2 className="text-blue-600" size={20} />
-                <h3 className="font-bold text-[#0F172A]">Total de IDs por Empresa</h3>
-              </div>
+          <section className="panel p-6">
+            <div className="flex items-center gap-3">
+              <Building2 className="text-edp" size={21} />
+              <h3 className="font-bold text-white">Total por empresa</h3>
             </div>
-            <div className="p-6">
-              <label className="text-sm font-medium text-[#334155]">Buscar empresa</label>
-              <input className="mt-2 h-11 w-full rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 text-sm text-[#0F172A]" placeholder="Digite o nome da empresa..." />
+            <div className="mt-5 space-y-3">
+              {empresas.slice(0, 8).map((empresa) => (
+                <div key={empresa.empresa} className="flex items-center justify-between rounded-xl border border-line bg-surface px-4 py-3">
+                  <span className="truncate text-sm text-edp-muted">{empresa.empresa}</span>
+                  <span className="text-sm font-bold text-white">{empresa._count.empresa}</span>
+                </div>
+              ))}
+              {empresas.length === 0 ? <p className="text-sm text-edp-muted">Sem empresas no filtro atual.</p> : null}
             </div>
           </section>
         </aside>
@@ -207,24 +260,25 @@ export default async function NotificaFacilPage({
   );
 }
 
-function Metric({ label, value, icon, tone }: { label: string; value: number | string; icon: ReactNode; tone: "green" | "yellow" | "purple" | "red" | "blue" | "gray" | "indigo" }) {
+function Metric({ label, value, hint, icon, tone }: { label: string; value: number | string; hint: string; icon: ReactNode; tone: "green" | "yellow" | "purple" | "red" | "blue" }) {
   const tones = {
-    green: "bg-emerald-100 text-emerald-700",
-    yellow: "bg-yellow-100 text-yellow-700",
-    purple: "bg-purple-100 text-purple-700",
-    red: "bg-red-100 text-red-700",
-    blue: "bg-blue-100 text-blue-700",
-    gray: "bg-[#F1F5F9] text-[#334155]",
-    indigo: "bg-indigo-100 text-indigo-700"
+    green: "border-edp/25 bg-edp/10 text-edp",
+    yellow: "border-yellow-300/25 bg-yellow-300/10 text-yellow-200",
+    purple: "border-purple-300/25 bg-purple-300/10 text-purple-200",
+    red: "border-red-300/25 bg-red-300/10 text-red-200",
+    blue: "border-cyan-300/25 bg-cyan-300/10 text-cyan-100"
   };
 
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-6 shadow-xl shadow-slate-900/7">
-      <div>
-        <div className="text-sm font-semibold text-[#64748B]">{label}</div>
-        <div className="mt-3 text-3xl font-extrabold text-[#0F172A]">{value}</div>
+    <div className="panel p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-bold uppercase tracking-wide text-edp-muted">{label}</div>
+          <div className="mt-3 text-3xl font-bold text-white">{value}</div>
+          <div className="mt-3 text-xs font-medium text-edp-muted">{hint}</div>
+        </div>
+        <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border ${tones[tone]}`}>{icon}</div>
       </div>
-      <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ${tones[tone]}`}>{icon}</div>
     </div>
   );
 }
@@ -233,11 +287,43 @@ function StatusChip({ href, label, active = false }: { href: string; label: stri
   return (
     <Link
       href={href}
-      className={`rounded-full border px-4 py-2 text-xs font-semibold shadow-sm transition ${
-        active ? "border-[#0F172A] bg-[#0F172A] text-white" : "border-[#E2E8F0] bg-[#FFFFFF] text-[#0F172A] hover:border-blue-300 hover:text-blue-600"
+      className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+        active ? "border-edp/45 bg-edp text-edp-navy" : "border-line bg-surface text-edp-muted hover:border-edp/35 hover:text-white"
       }`}
     >
       {label}
     </Link>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const lower = status.toLowerCase();
+  const tone = lower.includes("finalizar")
+    ? "border-edp/35 bg-edp/15 text-edp"
+    : lower.includes("resposta")
+      ? "border-purple-300/30 bg-purple-300/15 text-purple-100"
+      : lower.includes("email")
+        ? "border-cyan-300/30 bg-cyan-300/15 text-cyan-100"
+        : "border-yellow-300/30 bg-yellow-300/15 text-yellow-100";
+
+  return <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${tone}`}>{status}</span>;
+}
+
+function SmallBadge({ label }: { label: string }) {
+  return <span className="rounded-full border border-edp/25 bg-edp/10 px-2.5 py-1 text-xs font-bold text-edp">{label}</span>;
+}
+
+function Progress({ label, value, total }: { label: string; value: number; total: number }) {
+  const percent = Math.round((value / total) * 100);
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between text-xs font-semibold">
+        <span className="text-edp-muted">{label}</span>
+        <span className="text-white">{value}</span>
+      </div>
+      <div className="h-2 rounded-full bg-white/10">
+        <div className="h-2 rounded-full bg-edp" style={{ width: `${Math.min(percent, 100)}%` }} />
+      </div>
+    </div>
   );
 }

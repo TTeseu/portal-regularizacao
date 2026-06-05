@@ -111,8 +111,9 @@ O Notifica Facil foi isolado em tabelas e rotas proprias para evitar conflito co
 - `NotificaFacilActivityLog`
 - `NotificaFacilNotificationCounter`
 - `NotificaFacilRelatorioEmpresaClandestina`
+- `NotificaFacilRawEntity`
 
-Renomeacao documentada: o Base44 tambem tinha entidades chamadas `Notification`, `Notificacao` e `Empresa`. No Prisma elas foram prefixadas com `NotificaFacil` para nao colidir com `Notificacao` e `Empresa` ja usadas pelo Portal de Regularizacao.
+Renomeacao documentada: o Base44 tambem tinha entidades chamadas `Notification`, `Notificacao` e `Empresa`. No Prisma elas foram prefixadas com `NotificaFacil` para nao colidir com `Notificacao` e `Empresa` ja usadas pelo Portal de Regularizacao. A tabela `NotificaFacilRawEntity` preserva o payload bruto de todas as entidades do Base44, inclusive a `Notificacao` legada do Notifica Facil.
 
 ## Migracao de dados do Base44
 
@@ -139,6 +140,31 @@ node scripts/import-base44.mjs ./exports/base44-690248a304b1770ec9b7c4ed
 IDs originais do Base44 sao preservados para manter historico de downloads e referencias por lote.
 
 Na migracao inicial foram importados 2.146 registros de `Notificacao`, 140 de `Empresa`, 20 de `HistoricoDownload` e 8 usuarios do Base44, mantendo o usuario admin local criado pelo seed.
+
+### Migracao do Notifica Facil
+
+O app Notifica Facil do Base44 usa o App ID `68ee37fd420f50f0c3ee471e`.
+
+Configure:
+
+```bash
+NOTIFICA_FACIL_BASE44_APP_ID="68ee37fd420f50f0c3ee471e"
+BASE44_TOKEN="token-do-base44"
+```
+
+Exportar dados:
+
+```bash
+npm run export:notifica-facil
+```
+
+Importar para o banco configurado em `DATABASE_URL`:
+
+```bash
+npm run import:notifica-facil
+```
+
+O importador faz upsert nas tabelas operacionais `NotificaFacil*` e tambem grava todos os registros originais em `NotificaFacilRawEntity`, preservando campos, anexos, URLs de arquivos, OCR, historico e entidades legadas.
 
 ## Funcionalidades implementadas
 

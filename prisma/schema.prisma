@@ -434,3 +434,17 @@ model NotificaFacilRelatorioEmpresaClandestina {
   @@index([status])
   @@index([numero_registro_censo])
 }
+
+model NotificaFacilRawEntity {
+  id           String   @id @default(cuid())
+  entity_name  String
+  base44_id    String
+  payload      Json
+  created_date DateTime?
+  updated_date DateTime?
+  imported_at  DateTime @default(now())
+
+  @@unique([entity_name, base44_id])
+  @@index([entity_name])
+  @@index([base44_id])
+}

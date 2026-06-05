@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowLeft, Construction } from "lucide-react";
+import { ArrowLeft, Construction, Zap } from "lucide-react";
 
 export function NotificaFacilProcessPage({
   title,
@@ -14,34 +14,41 @@ export function NotificaFacilProcessPage({
   action?: ReactNode;
 }) {
   return (
-    <div className="mx-auto max-w-6xl space-y-6 text-[#0F172A]">
-      <Link href="/notifica-facil" className="inline-flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] px-4 py-2.5 text-sm font-semibold text-[#334155] shadow-sm transition hover:border-blue-300 hover:text-blue-600">
+    <div className="mx-auto max-w-6xl space-y-6">
+      <Link href="/notifica-facil" className="btn-secondary">
         <ArrowLeft size={16} />
         Voltar ao Dashboard
       </Link>
 
-      <section className="rounded-3xl border border-[#E2E8F0] bg-[#FFFFFF] p-8 shadow-xl shadow-slate-900/5">
-        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
-          <div className="flex gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-              {icon || <Construction size={24} />}
+      <section className="panel overflow-hidden">
+        <div className="relative p-8">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_8%,rgba(0,230,118,0.18),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.05),transparent_60%)]" />
+          <div className="relative flex flex-col justify-between gap-5 md:flex-row md:items-start">
+            <div className="flex gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-edp/25 bg-edp/10 text-edp">
+                {icon || <Construction size={24} />}
+              </div>
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-edp/25 bg-edp/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-edp">
+                  <Zap size={13} />
+                  Processo Notifica Facil
+                </div>
+                <h1 className="mt-3 text-3xl font-bold tracking-tight text-white">{title}</h1>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-edp-muted">{description}</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-[#0F172A]">{title}</h1>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#64748B]">{description}</p>
-            </div>
+            {action}
           </div>
-          {action}
         </div>
       </section>
 
-      <section className="rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-8 text-center shadow-xl shadow-slate-900/5">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+      <section className="panel p-8 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-edp/25 bg-edp/10 text-edp">
           <Construction size={28} />
         </div>
-        <h2 className="mt-5 text-xl font-bold text-[#0F172A]">Tela do processo preparada</h2>
-        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[#64748B]">
-          Esta aba foi separada dentro do fluxo do Notifica Fácil para seguir a navegação do Base44. A implementação operacional específica pode ser evoluída aqui sem misturar com o Portal de Regularização.
+        <h2 className="mt-5 text-xl font-bold text-white">Tela do processo preparada</h2>
+        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-edp-muted">
+          Esta aba fica isolada dentro do modulo Notifica Facil, seguindo o fluxo do Base44 sem misturar com o Portal de Regularizacao. A camada visual permanece no padrao EDP escuro.
         </p>
       </section>
     </div>
