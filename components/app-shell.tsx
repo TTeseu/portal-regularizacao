@@ -9,6 +9,7 @@ import {
   Users
 } from "lucide-react";
 import { requireUser } from "@/lib/auth";
+import { SidebarWeather } from "@/components/sidebar-weather";
 
 const nav = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -25,7 +26,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-edp-navy edp-technical-bg">
-      <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-line bg-gradient-to-b from-edp-navy via-[#1b2a40] to-[#142238] shadow-2xl shadow-black/20 lg:block">
+      <aside className="fixed inset-y-0 left-0 hidden w-72 flex-col border-r border-line bg-gradient-to-b from-edp-navy via-[#1b2a40] to-[#142238] shadow-2xl shadow-black/20 lg:flex">
         <div className="flex h-24 items-center gap-4 border-b border-line px-6">
           <div className="flex h-14 w-28 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] px-4 shadow-lg shadow-black/10">
             <img src="/edp-logo-white.svg" alt="EDP" className="h-9 w-auto" />
@@ -35,7 +36,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             <div className="text-xs font-medium text-edp">Regularização</div>
           </div>
         </div>
-        <nav className="space-y-2 px-4 py-6">
+        <nav className="flex-1 space-y-2 px-4 py-6">
           {visibleNav.map((item) => {
             const Icon = item.icon;
             return (
@@ -50,6 +51,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
+        <div className="px-4 pb-5">
+          <SidebarWeather />
+        </div>
       </aside>
       <div className="lg:pl-72">
         <header className="sticky top-0 z-20 flex min-h-20 items-center justify-between border-b border-line bg-edp-navy/88 px-4 backdrop-blur-xl lg:px-8">

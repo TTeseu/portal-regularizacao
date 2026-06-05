@@ -10,7 +10,10 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Portal de Regularização",
-  description: "Sistema independente de notificações, empresas e downloads."
+  description: "Sistema independente de notificações, empresas e downloads.",
+  icons: {
+    icon: "/favicon.ico"
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
