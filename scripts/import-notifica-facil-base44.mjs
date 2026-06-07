@@ -59,6 +59,17 @@ function jsonValue(value) {
   return value === undefined || value === null ? Prisma.JsonNull : value;
 }
 
+function normalizeEnderecosRevelia(value) {
+  if (!Array.isArray(value)) return jsonValue(value);
+  return value.map((row) => {
+    if (!row || typeof row !== "object") return row;
+    return {
+      ...row,
+      cidade: row.cidade ?? row.municipio ?? null
+    };
+  });
+}
+
 function cleanValue(value) {
   if (typeof value === "string") return value.replace(/\u0000/g, "");
   if (Array.isArray(value)) return value.map(cleanValue);
@@ -195,7 +206,7 @@ await createManyInBatches(prisma.notificaFacilNotification, (await readJson("Not
     last_downloaded_at: dt(row.last_downloaded_at),
     notificacao_assinada_anexos: jsonValue(row.notificacao_assinada_anexos),
     anexos_resposta_email: jsonValue(row.anexos_resposta_email),
-    enderecos_revelia: jsonValue(row.enderecos_revelia),
+    enderecos_revelia: normalizeEnderecosRevelia(row.enderecos_revelia),
     fotos_censo: jsonValue(row.fotos_censo),
     ocr_legendas: jsonValue(row.ocr_legendas)
   };

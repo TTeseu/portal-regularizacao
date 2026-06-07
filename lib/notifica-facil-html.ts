@@ -73,11 +73,11 @@ function addressRows(notification: NotificaFacilNotification) {
   const rows = Array.isArray(notification.enderecos_revelia) ? notification.enderecos_revelia : [];
   const normalized = rows
     .map((item) => {
-      const row = item as { endereco?: string; bairro?: string; cidade?: string };
+      const row = item as { endereco?: string; bairro?: string; cidade?: string; municipio?: string };
       return {
         endereco: row.endereco || "",
         bairro: row.bairro || "",
-        cidade: row.cidade || ""
+        cidade: row.cidade || row.municipio || ""
       };
     })
     .filter((row) => row.endereco || row.bairro || row.cidade);
@@ -133,7 +133,8 @@ export function buildNotificaFacilHtml(notification: NotificaFacilNotification) 
     "{{TEXTO_24_1}}": textBlock(notification.texto_24_1),
     "{{TEXTO_24_3}}": textBlock(notification.texto_24_3),
     "{{VALOR_MULTA}}": moneyNumber(notification.valor_cobrado ?? notification.multa),
-    "{{VALOR_RETROATIVO_CALCULADO}}": text(notification.retroativo || moneyNumber(0))
+    "{{VALOR_RETROATIVO_CALCULADO}}": text(notification.retroativo || moneyNumber(0)),
+    "{{R1_MARKER}}": '<span class="r1-marker" style="color:#fff;font-size:1px;line-height:0;">R1</span>'
   };
 
   for (const [placeholder, value] of Object.entries(replacements)) {

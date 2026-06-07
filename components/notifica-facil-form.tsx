@@ -1,7 +1,7 @@
 "use client";
 
 import type { NotificaFacilNotification } from "@prisma/client";
-import { Calculator, CheckCircle2, FileText, Save, Search } from "lucide-react";
+import { Calculator, CheckCircle2, FileText, Plus, Save, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 const STATUS_OPTIONS = [
@@ -81,6 +81,13 @@ type FormValues = {
   pt_data_notificado: string;
 };
 
+type AddressRow = {
+  id: string;
+  endereco: string;
+  bairro: string;
+  cidade: string;
+};
+
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -132,6 +139,50 @@ function jsonLines(value: unknown, keys: string[]) {
       return keys.map((key) => String(record[key] ?? "")).join("; ");
     })
     .filter(Boolean)
+    .join("\n");
+}
+
+function addressJsonLines(value: unknown) {
+  if (!Array.isArray(value)) return "";
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return "";
+      const record = item as Record<string, unknown>;
+      return [
+        String(record.endereco ?? ""),
+        String(record.bairro ?? ""),
+        String(record.cidade ?? record.municipio ?? "")
+      ].join("; ");
+    })
+    .filter((line) => line.replace(/[;\s]/g, ""))
+    .join("\n");
+}
+
+function makeAddressRow(partial: Partial<AddressRow> = {}): AddressRow {
+  return {
+    id: crypto.randomUUID(),
+    endereco: partial.endereco || "",
+    bairro: partial.bairro || "",
+    cidade: partial.cidade || ""
+  };
+}
+
+function parseAddressInput(value: string) {
+  const rows = value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [endereco = "", bairro = "", cidade = ""] = line.split(";").map((part) => part.trim());
+      return makeAddressRow({ endereco, bairro, cidade });
+    });
+  return rows.length ? rows : [makeAddressRow()];
+}
+
+function serializeAddressRows(rows: AddressRow[]) {
+  return rows
+    .map((row) => [row.endereco, row.bairro, row.cidade].map((part) => part.trim()).join("; "))
+    .filter((line) => line.replace(/[;\s]/g, ""))
     .join("\n");
 }
 
@@ -232,7 +283,8 @@ function buildPreviewHtml(templateHtml: string, values: FormValues, previewNumbe
     "{{TEXTO_24_1}}": textBlock(values.texto_24_1),
     "{{TEXTO_24_3}}": textBlock(values.texto_24_3),
     "{{VALOR_MULTA}}": plainMoney(valorMulta),
-    "{{VALOR_RETROATIVO_CALCULADO}}": escapeHtml(values.retroativo || "0,00")
+    "{{VALOR_RETROATIVO_CALCULADO}}": escapeHtml(values.retroativo || "0,00"),
+    "{{R1_MARKER}}": '<span class="r1-marker">R1</span>'
   };
   for (const [placeholder, value] of Object.entries(replacements)) html = html.replaceAll(placeholder, value);
   return html;
@@ -283,7 +335,7 @@ function initialValues(notification?: NotificaFacilNotification | null, nextNume
     valor_atualizado: notification?.valor_atualizado?.toString() || "",
     multa: notification?.multa?.toString() || "",
     retroativo: notification?.retroativo || "",
-    enderecos_revelia: jsonLines(notification?.enderecos_revelia, ["endereco", "bairro", "cidade"]),
+    enderecos_revelia: addressJsonLines(notification?.enderecos_revelia),
     anexos_resposta_email: jsonLines(notification?.anexos_resposta_email, ["nome", "url"]),
     observacoes: notification?.observacoes || "",
     pt_data_notificado: normalizeDateForInput(notification?.pt_data_notificado)
@@ -308,6 +360,7 @@ export function NotificaFacilForm({
   templateHtml?: string;
 }) {
   const [values, setValues] = useState(() => initialValues(notification, nextNumero));
+  const [addressRows, setAddressRows] = useState(() => parseAddressInput(initialValues(notification, nextNumero).enderecos_revelia));
   const [companyQuery, setCompanyQuery] = useState(notification?.empresa || "");
   const [showCompanyResults, setShowCompanyResults] = useState(false);
   const [prazoTouched, setPrazoTouched] = useState(Boolean(notification?.prazo_resposta));
@@ -352,6 +405,24 @@ export function NotificaFacilForm({
 
   function setField(field: keyof FormValues, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateAddressRows(nextRows: AddressRow[]) {
+    const normalized = nextRows.length ? nextRows : [makeAddressRow()];
+    setAddressRows(normalized);
+    setField("enderecos_revelia", serializeAddressRows(normalized));
+  }
+
+  function updateAddressRow(id: string, field: keyof Omit<AddressRow, "id">, value: string) {
+    updateAddressRows(addressRows.map((row) => row.id === id ? { ...row, [field]: value } : row));
+  }
+
+  function addAddressRow() {
+    updateAddressRows([...addressRows, makeAddressRow()]);
+  }
+
+  function removeAddressRow(id: string) {
+    updateAddressRows(addressRows.length === 1 ? addressRows : addressRows.filter((row) => row.id !== id));
   }
 
   function handleDateChange(value: string) {
@@ -547,15 +618,55 @@ export function NotificaFacilForm({
           </div>
         </Section>
 
-        <Section title="Enderecos, valores e calculo" description="Informe um endereco por linha no formato Endereco; Bairro; Cidade.">
+        <Section title="Enderecos a revelia" description="Preencha endereco, bairro e cidade em campos separados. Adicione quantas linhas forem necessarias.">
+          <input type="hidden" name="enderecos_revelia" value={values.enderecos_revelia} />
+          <div className="space-y-3">
+            {addressRows.map((row, index) => (
+              <div key={row.id} className="grid gap-3 rounded-2xl border border-line bg-surface/70 p-4 md:grid-cols-[1.35fr_1fr_1fr_auto] md:items-end">
+                <Field label={index === 0 ? "Endereco a Revelia" : `Endereco a Revelia ${index + 1}`}>
+                  <input
+                    className="field mt-2"
+                    value={row.endereco}
+                    onChange={(event) => updateAddressRow(row.id, "endereco", event.target.value)}
+                    placeholder="Ex: Rua das Flores, 123"
+                  />
+                </Field>
+                <Field label="Bairro a Revelia">
+                  <input
+                    className="field mt-2"
+                    value={row.bairro}
+                    onChange={(event) => updateAddressRow(row.id, "bairro", event.target.value)}
+                    placeholder="Ex: Centro"
+                  />
+                </Field>
+                <Field label="Municipio a Revelia">
+                  <input
+                    className="field mt-2"
+                    value={row.cidade}
+                    onChange={(event) => updateAddressRow(row.id, "cidade", event.target.value)}
+                    placeholder="Ex: Sao Paulo"
+                  />
+                </Field>
+                <button
+                  type="button"
+                  className="btn-secondary h-11 px-3 text-red-200 hover:border-red-400/40 hover:bg-red-500/10"
+                  onClick={() => removeAddressRow(row.id)}
+                  disabled={addressRows.length === 1}
+                  aria-label="Remover endereco"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button type="button" className="btn-primary mt-4" onClick={addAddressRow}>
+            <Plus size={16} />
+            Adicionar endereco
+          </button>
+        </Section>
+
+        <Section title="Valores e calculo" description="Campos financeiros do fluxo documental do Notifica Facil.">
           <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <Textarea
-              label="Enderecos revelia"
-              name="enderecos_revelia"
-              value={values.enderecos_revelia}
-              onChange={(value) => setField("enderecos_revelia", value)}
-              placeholder="Endereco; Bairro; Cidade"
-            />
             <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-1">
               <Input label="Valor do Ponto" name="valor_atualizado" value={values.valor_atualizado} onChange={(value) => setField("valor_atualizado", value)} />
               <Input label="Multa" name="multa" value={values.multa} onChange={(value) => setField("multa", value)} />

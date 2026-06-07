@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Download, FileText, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, FileText, ImageIcon, Trash2 } from "lucide-react";
 import { canEdit, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildNotificaFacilHtml } from "@/lib/notifica-facil-html";
@@ -11,11 +11,13 @@ import { formatDateTime } from "@/lib/format";
 import { deleteNotificaFacilNotification, updateNotificaFacilNotification } from "../actions";
 
 export default async function NotificaFacilDetailPage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ from?: string }>;
 }) {
-  const [{ id }, user] = await Promise.all([params, requireUser()]);
+  const [{ id }, user, query] = await Promise.all([params, requireUser(), searchParams]);
   const [notification, logs, templateHtml] = await Promise.all([
     prisma.notificaFacilNotification.findUnique({ where: { id } }),
     prisma.notificaFacilActivityLog.findMany({
@@ -29,12 +31,15 @@ export default async function NotificaFacilDetailPage({
   if (!notification) notFound();
   const mayEdit = canEdit(user);
   const html = notification.html_content || buildNotificaFacilHtml(notification);
+  const backHref = getSafeBackHref(query?.from, notification);
+  const evidences = collectEvidences(notification.fotos_censo, notification.ocr_legendas);
+  const attachments = collectAttachments(notification.notificacao_assinada_anexos, notification.anexos_resposta_email);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
         <div>
-          <Link className="btn-secondary mb-4" href="/notifica-facil">
+          <Link className="btn-secondary mb-4" href={backHref}>
             <ArrowLeft size={16} />
             Voltar
           </Link>
@@ -85,8 +90,11 @@ export default async function NotificaFacilDetailPage({
               <Row label="Cidade" value={notification.empresa_cidade} />
               <Row label="Ordem venda" value={notification.ordem_venda} />
               <Row label="Pendencia tecnica" value={notification.pendencia_tecnica ? "Sim" : "Nao"} />
+              <Row label="Poste" value={notification.numero_poste} />
             </dl>
           </div>
+
+          <EvidencePanel evidences={evidences} attachments={attachments} />
 
           <div className="panel p-5">
             <h2 className="mb-3 font-bold text-white">Historico</h2>
@@ -110,6 +118,116 @@ export default async function NotificaFacilDetailPage({
         canEdit={mayEdit}
         templateHtml={templateHtml}
       />
+    </div>
+  );
+}
+
+function getSafeBackHref(value: string | undefined, notification: { pendencia_tecnica: boolean; pt_notificado: boolean; pt_data_notificado?: string | null }) {
+  const allowed = new Set([
+    "/notifica-facil",
+    "/notifica-facil/pendencia-tecnica",
+    "/notifica-facil/notificacao-pendencias",
+    "/notifica-facil/historico-pendencia-tecnica",
+    "/notifica-facil/stand-by",
+    "/notifica-facil/pdfs"
+  ]);
+  if (value && allowed.has(value)) return value;
+  if (notification.pendencia_tecnica || notification.pt_notificado || notification.pt_data_notificado) {
+    return "/notifica-facil/pendencia-tecnica";
+  }
+  return "/notifica-facil";
+}
+
+function collectEvidences(fotos: unknown, ocr: unknown) {
+  const urls = Array.isArray(fotos) ? fotos.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : [];
+  const ocrRows = Array.isArray(ocr) ? ocr : [];
+  return urls.map((url, index) => {
+    const match = ocrRows.find((item) => item && typeof item === "object" && (item as Record<string, unknown>).url === url) as Record<string, unknown> | undefined;
+    return {
+      url,
+      name: fileNameFromUrl(url) || `Foto ${index + 1}`,
+      text: typeof match?.texto === "string" ? match.texto : "",
+      date: typeof match?.data_ocr === "string" ? match.data_ocr : ""
+    };
+  });
+}
+
+function collectAttachments(...groups: unknown[]) {
+  return groups.flatMap((group) => {
+    if (!Array.isArray(group)) return [];
+    return group
+      .map((item, index) => {
+        if (typeof item === "string") return { url: item, name: fileNameFromUrl(item) || `Anexo ${index + 1}` };
+        if (!item || typeof item !== "object") return null;
+        const row = item as Record<string, unknown>;
+        const url = String(row.url || row.file_url || row.href || "");
+        if (!url) return null;
+        return { url, name: String(row.nome || row.name || fileNameFromUrl(url) || `Anexo ${index + 1}`) };
+      })
+      .filter((item): item is { url: string; name: string } => Boolean(item));
+  });
+}
+
+function fileNameFromUrl(url: string) {
+  try {
+    return decodeURIComponent(new URL(url).pathname.split("/").filter(Boolean).pop() || "");
+  } catch {
+    return url.split("/").filter(Boolean).pop() || "";
+  }
+}
+
+function EvidencePanel({
+  evidences,
+  attachments
+}: {
+  evidences: Array<{ url: string; name: string; text: string; date: string }>;
+  attachments: Array<{ url: string; name: string }>;
+}) {
+  return (
+    <div className="panel p-5">
+      <div className="mb-4 flex items-center gap-2">
+        <ImageIcon className="text-edp" size={18} />
+        <h2 className="font-bold text-white">Fotos e Evidencias</h2>
+      </div>
+      {evidences.length ? (
+        <div className="grid gap-3">
+          {evidences.map((item, index) => (
+            <article key={`${item.url}-${index}`} className="overflow-hidden rounded-2xl border border-line bg-surface">
+              <a href={item.url} target="_blank" rel="noreferrer" className="block">
+                <img src={item.url} alt={item.name} className="h-44 w-full object-cover" />
+              </a>
+              <div className="space-y-2 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-bold text-white">{item.name}</div>
+                    {item.date ? <div className="text-xs text-edp-muted">{formatDateTime(new Date(item.date))}</div> : null}
+                  </div>
+                  <a className="btn-secondary h-8 px-2 text-xs" href={item.url} target="_blank" rel="noreferrer">
+                    <ExternalLink size={13} />
+                  </a>
+                </div>
+                {item.text ? <p className="line-clamp-4 whitespace-pre-line text-xs leading-5 text-edp-muted">{item.text}</p> : null}
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-edp-muted">Nenhuma foto vinculada a esta notificacao.</p>
+      )}
+
+      {attachments.length ? (
+        <div className="mt-5 border-t border-line pt-4">
+          <h3 className="mb-3 text-sm font-bold text-white">Anexos</h3>
+          <div className="space-y-2">
+            {attachments.map((item) => (
+              <a key={item.url} className="flex items-center justify-between gap-3 rounded-xl border border-line bg-card px-3 py-2 text-sm text-edp-muted hover:border-edp/40 hover:text-edp" href={item.url} target="_blank" rel="noreferrer">
+                <span className="truncate">{item.name}</span>
+                <Download size={14} />
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -31,6 +31,9 @@
     .bold { font-weight: bold; }
     .indented { margin-left: 40px; text-align: justify; }
     .center { text-align: center !important; }
+    .signature-wrap { position: relative; text-align: center !important; }
+    .signature-line { display: inline-block; width: 360px; border-top: 1px solid #000; height: 1px; }
+    .r1-marker { position: absolute; left: calc(50% - 210px); top: -18px; color: #d71920; font-weight: 700; font-size: 18pt; line-height: 1; }
 
     .address-table {
       width: 100%;
@@ -236,7 +239,7 @@
 
             <p>Atenciosamente,</p>
             <p class="center">EDP SÃO PAULO DISTRIBUIÇÃO DE ENERGIA SA</p>
-            <p class="center">___________________________________________________</p>
+            <p class="signature-wrap"><span class="r1-holder">{{R1_MARKER}}</span><span class="signature-line"></span></p>
           </div>
         </td>
       </tr>

@@ -172,7 +172,7 @@ export async function NotificaFacilPendenciasPage({
               {items.length ? items.map((item) => (
                 <tr key={item.id} className="border-t border-line">
                   <td className="px-5 py-4">
-                    <Link href={`/notifica-facil/${item.id}`} className="font-bold text-edp hover:text-edp-hover">
+                    <Link href={`/notifica-facil/${item.id}?from=${encodeURIComponent(modeHref(mode))}`} className="font-bold text-edp hover:text-edp-hover">
                       {item.numero_notificacao || item.numero_protocolo || item.id}
                     </Link>
                     <div className="mt-1 text-xs text-edp-muted">{item.updated_date ? item.updated_date.toLocaleDateString("pt-BR") : "Sem atualizacao"}</div>
@@ -189,7 +189,7 @@ export async function NotificaFacilPendenciasPage({
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex flex-wrap gap-2">
-                      <Link href={`/notifica-facil/${item.id}`} className="btn-secondary h-9 px-3 text-xs">Abrir</Link>
+                      <Link href={`/notifica-facil/${item.id}?from=${encodeURIComponent(modeHref(mode))}`} className="btn-secondary h-9 px-3 text-xs">Abrir</Link>
                       <a href={`/api/notifica-facil/notifications/${item.id}/pdf`} className="btn-secondary h-9 px-3 text-xs">
                         <Download size={14} />
                         PDF
