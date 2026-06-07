@@ -74,7 +74,7 @@ export async function ensurePdfForNotificaFacil(notification: NotificaFacilNotif
     }
   }
 
-  return storePdfForNotificaFacil(notification);
+  return storePdfForNotificaFacil(notification, notification.html_content || buildNotificaFacilHtml(notification));
 }
 
 export { pdfResponse };

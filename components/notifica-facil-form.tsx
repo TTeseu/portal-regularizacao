@@ -190,9 +190,9 @@ function previewAddressRows(values: FormValues) {
       return { endereco, bairro, cidade };
     });
   const normalized = rows.length ? rows : [{
-    endereco: values.destinatario_endereco || values.empresa_endereco,
-    bairro: values.empresa_bairro,
-    cidade: values.empresa_cidade
+    endereco: "",
+    bairro: "",
+    cidade: ""
   }];
   return normalized
     .map((row) => `                <tr>

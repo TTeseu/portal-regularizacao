@@ -85,9 +85,9 @@ function addressRows(notification: NotificaFacilNotification) {
   const fallbackRows = normalized.length
     ? normalized
     : [{
-        endereco: notification.destinatario_endereco || notification.empresa_endereco || "",
-        bairro: notification.empresa_bairro || "",
-        cidade: notification.empresa_cidade || ""
+        endereco: "",
+        bairro: "",
+        cidade: ""
       }];
 
   return fallbackRows

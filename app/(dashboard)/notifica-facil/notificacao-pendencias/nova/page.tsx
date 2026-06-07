@@ -1,0 +1,56 @@
+import { GerarNotificacaoWizard } from "@/components/gerar-notificacao-wizard";
+import { canEdit, requireUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { createNotificaFacilPendenciaWizard } from "../../actions";
+
+export default async function NovaNotificacaoPendenciaPage() {
+  const user = await requireUser();
+  const [baseEmpresas, tiposRows] = await Promise.all([
+    prisma.notificaFacilBaseNotificacao.findMany({
+      orderBy: { empresa: "asc" },
+      select: {
+        id: true,
+        empresa: true,
+        cnpj: true,
+        contrato_numero: true,
+        empresa_endereco: true,
+        empresa_cidade: true,
+        empresa_estado: true
+      }
+    }),
+    prisma.notificaFacilNotification.findMany({
+      distinct: ["tipo_servico"],
+      where: { tipo_servico: { not: null } },
+      select: { tipo_servico: true },
+      take: 20
+    })
+  ]);
+
+  const empresas = baseEmpresas.map((empresa) => ({
+    id: empresa.id,
+    nome: empresa.empresa,
+    cnpj: empresa.cnpj,
+    contrato_numero: empresa.contrato_numero,
+    endereco: empresa.empresa_endereco,
+    cidade: empresa.empresa_cidade,
+    estado: empresa.empresa_estado,
+    tem_clausula_11_6_3: false,
+    campo_11_6_3: null
+  }));
+
+  const tipos = Array.from(new Set([
+    "Ocupacao Irregular - Descumprimento ao Contrato e Normas Tecnicas",
+    ...tiposRows.map((row) => row.tipo_servico).filter((tipo): tipo is string => Boolean(tipo))
+  ]));
+
+  return (
+    <GerarNotificacaoWizard
+      empresas={empresas}
+      tipos={tipos}
+      canEdit={canEdit(user)}
+      action={createNotificaFacilPendenciaWizard}
+      backHref="/notifica-facil/notificacao-pendencias"
+      cancelHref="/notifica-facil/notificacao-pendencias"
+    />
+  );
+}

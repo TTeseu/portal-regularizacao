@@ -32,6 +32,7 @@ function parseAddressRows(notificacao: Notificacao): AddressRow[] {
         }))
         .filter((row) => row.endereco || row.bairro || row.cidade);
       if (rows.length > 0) return rows;
+      return [{ endereco: "", bairro: "", cidade: "" }];
     }
   } catch {
     // Older imported records store addresses as plain text; fall through to line parsing.

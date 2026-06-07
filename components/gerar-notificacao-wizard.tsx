@@ -54,6 +54,8 @@ type Props = {
   tipos: string[];
   canEdit: boolean;
   action: (formData: FormData) => Promise<void>;
+  backHref?: string;
+  cancelHref?: string;
 };
 
 const steps = [
@@ -166,7 +168,7 @@ function buildPreviewHtml(empresa: EmpresaOption | undefined, form: WizardForm, 
   }, { preview: true });
 }
 
-export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Props) {
+export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action, backHref = "/notificacoes", cancelHref = "/notificacoes" }: Props) {
   const [step, setStep] = useState(1);
   const [query, setQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -316,7 +318,7 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Pro
     <div className="mx-auto max-w-6xl">
       <header className="mb-8">
         <div className="flex items-start gap-4">
-          <Link href="/notificacoes" className="btn-secondary h-10 w-10 px-0" aria-label="Voltar">
+          <Link href={backHref} className="btn-secondary h-10 w-10 px-0" aria-label="Voltar">
             <ArrowLeft size={18} />
           </Link>
           <div>
@@ -519,7 +521,7 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action }: Pro
         <footer className="flex items-center justify-between border-t border-line bg-card px-6 py-5">
           <div className="flex gap-3">
             <button type="button" className="btn-secondary min-w-24" disabled={step === 1} onClick={() => setStep((current) => Math.max(current - 1, 1))}>Voltar</button>
-            <Link href="/notificacoes" className="btn text-red-600 hover:bg-red-50">Cancelar</Link>
+            <Link href={cancelHref} className="btn text-red-600 hover:bg-red-50">Cancelar</Link>
           </div>
           {step < 4 ? (
             <button type="button" className="btn-primary px-8" disabled={nextDisabled} onClick={goNext}>

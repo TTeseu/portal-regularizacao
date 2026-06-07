@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { canEdit, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 import { buildNotificaFacilHtml } from "@/lib/notifica-facil-html";
 import { storePdfForNotificaFacil } from "@/lib/notifica-facil-pdf-cache";
 
@@ -15,7 +16,11 @@ function text(formData: FormData, key: string) {
 }
 
 function numberValue(formData: FormData, key: string) {
-  const raw = String(formData.get(key) || "")
+  return numberFromText(String(formData.get(key) || ""));
+}
+
+function numberFromText(value: string | number | null | undefined) {
+  const raw = String(value || "")
     .replace(/[^\d,.-]/g, "")
     .replace(/\.(?=\d{3}(\D|$))/g, "")
     .replace(",", ".")
@@ -55,6 +60,17 @@ function formatRegNumber(sequence: number, year: string) {
   return `REG${String(sequence).padStart(4, "0")}/${year}`;
 }
 
+function dateFromInput(value: string | null) {
+  if (!value) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  return `${match[3]}/${match[2]}/${match[1]}`;
+}
+
+function pluralLabel(count: number) {
+  return count === 1 ? "notificacao" : "notificacoes";
+}
+
 function parseEnderecos(value: string | null): Prisma.JsonArray | undefined {
   if (!value) return undefined;
   const rows = value
@@ -66,6 +82,29 @@ function parseEnderecos(value: string | null): Prisma.JsonArray | undefined {
       return { endereco, bairro, cidade };
     });
   return rows.length ? rows : undefined;
+}
+
+function parseEnderecosWizard(formData: FormData) {
+  const raw = text(formData, "enderecos_json");
+  if (!raw) return { jsonText: null, jsonArray: undefined, count: 0 };
+  try {
+    const rows = JSON.parse(raw);
+    if (!Array.isArray(rows)) return { jsonText: null, jsonArray: undefined, count: 0 };
+    const normalized = rows
+      .map((row) => ({
+        endereco: String(row?.endereco ?? "").trim(),
+        bairro: String(row?.bairro ?? "").trim(),
+        cidade: String(row?.cidade ?? "").trim()
+      }))
+      .filter((row) => row.endereco || row.bairro || row.cidade);
+    return {
+      jsonText: normalized.length ? JSON.stringify(normalized) : null,
+      jsonArray: normalized.length ? (normalized as Prisma.JsonArray) : undefined,
+      count: normalized.length
+    };
+  } catch {
+    return { jsonText: null, jsonArray: undefined, count: 0 };
+  }
 }
 
 function parseAnexos(value: string | null): Prisma.JsonArray | undefined {
@@ -208,6 +247,165 @@ export async function createNotificaFacilNotification(formData: FormData) {
 
   revalidatePath("/notifica-facil");
   redirect(`/notifica-facil/${created.id}`);
+}
+
+export async function createNotificaFacilPendenciaWizard(formData: FormData) {
+  const user = await requireUser();
+  if (!canEdit(user)) redirect("/notifica-facil/notificacao-pendencias");
+
+  const empresaIds = formData.getAll("empresa_ids").map(String).filter(Boolean);
+  if (empresaIds.length === 0) {
+    throw new Error("Selecione ao menos uma empresa.");
+  }
+
+  const empresas = await prisma.notificaFacilBaseNotificacao.findMany({
+    where: { id: { in: empresaIds } },
+    orderBy: { empresa: "asc" }
+  });
+
+  if (empresas.length === 0) {
+    throw new Error("Nenhuma empresa selecionada foi encontrada na base do Notifica Facil.");
+  }
+
+  const now = new Date();
+  const loteId = randomUUID();
+  const loteNome = text(formData, "lote_nome") || `Notifica Facil - ${now.toLocaleDateString("pt-BR")} - ${empresas.length} ${pluralLabel(empresas.length)}`;
+  const tipo = text(formData, "tipo_notificacao") || "Ocupacao Irregular";
+  const numeroOficio = text(formData, "numero_oficio");
+  const dataNotificacao = dateFromInput(text(formData, "data_notificacao"));
+  const prazoDias = text(formData, "prazo_dias");
+  const enderecos = parseEnderecosWizard(formData);
+  const createdIds: string[] = [];
+
+  for (const empresa of empresas) {
+    const id = randomUUID();
+    const notificationNumber = numeroOficio || await prisma.$transaction((tx) =>
+      generateNextNotificationNumber(tx, yearFromDateText(dataNotificacao))
+    );
+
+    const data: Prisma.NotificaFacilNotificationUncheckedCreateInput = {
+      id,
+      created_date: now,
+      updated_date: now,
+      created_by_id: user.id,
+      created_by: user.email,
+      empresa: empresa.empresa,
+      tipo_servico: tipo,
+      numero_notificacao: notificationNumber,
+      data_notificacao: dataNotificacao,
+      prazo_resposta: prazoDias,
+      status: "Aguardando assinatura Gestor",
+      pendencia_tecnica: true,
+      pt_notificado: false,
+      status_envio_notificacao: empresa.status_envio_notificacao,
+      vencimento_contrato: empresa.vencimento_contrato,
+      ano_vencimento_contrato: empresa.ano_vencimento_contrato,
+      celebrado_em: empresa.celebrado_em,
+      cnpj: empresa.cnpj,
+      contrato_numero: empresa.contrato_numero,
+      ac: empresa.ac,
+      numero_nome_empresa: empresa.numero_nome_empresa,
+      numero_parceiro: empresa.numero_parceiro,
+      empresa_endereco: empresa.empresa_endereco,
+      empresa_bairro: empresa.empresa_bairro,
+      empresa_cidade: empresa.empresa_cidade,
+      empresa_estado: empresa.empresa_estado,
+      texto_contrato_7_14: empresa.texto_contrato_7_14,
+      texto_ocupacao_revelia: empresa.texto_ocupacao_revelia,
+      texto_23_3: empresa.texto_23_3,
+      texto_24_1: empresa.texto_24_1,
+      texto_24_3: empresa.texto_24_3,
+      valor_atualizado: numberFromText(empresa.valor_atualizado),
+      multa: numberFromText(empresa.multa),
+      retroativo: empresa.retroativo,
+      enderecos_revelia: enderecos.jsonArray,
+      total_ids_identificados: enderecos.count,
+      observacoes: loteNome
+    };
+
+    const created = await prisma.notificaFacilNotification.create({ data });
+    const portalTemplateHtml = buildNotificacaoHtml({
+      id,
+      created_date: now,
+      updated_date: now,
+      created_by_id: user.id,
+      created_by: user.email,
+      is_sample: false,
+      tipo_notificacao: tipo,
+      numero_oficio: notificationNumber,
+      data_notificacao: dataNotificacao,
+      nota_atendimento: null,
+      empresa: empresa.empresa,
+      status_envio: null,
+      vencimento: empresa.vencimento_contrato,
+      ano_vencimento: empresa.ano_vencimento_contrato,
+      endereco: empresa.empresa_endereco,
+      bairro: empresa.empresa_bairro,
+      cidade: empresa.empresa_cidade,
+      estado: empresa.empresa_estado,
+      contrato_numero: empresa.contrato_numero,
+      ac: empresa.ac,
+      numero_nome: empresa.numero_nome_empresa,
+      celebrado_em: empresa.celebrado_em,
+      numero_parceiro: empresa.numero_parceiro,
+      cnpj: empresa.cnpj,
+      empresa_rep: null,
+      endereco_rep: null,
+      bairro_rep: null,
+      cidade_rep: null,
+      estado_rep: null,
+      campo_11_6_3: null,
+      empresa_1: null,
+      rua_empresa_1: null,
+      cidade_empresa_1: null,
+      estado_empresa_1: null,
+      cnpj_empresa_1: null,
+      numero_contrato_1: null,
+      empresa_2: null,
+      endereco_empresa_2: null,
+      cnpj_empresa_2: null,
+      numero_contrato_2: null,
+      endereco_notificacao: enderecos.jsonText,
+      razao_social_condominio: null,
+      endereco_condominio: null,
+      cidade_condominio: null,
+      estado_condominio: null,
+      cnpj_condominio: null,
+      condominio_identificado: null,
+      data_reuniao: null,
+      prazo_dias: prazoDias,
+      prazo_resposta: prazoDias,
+      lote_nome: loteNome,
+      lote_id: loteId,
+      pdf_base64: null,
+      pdfUrl: null,
+      html_content: null,
+      status: "Pendente",
+      observacoes: null,
+      retorno_cliente: null,
+      anexo_url: null,
+      anexo_nome: null,
+      anexos: null,
+      origem: "manual",
+      visualizada: false,
+      arquivada: false,
+      sem_projeto: false,
+      encaminhado_prefeitura: false,
+      download_count: 0,
+      last_downloaded_at: null,
+      last_downloaded_by: null
+    });
+    await storePdfForNotificaFacil(created, portalTemplateHtml);
+    await logAction(created.id, "criacao_pendencia", "Notificacao das Pendencias criada com o template do Portal de Regularizacao");
+    createdIds.push(id);
+  }
+
+  revalidatePath("/notifica-facil");
+  revalidatePath("/notifica-facil/notificacao-pendencias");
+  if (createdIds.length === 1) {
+    redirect(`/notifica-facil/${createdIds[0]}`);
+  }
+  redirect("/notifica-facil/notificacao-pendencias");
 }
 
 export async function updateNotificaFacilNotification(id: string, formData: FormData) {

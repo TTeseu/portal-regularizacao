@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { AlertTriangle, ArrowLeft, Bell, CheckCircle2, Clock3, Download, FileText, Search } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Bell, CheckCircle2, Clock3, Download, FileText, Plus, Search } from "lucide-react";
 import { Prisma } from "@prisma/client";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -116,6 +116,12 @@ export async function NotificaFacilPendenciasPage({
               <ProcessLink href="/notifica-facil/pendencia-tecnica" active={mode === "ativas"} label="Pendencias" />
               <ProcessLink href="/notifica-facil/notificacao-pendencias" active={mode === "notificar"} label="Notificar" />
               <ProcessLink href="/notifica-facil/historico-pendencia-tecnica" active={mode === "historico"} label="Historico" />
+              {mode === "notificar" && canEdit ? (
+                <Link className="btn-primary" href="/notifica-facil/notificacao-pendencias/nova">
+                  <Plus size={16} />
+                  Criar notificacao
+                </Link>
+              ) : null}
             </div>
           </div>
         </div>
