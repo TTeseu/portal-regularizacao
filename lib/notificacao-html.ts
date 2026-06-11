@@ -120,8 +120,15 @@ function renderAddressTables(rows: AddressRow[]) {
   `).join("");
 }
 
+export function sanitizeNotificacaoHtml(html: string) {
+  return html
+    .replace(/\s*\(o\s*"<strong>CONTRATO<\/strong>"\),?/gi, "")
+    .replace(/\s*\(o\s*"<span class="bold">Contrato<\/span>"\),?/gi, "")
+    .replace(/<div class="assinatura-label">Assinatura<\/div>/gi, "");
+}
+
 export function buildNotificacaoHtml(notificacao: Notificacao, options: BuildOptions = {}) {
-  if (notificacao.html_content) return notificacao.html_content;
+  if (notificacao.html_content) return sanitizeNotificacaoHtml(notificacao.html_content);
 
   const empresa = notificacao.empresa || notificacao.empresa_1 || notificacao.empresa_rep || "RAZÃO SOCIAL DA EMPRESA DE TELECOM";
   const contrato = notificacao.contrato_numero || notificacao.numero_contrato_1 || notificacao.numero_contrato_2 || "XXXXX";
@@ -209,7 +216,7 @@ export function buildNotificacaoHtml(notificacao: Notificacao, options: BuildOpt
   <div class="atc">A/C:&nbsp; <span class="editable">${escapeHtml(empresa)}</span></div>
   <div class="prezado">PREZADO(S),</div>
 
-  <p><strong>1. A EDP SÃO PAULO DISTRIBUIÇÃO DE ENERGIA S.A.</strong> concessionária de serviço público de distribuição de energia elétrica, <span class="editable">com sede na RUA WERBER VON SIEMENS, 111, CXPST 44191-0 CONJ. 22 BLOCO A SALA 1, LAPA DE BAIXO - SÃO PAULO - SP, inscrita no CNPJ/MF sob o n.º 02.302.100/0001-06</span>, neste ato representada na forma de seu estatuto social (a "<strong>DETENTORA</strong>"), fazendo referência ao "Contrato de Compartilhamento de Infraestrutura - Pontos de Fixação em Poste - Nº <span class="editable">${escapeHtml(contrato)}</span>" (o "<strong>CONTRATO</strong>"), com a <strong><span class="editable">${escapeHtml(empresaQualificada)}</span></strong> (a "<strong>OCUPANTE</strong>"), expõe e notifica acerca do quanto segue.</p>
+  <p><strong>1. A EDP SÃO PAULO DISTRIBUIÇÃO DE ENERGIA S.A.</strong> concessionária de serviço público de distribuição de energia elétrica, <span class="editable">com sede na RUA WERBER VON SIEMENS, 111, CXPST 44191-0 CONJ. 22 BLOCO A SALA 1, LAPA DE BAIXO - SÃO PAULO - SP, inscrita no CNPJ/MF sob o n.º 02.302.100/0001-06</span>, neste ato representada na forma de seu estatuto social (a "<strong>DETENTORA</strong>"), fazendo referência ao "Contrato de Compartilhamento de Infraestrutura - Pontos de Fixação em Poste - Nº <span class="editable">${escapeHtml(contrato)}</span>", com a <strong><span class="editable">${escapeHtml(empresaQualificada)}</span></strong> (a "<strong>OCUPANTE</strong>"), expõe e notifica acerca do quanto segue.</p>
 
   <p><strong>2. A DETENTORA</strong> identificou ocupação irregular em sua infraestrutura de distribuição de energia elétrica por cabos, fios, cordoalha e equipamentos de telecomunicações da <strong>OCUPANTE</strong>, em claro descumprimento ao <strong>CONTRATO</strong> e às Normas Técnicas e Regulamentares aplicáveis, conforme o constatado e descrito no Anexo I dessa notificação, no(s) seguinte(s) endereço(s):</p>
 
@@ -273,7 +280,6 @@ export function buildNotificacaoHtml(notificacao: Notificacao, options: BuildOpt
           <span class="r1-marker" style="${r1Style}">R1</span>
           <div class="linha-assinatura"></div>
         </div>
-        <div class="assinatura-label">Assinatura</div>
       </div>
     </div>
   </div>

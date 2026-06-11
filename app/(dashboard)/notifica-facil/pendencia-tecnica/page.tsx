@@ -8,8 +8,8 @@ export default function PendenciaTecnicaPage({
 }) {
   return (
     <NotificaFacilPendenciasPage
-      title="Pendencia Tecnica"
-      description="Controle operacional das notificacoes marcadas com pendencia tecnica no Base44, incluindo status de PT, data de notificacao e acompanhamento."
+      title="Pendência Técnica"
+      description="Controle operacional das notificações marcadas com pendência técnica no Base44, incluindo status de PT, data de notificação e acompanhamento."
       mode="ativas"
       icon={<AlertTriangle size={24} />}
       searchParams={searchParams}

@@ -8,10 +8,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const [{ id }, user] = await Promise.all([params, getCurrentUser()]);
-  if (!canAccessPortal(user)) return new NextResponse("Acesso nao aprovado", { status: 403 });
+  if (!canAccessPortal(user)) return new NextResponse("Acesso não aprovado", { status: 403 });
 
   const notification = await prisma.notificaFacilNotification.findUnique({ where: { id } });
-  if (!notification) return new NextResponse("Notificacao nao encontrada", { status: 404 });
+  if (!notification) return new NextResponse("Notificação não encontrada", { status: 404 });
 
   await prisma.notificaFacilNotification.update({
     where: { id },
@@ -23,10 +23,6 @@ export async function GET(
   });
 
   const cached = await ensurePdfForNotificaFacil(notification);
-  if (cached.source === "blob" && cached.url) {
-    return NextResponse.redirect(cached.url, 302);
-  }
-
   const filename = `${notification.numero_notificacao || notification.numero_registro_censo || notification.id}.pdf`;
   return pdfResponse(cached.bytes, filename);
 }

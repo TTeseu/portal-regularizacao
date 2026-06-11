@@ -4,6 +4,7 @@ import { Eye, Plus, Search } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { PageTitle } from "@/components/page-title";
+import { formatPtBrDisplay } from "@/lib/format";
 
 export default async function EmpresasPage({
   searchParams
@@ -69,7 +70,7 @@ export default async function EmpresasPage({
                   <td className="px-4 py-3 font-medium">{empresa.nome}</td>
                   <td className="px-4 py-3">{empresa.cnpj || "-"}</td>
                   <td className="px-4 py-3">{empresa.contrato_numero || "-"}</td>
-                  <td className="px-4 py-3">{empresa.cidade || "-"}</td>
+                  <td className="px-4 py-3">{formatPtBrDisplay(empresa.cidade)}</td>
                   <td className="px-4 py-3">{empresa.tem_clausula_11_6_3 ? "Sim" : "Não"}</td>
                   <td className="px-4 py-3 text-right">
                     <Link className="btn-secondary px-2" href={`/empresas/${empresa.id}`}>

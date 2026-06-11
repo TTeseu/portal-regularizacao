@@ -49,7 +49,7 @@ function parseEnderecosJson(formData: FormData) {
 async function assertCanEdit() {
   const user = await requireUser();
   if (!canEdit(user)) {
-    throw new Error("Usuario sem permissao para editar ou importar.");
+    throw new Error("Usuário sem permissão para editar ou importar.");
   }
   return user;
 }
@@ -309,7 +309,7 @@ export async function updateEmpresa(id: string, formData: FormData) {
 export async function updateUserPermission(id: string, formData: FormData) {
   const admin = await requireAdmin();
   const target = await prisma.user.findUnique({ where: { id } });
-  if (!target) throw new Error("Usuario nao encontrado.");
+  if (!target) throw new Error("Usuário não encontrado.");
 
   const requestedRole = stringValue(formData, "role") || "user";
   const nextRole = isSuperAdminEmail(target.email) ? "admin" : requestedRole;
@@ -369,14 +369,14 @@ async function assertAdminContinuity(
 
   const remainingAdmins = await countActiveAdmins(targetId);
   if (remainingAdmins === 0) {
-    throw new Error("Nao e permitido remover ou rebaixar o ultimo administrador ativo.");
+    throw new Error("Não é permitido remover ou rebaixar o último administrador ativo.");
   }
 }
 
 export async function approveUser(id: string) {
   const admin = await requireAdmin();
   const target = await prisma.user.findUnique({ where: { id } });
-  if (!target) throw new Error("Usuario nao encontrado.");
+  if (!target) throw new Error("Usuário não encontrado.");
 
   await prisma.user.update({
     where: { id },
@@ -398,9 +398,9 @@ export async function approveUser(id: string) {
 export async function rejectUser(id: string) {
   const admin = await requireAdmin();
   const target = await prisma.user.findUnique({ where: { id } });
-  if (!target) throw new Error("Usuario nao encontrado.");
+  if (!target) throw new Error("Usuário não encontrado.");
   if (isSuperAdminEmail(target.email)) {
-    throw new Error("O administrador principal nao pode ser recusado.");
+    throw new Error("O administrador principal não pode ser recusado.");
   }
 
   await assertAdminContinuity(target.id, {
@@ -428,7 +428,7 @@ export async function rejectUser(id: string) {
 export async function resendAccessRequestEmail(id: string) {
   await requireAdmin();
   const target = await prisma.user.findUnique({ where: { id } });
-  if (!target) throw new Error("Usuario nao encontrado.");
+  if (!target) throw new Error("Usuário não encontrado.");
   if (target.status !== "pending") {
     throw new Error("Somente solicitacoes pendentes podem ser reenviadas.");
   }

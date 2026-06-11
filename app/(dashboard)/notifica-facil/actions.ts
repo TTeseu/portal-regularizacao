@@ -68,7 +68,7 @@ function dateFromInput(value: string | null) {
 }
 
 function pluralLabel(count: number) {
-  return count === 1 ? "notificacao" : "notificacoes";
+  return count === 1 ? "notificação" : "notificações";
 }
 
 function parseEnderecos(value: string | null): Prisma.JsonArray | undefined {
@@ -243,7 +243,7 @@ export async function createNotificaFacilNotification(formData: FormData) {
     return tx.notificaFacilNotification.create({ data });
   });
   await storePdfForNotificaFacil(created, buildNotificaFacilHtml(created));
-  await logAction(created.id, "criacao", "Notificacao criada no modulo Notifica Facil");
+  await logAction(created.id, "criacao", "Notificação criada no módulo Notifica Fácil");
 
   revalidatePath("/notifica-facil");
   redirect(`/notifica-facil/${created.id}`);
@@ -264,13 +264,13 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
   });
 
   if (empresas.length === 0) {
-    throw new Error("Nenhuma empresa selecionada foi encontrada na base do Notifica Facil.");
+    throw new Error("Nenhuma empresa selecionada foi encontrada na base do Notifica Fácil.");
   }
 
   const now = new Date();
   const loteId = randomUUID();
-  const loteNome = text(formData, "lote_nome") || `Notifica Facil - ${now.toLocaleDateString("pt-BR")} - ${empresas.length} ${pluralLabel(empresas.length)}`;
-  const tipo = text(formData, "tipo_notificacao") || "Ocupacao Irregular";
+  const loteNome = text(formData, "lote_nome") || `Notifica Fácil - ${now.toLocaleDateString("pt-BR")} - ${empresas.length} ${pluralLabel(empresas.length)}`;
+  const tipo = text(formData, "tipo_notificacao") || "Ocupação Irregular";
   const numeroOficio = text(formData, "numero_oficio");
   const dataNotificacao = dateFromInput(text(formData, "data_notificacao"));
   const prazoDias = text(formData, "prazo_dias");
@@ -396,7 +396,7 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       last_downloaded_by: null
     });
     await storePdfForNotificaFacil(created, portalTemplateHtml);
-    await logAction(created.id, "criacao_pendencia", "Notificacao das Pendencias criada com o template do Portal de Regularizacao");
+    await logAction(created.id, "criacao_pendencia", "Notificação das Pendências criada com o template do Portal de Regularização");
     createdIds.push(id);
   }
 
@@ -430,7 +430,7 @@ export async function updateNotificaFacilNotification(id: string, formData: Form
   });
 
   await storePdfForNotificaFacil(updated, buildNotificaFacilHtml(updated));
-  await logAction(id, "edicao", "Notificacao editada e PDF regenerado");
+  await logAction(id, "edicao", "Notificação editada e PDF regenerado");
 
   revalidatePath("/notifica-facil");
   revalidatePath(`/notifica-facil/${id}`);
@@ -441,7 +441,7 @@ export async function deleteNotificaFacilNotification(id: string) {
   const user = await requireUser();
   if (!canEdit(user)) redirect(`/notifica-facil/${id}`);
   await prisma.notificaFacilNotification.delete({ where: { id } });
-  await logAction(id, "exclusao", "Notificacao excluida no modulo Notifica Facil");
+  await logAction(id, "exclusao", "Notificação excluída no módulo Notifica Fácil");
   revalidatePath("/notifica-facil");
   redirect("/notifica-facil");
 }

@@ -16,6 +16,7 @@ import {
   Users
 } from "lucide-react";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
+import { formatPtBrDisplay } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 const statuses = [
@@ -95,11 +96,11 @@ export default async function NotificaFacilPage({
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-edp/25 bg-edp/10 px-4 py-2 text-xs font-bold uppercase tracking-wide text-edp">
                 <Bell size={15} />
-                Modulo documental
+                Módulo documental
               </div>
-              <h1 className="mt-5 text-4xl font-bold tracking-tight text-white md:text-5xl">Notifica Facil</h1>
+              <h1 className="mt-5 text-4xl font-bold tracking-tight text-white md:text-5xl">Notifica Fácil</h1>
               <p className="mt-4 max-w-3xl text-base leading-7 text-edp-muted">
-                Backend, dados e fluxo do Base44 com identidade visual EDP: notificacoes do censo, pendencias tecnicas,
+                Backend, dados e fluxo do Base44 com identidade visual EDP: notificações do censo, pendências técnicas,
                 respostas de clientes, anexos, assinaturas e acompanhamento documental.
               </p>
             </div>
@@ -108,7 +109,7 @@ export default async function NotificaFacilPage({
               {canEdit ? (
                 <Link href="/notifica-facil/nova" className="btn-primary">
                   <Plus size={16} />
-                  Nova notificacao
+                  Nova notificação
                 </Link>
               ) : null}
             </div>
@@ -118,12 +119,12 @@ export default async function NotificaFacilPage({
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         <Metric label="Total filtrado" value={total} hint="Base documental ativa" icon={<FileText size={24} />} tone="blue" />
-        <Metric label="Nao regularizados" value={naoRegularizados} hint="Aguardando tratativa" icon={<ShieldAlert size={24} />} tone="yellow" />
+        <Metric label="Não regularizados" value={naoRegularizados} hint="Aguardando tratativa" icon={<ShieldAlert size={24} />} tone="yellow" />
         <Metric label="Stand-by" value={standby} hint="Fluxo pausado" icon={<ClipboardCheck size={24} />} tone="purple" />
-        <Metric label="Pendencia tecnica" value={pendencias} hint="Requer analise operacional" icon={<Bell size={24} />} tone="green" />
+        <Metric label="Pendência técnica" value={pendencias} hint="Requer análise operacional" icon={<Bell size={24} />} tone="green" />
         <Metric label="Valor retroativo" value={money(totalRetroativo)} hint="Soma no filtro atual" icon={<TrendingUp size={24} />} tone="green" />
         <Metric label="Total multas" value={money(totalMultas)} hint="Soma no filtro atual" icon={<DollarSign size={24} />} tone="red" />
-        <Metric label="Empresas notificadas" value={empresas.length} hint="Empresas unicas" icon={<Building2 size={24} />} tone="blue" />
+        <Metric label="Empresas notificadas" value={empresas.length} hint="Empresas únicas" icon={<Building2 size={24} />} tone="blue" />
         <Metric label="E-mails enviados" value={emailEnviados} hint="Com data de envio" icon={<Users size={24} />} tone="purple" />
       </section>
 
@@ -165,18 +166,18 @@ export default async function NotificaFacilPage({
               <div>
                 <div className="flex items-center gap-3">
                   <FileText className="text-edp" size={23} />
-                  <h2 className="text-2xl font-bold text-white">Notificacoes</h2>
+                  <h2 className="text-2xl font-bold text-white">Notificações</h2>
                 </div>
-                <p className="mt-1 text-sm text-edp-muted">Ultimos 100 registros do modulo Notifica Facil.</p>
+                <p className="mt-1 text-sm text-edp-muted">Últimos 100 registros do módulo Notifica Fácil.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button className="btn-secondary">
                   <RefreshCw size={16} />
-                  Popular Historico
+                  Popular Histórico
                 </button>
                 <button className="btn-secondary">
                   <BarChart3 size={16} />
-                  Grafico
+                  Gráfico
                 </button>
               </div>
             </div>
@@ -192,7 +193,7 @@ export default async function NotificaFacilPage({
             <table className="w-full min-w-[900px] text-left text-sm">
               <thead>
                 <tr>
-                  <th className="px-5 py-4 font-semibold">Notificacao</th>
+                  <th className="px-5 py-4 font-semibold">Notificação</th>
                   <th className="px-5 py-4 font-semibold">Empresa</th>
                   <th className="px-5 py-4 font-semibold">Registro censo</th>
                   <th className="px-5 py-4 font-semibold">Cidade</th>
@@ -203,7 +204,7 @@ export default async function NotificaFacilPage({
               <tbody>
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-5 py-12 text-center text-edp-muted">Nenhuma notificacao encontrada.</td>
+                    <td colSpan={6} className="px-5 py-12 text-center text-edp-muted">Nenhuma notificação encontrada.</td>
                   </tr>
                 ) : (
                   items.map((item) => (
@@ -216,12 +217,12 @@ export default async function NotificaFacilPage({
                       </td>
                       <td className="px-5 py-4 text-white">{item.empresa}</td>
                       <td className="px-5 py-4 text-edp-muted">{item.numero_registro_censo || "-"}</td>
-                      <td className="px-5 py-4 text-edp-muted">{item.empresa_cidade || "-"}</td>
+                      <td className="px-5 py-4 text-edp-muted">{formatPtBrDisplay(item.empresa_cidade)}</td>
                       <td className="px-5 py-4"><StatusBadge status={item.status} /></td>
                       <td className="px-5 py-4">
                         <div className="flex flex-wrap gap-2">
                           {item.is_standby ? <SmallBadge label="Stand-by" /> : null}
-                          {item.pendencia_tecnica || item.pt_notificado || item.pt_data_notificado ? <SmallBadge label="Pendencia tecnica" /> : null}
+                          {item.pendencia_tecnica || item.pt_notificado || item.pt_data_notificado ? <SmallBadge label="Pendência técnica" /> : null}
                           {item.is_draft ? <SmallBadge label="Rascunho" /> : null}
                           {!item.is_standby && !item.pendencia_tecnica && !item.pt_notificado && !item.pt_data_notificado && !item.is_draft ? <span className="text-edp-muted">-</span> : null}
                         </div>
@@ -238,12 +239,12 @@ export default async function NotificaFacilPage({
           <section className="panel p-6">
             <div className="flex items-center gap-3">
               <TrendingUp className="text-edp" size={21} />
-              <h3 className="font-bold text-white">Status das notificacoes</h3>
+              <h3 className="font-bold text-white">Status das notificações</h3>
             </div>
             <div className="mt-6 space-y-3">
-              <Progress label="Concluidas" value={concluidas} total={Math.max(total, 1)} />
+              <Progress label="Concluídas" value={concluidas} total={Math.max(total, 1)} />
               <Progress label="Stand-by" value={standby} total={Math.max(total, 1)} />
-              <Progress label="Pendencia tecnica" value={pendencias} total={Math.max(total, 1)} />
+              <Progress label="Pendência técnica" value={pendencias} total={Math.max(total, 1)} />
             </div>
           </section>
 

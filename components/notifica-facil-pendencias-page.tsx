@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { AlertTriangle, ArrowLeft, Bell, CheckCircle2, Clock3, Download, FileText, Plus, Search } from "lucide-react";
 import { Prisma } from "@prisma/client";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
+import { formatPtBrDisplay } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { markNotificaFacilPtNotificado } from "@/app/(dashboard)/notifica-facil/actions";
 
@@ -113,13 +114,13 @@ export async function NotificaFacilPendenciasPage({
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <ProcessLink href="/notifica-facil/pendencia-tecnica" active={mode === "ativas"} label="Pendencias" />
+              <ProcessLink href="/notifica-facil/pendencia-tecnica" active={mode === "ativas"} label="Pendências" />
               <ProcessLink href="/notifica-facil/notificacao-pendencias" active={mode === "notificar"} label="Notificar" />
-              <ProcessLink href="/notifica-facil/historico-pendencia-tecnica" active={mode === "historico"} label="Historico" />
+              <ProcessLink href="/notifica-facil/historico-pendencia-tecnica" active={mode === "historico"} label="Histórico" />
               {mode === "notificar" && canEdit ? (
                 <Link className="btn-primary" href="/notifica-facil/notificacao-pendencias/nova">
                   <Plus size={16} />
-                  Criar notificacao
+                  Criar notificação
                 </Link>
               ) : null}
             </div>
@@ -128,7 +129,7 @@ export async function NotificaFacilPendenciasPage({
       </section>
 
       <section className="grid gap-4 md:grid-cols-4">
-        <Metric label="Pendencias tecnicas" value={total} icon={<AlertTriangle size={22} />} />
+        <Metric label="Pendências técnicas" value={total} icon={<AlertTriangle size={22} />} />
         <Metric label="Aguardando PT" value={aguardando} icon={<Clock3 size={22} />} />
         <Metric label="PT notificado" value={notificados} icon={<CheckCircle2 size={22} />} />
         <Metric label="Com data PT" value={comData} icon={<FileText size={22} />} />
@@ -140,7 +141,7 @@ export async function NotificaFacilPendenciasPage({
             <span className="label">Buscar no processo</span>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-edp-muted" size={16} />
-              <input className="field pl-9" name="q" defaultValue={q} placeholder="Empresa, notificacao, censo, protocolo, cidade..." />
+              <input className="field pl-9" name="q" defaultValue={q} placeholder="Empresa, notificação, censo, protocolo, cidade..." />
             </div>
           </label>
           <button className="btn-primary h-[42px]">Filtrar</button>
@@ -150,16 +151,16 @@ export async function NotificaFacilPendenciasPage({
 
       <section className="panel overflow-hidden">
         <div className="border-b border-line px-6 py-5">
-          <h2 className="text-xl font-bold text-white">{mode === "historico" ? "Historico das pendencias" : "Notificacoes com pendencia tecnica"}</h2>
+          <h2 className="text-xl font-bold text-white">{mode === "historico" ? "Histórico das pendências" : "Notificações com pendência técnica"}</h2>
           <p className="mt-1 text-sm text-edp-muted">
-            {mode === "notificar" ? "Registros pendentes de marcacao PT notificado." : "Registros normalizados da base Base44 do Notifica Facil."}
+            {mode === "notificar" ? "Registros pendentes de marcação PT notificado." : "Registros normalizados da base Base44 do Notifica Fácil."}
           </p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1080px] text-left text-sm">
             <thead>
               <tr>
-                <th className="px-5 py-4 font-semibold">Notificacao</th>
+                <th className="px-5 py-4 font-semibold">Notificação</th>
                 <th className="px-5 py-4 font-semibold">Empresa</th>
                 <th className="px-5 py-4 font-semibold">Registro censo</th>
                 <th className="px-5 py-4 font-semibold">Cidade</th>
@@ -175,11 +176,11 @@ export async function NotificaFacilPendenciasPage({
                     <Link href={`/notifica-facil/${item.id}?from=${encodeURIComponent(modeHref(mode))}`} className="font-bold text-edp hover:text-edp-hover">
                       {item.numero_notificacao || item.numero_protocolo || item.id}
                     </Link>
-                    <div className="mt-1 text-xs text-edp-muted">{item.updated_date ? item.updated_date.toLocaleDateString("pt-BR") : "Sem atualizacao"}</div>
+                    <div className="mt-1 text-xs text-edp-muted">{item.updated_date ? item.updated_date.toLocaleDateString("pt-BR") : "Sem atualização"}</div>
                   </td>
                   <td className="px-5 py-4 text-white">{item.empresa}</td>
                   <td className="px-5 py-4 text-edp-muted">{item.numero_registro_censo || "-"}</td>
-                  <td className="px-5 py-4 text-edp-muted">{item.empresa_cidade || "-"}</td>
+                  <td className="px-5 py-4 text-edp-muted">{formatPtBrDisplay(item.empresa_cidade)}</td>
                   <td className="px-5 py-4"><StatusBadge value={item.status} /></td>
                   <td className="px-5 py-4">
                     <div className="space-y-1">
@@ -204,7 +205,7 @@ export async function NotificaFacilPendenciasPage({
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center text-edp-muted">Nenhuma pendencia tecnica encontrada.</td>
+                  <td colSpan={7} className="px-5 py-12 text-center text-edp-muted">Nenhuma pendência técnica encontrada.</td>
                 </tr>
               )}
             </tbody>
@@ -220,10 +221,10 @@ export async function NotificaFacilPendenciasPage({
               <div key={log.id} className="rounded-2xl border border-line bg-surface p-4">
                 <div className="font-bold text-white">{log.action}</div>
                 <div className="mt-1 text-xs text-edp-muted">{log.timestamp.toLocaleString("pt-BR")} - {log.user_name || log.user_email}</div>
-                <div className="mt-2 text-sm text-edp-muted">{log.details || log.field_changed || "Registro de alteracao"}</div>
+                <div className="mt-2 text-sm text-edp-muted">{log.details || log.field_changed || "Registro de alteração"}</div>
               </div>
             ))}
-            {logs.length === 0 ? <p className="text-sm text-edp-muted">Nenhum log de pendencia registrado.</p> : null}
+            {logs.length === 0 ? <p className="text-sm text-edp-muted">Nenhum log de pendência registrado.</p> : null}
           </div>
         </section>
       ) : null}

@@ -6,11 +6,11 @@ import { useMemo, useState } from "react";
 
 const STATUS_OPTIONS = [
   "Aguardando assinatura Gestor",
-  "Notificacao Encaminhada por E-mail.",
+  "Notificação Encaminhada por E-mail.",
   "Resposta do Cliente - Anexo do E-mail.",
   "Entrega do Projeto ou Projeto Pendente. (10 dias)",
-  "Nao houve resposta do Cliente - Valores Informar o Faturamento.",
-  "Finalizar Notificacao."
+  "Não houve resposta do Cliente - Valores Informar o Faturamento.",
+  "Finalizar Notificação."
 ];
 
 export type NotificaFacilCompanyOption = {
@@ -262,7 +262,7 @@ function replaceAddressTable(template: string, rows: string) {
 }
 
 function buildPreviewHtml(templateHtml: string, values: FormValues, previewNumber: string, mostrarCelebradoEm: boolean, valorMulta: number) {
-  let html = templateHtml || "<html><body><p>Template nao encontrado.</p></body></html>";
+  let html = templateHtml || "<html><body><p>Template não encontrado.</p></body></html>";
   if (!mostrarCelebradoEm) html = html.replace(/, celebrado em \{\{CELEBRADO_EM\}\},/g, ",");
   html = replaceAddressTable(html, previewAddressRows(values));
   const replacements: Record<string, string> = {
@@ -474,11 +474,11 @@ export function NotificaFacilForm({
       <div className="border-b border-line bg-surface px-6 py-5">
         <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
           <div>
-            <h2 className="text-xl font-bold text-white">Nova Notificacao</h2>
-            <p className="mt-1 text-sm text-edp-muted">Fluxo do Notifica Facil com base CSV, dados contratuais e calculo antes da geracao do PDF.</p>
+            <h2 className="text-xl font-bold text-white">Nova Notificação</h2>
+            <p className="mt-1 text-sm text-edp-muted">Fluxo do Notifica Fácil com base CSV, dados contratuais e cálculo antes da geração do PDF.</p>
           </div>
           <div className="rounded-2xl border border-edp/30 bg-edp/10 px-4 py-3 text-sm">
-            <span className="block text-xs font-bold uppercase text-edp-muted">Numero automatico</span>
+            <span className="block text-xs font-bold uppercase text-edp-muted">Número automático</span>
             <strong className="text-lg text-edp">{previewNumber || "A gerar"}</strong>
           </div>
         </div>
@@ -486,7 +486,7 @@ export function NotificaFacilForm({
 
       <fieldset disabled={!canEdit} className="space-y-7 p-6 disabled:opacity-60">
         {!isEditing ? (
-          <Section title="Selecionar empresa" description="Use a base do Notifica Facil importada do Base44 para preencher automaticamente os dados.">
+          <Section title="Selecionar empresa" description="Use a base do Notifica Fácil importada do Base44 para preencher automaticamente os dados.">
             <div className="relative">
               <span className="label">Selecionar Empresa (Banco de Dados CSV)</span>
               <div className="relative mt-2">
@@ -520,7 +520,7 @@ export function NotificaFacilForm({
                       </button>
                     ))
                   ) : (
-                    <div className="px-4 py-5 text-sm text-edp-muted">Nenhuma empresa encontrada na base do Notifica Facil.</div>
+                    <div className="px-4 py-5 text-sm text-edp-muted">Nenhuma empresa encontrada na base do Notifica Fácil.</div>
                   )}
                 </div>
               ) : null}
@@ -528,18 +528,18 @@ export function NotificaFacilForm({
           </Section>
         ) : null}
 
-        <Section title="Previa da Notificacao" description="A previa aparece desde o inicio e acompanha os campos preenchidos antes de gerar o PDF.">
+        <Section title="Prévia da Notificação" description="A prévia aparece desde o início e acompanha os campos preenchidos antes de gerar o PDF.">
           <div className="overflow-hidden rounded-2xl border border-line bg-white">
-            <iframe className="h-[760px] w-full bg-white" sandbox="" srcDoc={previewHtml} title="Previa da notificacao Notifica Facil" />
+            <iframe className="h-[760px] w-full bg-white" sandbox="" srcDoc={previewHtml} title="Prévia da notificação Notifica Fácil" />
           </div>
         </Section>
 
-        <Section title="Dados da notificacao" description="Datas e identificadores principais do fluxo documental.">
+        <Section title="Dados da notificação" description="Datas e identificadores principais do fluxo documental.">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Field label="Numero da notificacao">
+            <Field label="Número da notificação">
               <input className="field mt-2 cursor-not-allowed bg-white/[0.04] text-edp" value={previewNumber} disabled />
             </Field>
-            <Input label="Data da Notificacao" name="data_notificacao" type="date" value={values.data_notificacao} onChange={handleDateChange} required />
+            <Input label="Data da Notificação" name="data_notificacao" type="date" value={values.data_notificacao} onChange={handleDateChange} required />
             <Input
               label="Prazo para Resposta"
               name="prazo_resposta"
@@ -556,8 +556,8 @@ export function NotificaFacilForm({
                 {STATUS_OPTIONS.map((status) => <option key={status}>{status}</option>)}
               </select>
             </Field>
-            <Input label="Tipo de servico" name="tipo_servico" value={values.tipo_servico} onChange={(value) => setField("tipo_servico", value)} />
-            <Input label="Numero protocolo" name="numero_protocolo" value={values.numero_protocolo} onChange={(value) => setField("numero_protocolo", value)} />
+            <Input label="Tipo de serviço" name="tipo_servico" value={values.tipo_servico} onChange={(value) => setField("tipo_servico", value)} />
+            <Input label="Número protocolo" name="numero_protocolo" value={values.numero_protocolo} onChange={(value) => setField("numero_protocolo", value)} />
             <Input label="Registro censo" name="numero_registro_censo" value={values.numero_registro_censo} onChange={(value) => setField("numero_registro_censo", value)} />
             <Input label="Ordem de venda" name="ordem_venda" value={values.ordem_venda} onChange={(value) => setField("ordem_venda", value)} />
             <Input label="Status para envio" name="status_envio_notificacao" value={values.status_envio_notificacao} onChange={(value) => setField("status_envio_notificacao", value)} />
@@ -565,18 +565,18 @@ export function NotificaFacilForm({
           </div>
         </Section>
 
-        <Section title="Dados da empresa e contrato" description="Campos preenchidos automaticamente pela base CSV e editaveis antes de salvar.">
+        <Section title="Dados da empresa e contrato" description="Campos preenchidos automaticamente pela base CSV e editáveis antes de salvar.">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <Input className="xl:col-span-2" label="Nome da Empresa" name="empresa" value={values.empresa} onChange={(value) => setField("empresa", value)} required />
             <Input label="CNPJ" name="cnpj" value={values.cnpj} onChange={(value) => setField("cnpj", value)} />
-            <Input label="Contrato No." name="contrato_numero" value={values.contrato_numero} onChange={(value) => setField("contrato_numero", value)} />
+            <Input label="Contrato Nº" name="contrato_numero" value={values.contrato_numero} onChange={(value) => setField("contrato_numero", value)} />
             <Input label="A/C" name="ac" value={values.ac} onChange={(value) => setField("ac", value)} />
-            <Input label="Numero/Nome da Empresa" name="numero_nome_empresa" value={values.numero_nome_empresa} onChange={(value) => setField("numero_nome_empresa", value)} />
-            <Input label="No. Parceiro" name="numero_parceiro" value={values.numero_parceiro} onChange={(value) => setField("numero_parceiro", value)} />
+            <Input label="Número/Nome da Empresa" name="numero_nome_empresa" value={values.numero_nome_empresa} onChange={(value) => setField("numero_nome_empresa", value)} />
+            <Input label="Nº Parceiro" name="numero_parceiro" value={values.numero_parceiro} onChange={(value) => setField("numero_parceiro", value)} />
             <Input label="Celebrado Em" name="celebrado_em" value={values.celebrado_em} onChange={(value) => setField("celebrado_em", value)} />
             <Input label="Vencimento do Contrato" name="vencimento_contrato" value={values.vencimento_contrato} onChange={(value) => setField("vencimento_contrato", value)} />
             <Input label="Ano vencimento" name="ano_vencimento_contrato" value={values.ano_vencimento_contrato} onChange={(value) => setField("ano_vencimento_contrato", value)} />
-            <Input className="xl:col-span-2" label="Endereco" name="empresa_endereco" value={values.empresa_endereco} onChange={(value) => setField("empresa_endereco", value)} />
+            <Input className="xl:col-span-2" label="Endereço" name="empresa_endereco" value={values.empresa_endereco} onChange={(value) => setField("empresa_endereco", value)} />
             <Input label="Bairro" name="empresa_bairro" value={values.empresa_bairro} onChange={(value) => setField("empresa_bairro", value)} />
             <Input label="Cidade" name="empresa_cidade" value={values.empresa_cidade} onChange={(value) => setField("empresa_cidade", value)} />
             <Input label="Estado" name="empresa_estado" value={values.empresa_estado} onChange={(value) => setField("empresa_estado", value)} />
@@ -600,30 +600,30 @@ export function NotificaFacilForm({
           </div>
         </Section>
 
-        <Section title="Destinatario e dados de contato">
+        <Section title="Destinatário e dados de contato">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Input label="Destinatario nome" name="destinatario_nome" value={values.destinatario_nome} onChange={(value) => setField("destinatario_nome", value)} />
-            <Input label="Destinatario CPF" name="destinatario_cpf" value={values.destinatario_cpf} onChange={(value) => setField("destinatario_cpf", value)} />
-            <Input className="xl:col-span-2" label="Destinatario endereco" name="destinatario_endereco" value={values.destinatario_endereco} onChange={(value) => setField("destinatario_endereco", value)} />
+            <Input label="Destinatário nome" name="destinatario_nome" value={values.destinatario_nome} onChange={(value) => setField("destinatario_nome", value)} />
+            <Input label="Destinatário CPF" name="destinatario_cpf" value={values.destinatario_cpf} onChange={(value) => setField("destinatario_cpf", value)} />
+            <Input className="xl:col-span-2" label="Destinatário endereço" name="destinatario_endereco" value={values.destinatario_endereco} onChange={(value) => setField("destinatario_endereco", value)} />
           </div>
         </Section>
 
-        <Section title="Campos contratuais completos" description="Textos utilizados na composicao do HTML/PDF do Notifica Facil.">
+        <Section title="Campos contratuais completos" description="Textos utilizados na composição do HTML/PDF do Notifica Fácil.">
           <div className="grid gap-4 md:grid-cols-2">
             <Textarea label="Texto Contrato 7.14" name="texto_contrato_7_14" value={values.texto_contrato_7_14} onChange={(value) => setField("texto_contrato_7_14", value)} />
-            <Textarea label="Texto Ocupacao Revelia" name="texto_ocupacao_revelia" value={values.texto_ocupacao_revelia} onChange={(value) => setField("texto_ocupacao_revelia", value)} />
+            <Textarea label="Texto Ocupação Revelia" name="texto_ocupacao_revelia" value={values.texto_ocupacao_revelia} onChange={(value) => setField("texto_ocupacao_revelia", value)} />
             <Textarea label="Texto 23.3" name="texto_23_3" value={values.texto_23_3} onChange={(value) => setField("texto_23_3", value)} />
             <Textarea label="Texto 24.1" name="texto_24_1" value={values.texto_24_1} onChange={(value) => setField("texto_24_1", value)} />
             <Textarea className="md:col-span-2" label="Texto 24.3" name="texto_24_3" value={values.texto_24_3} onChange={(value) => setField("texto_24_3", value)} />
           </div>
         </Section>
 
-        <Section title="Enderecos a revelia" description="Preencha endereco, bairro e cidade em campos separados. Adicione quantas linhas forem necessarias.">
+        <Section title="Endereços à revelia" description="Preencha endereço, bairro e cidade em campos separados. Adicione quantas linhas forem necessárias.">
           <input type="hidden" name="enderecos_revelia" value={values.enderecos_revelia} />
           <div className="space-y-3">
             {addressRows.map((row, index) => (
               <div key={row.id} className="grid gap-3 rounded-2xl border border-line bg-surface/70 p-4 md:grid-cols-[1.35fr_1fr_1fr_auto] md:items-end">
-                <Field label={index === 0 ? "Endereco a Revelia" : `Endereco a Revelia ${index + 1}`}>
+                <Field label={index === 0 ? "Endereço à Revelia" : `Endereço à Revelia ${index + 1}`}>
                   <input
                     className="field mt-2"
                     value={row.endereco}
@@ -631,7 +631,7 @@ export function NotificaFacilForm({
                     placeholder="Ex: Rua das Flores, 123"
                   />
                 </Field>
-                <Field label="Bairro a Revelia">
+                <Field label="Bairro à Revelia">
                   <input
                     className="field mt-2"
                     value={row.bairro}
@@ -639,12 +639,12 @@ export function NotificaFacilForm({
                     placeholder="Ex: Centro"
                   />
                 </Field>
-                <Field label="Municipio a Revelia">
+                <Field label="Município à Revelia">
                   <input
                     className="field mt-2"
                     value={row.cidade}
                     onChange={(event) => updateAddressRow(row.id, "cidade", event.target.value)}
-                    placeholder="Ex: Sao Paulo"
+                    placeholder="Ex: São Paulo"
                   />
                 </Field>
                 <button
@@ -652,7 +652,7 @@ export function NotificaFacilForm({
                   className="btn-secondary h-11 px-3 text-red-200 hover:border-red-400/40 hover:bg-red-500/10"
                   onClick={() => removeAddressRow(row.id)}
                   disabled={addressRows.length === 1}
-                  aria-label="Remover endereco"
+                  aria-label="Remover endereço"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -661,11 +661,11 @@ export function NotificaFacilForm({
           </div>
           <button type="button" className="btn-primary mt-4" onClick={addAddressRow}>
             <Plus size={16} />
-            Adicionar endereco
+            Adicionar endereço
           </button>
         </Section>
 
-        <Section title="Valores e calculo" description="Campos financeiros do fluxo documental do Notifica Facil.">
+        <Section title="Valores e cálculo" description="Campos financeiros do fluxo documental do Notifica Fácil.">
           <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
             <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-1">
               <Input label="Valor do Ponto" name="valor_atualizado" value={values.valor_atualizado} onChange={(value) => setField("valor_atualizado", value)} />
@@ -681,7 +681,7 @@ export function NotificaFacilForm({
           </div>
         </Section>
 
-        <Section title="Anexos e observacoes">
+        <Section title="Anexos e observações">
           <div className="grid gap-4 md:grid-cols-2">
             <Textarea
               label="Anexos resposta email"
@@ -690,7 +690,7 @@ export function NotificaFacilForm({
               onChange={(value) => setField("anexos_resposta_email", value)}
               placeholder="Nome; URL"
             />
-            <Textarea label="Observacoes" name="observacoes" value={values.observacoes} onChange={(value) => setField("observacoes", value)} />
+            <Textarea label="Observações" name="observacoes" value={values.observacoes} onChange={(value) => setField("observacoes", value)} />
           </div>
         </Section>
 
@@ -698,7 +698,7 @@ export function NotificaFacilForm({
           <div className="grid gap-3 md:grid-cols-4">
             <Checkbox name="is_draft" label="Rascunho" defaultChecked={notification?.is_draft || false} />
             <Checkbox name="is_standby" label="Stand-by" defaultChecked={notification?.is_standby || false} />
-            <Checkbox name="pendencia_tecnica" label="Pendencia tecnica" defaultChecked={notification?.pendencia_tecnica || false} />
+            <Checkbox name="pendencia_tecnica" label="Pendência técnica" defaultChecked={notification?.pendencia_tecnica || false} />
             <Checkbox name="pt_notificado" label="PT notificado" defaultChecked={notification?.pt_notificado || false} />
           </div>
         </Section>

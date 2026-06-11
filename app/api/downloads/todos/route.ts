@@ -6,7 +6,7 @@ import { buildPdfZip, zipResponse } from "@/lib/pdf-bundle";
 
 export async function GET() {
   const user = await getCurrentUser();
-  if (!canAccessPortal(user)) return new NextResponse("Acesso nao aprovado", { status: 403 });
+  if (!canAccessPortal(user)) return new NextResponse("Acesso não aprovado", { status: 403 });
 
   const notificacoes = await prisma.notificacao.findMany({
     where: { arquivada: false },
@@ -31,7 +31,7 @@ export async function GET() {
         created_by_id: user?.id,
         created_by: user?.email,
         tipo: "todos",
-        descricao: `Download de todos os ${ids.length} arquivo(s) nao arquivados`,
+        descricao: `Download de todos os ${ids.length} arquivo(s) não arquivados`,
         quantidade_arquivos: ids.length,
         ids_baixados: ids,
         usuario_nome: user?.full_name || user?.email || "Sistema"

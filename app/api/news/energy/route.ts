@@ -50,7 +50,7 @@ const fallbackArticles: EnergyNewsArticle[] = [
     id: "fallback-infraestrutura",
     category: "Infraestrutura",
     title: "Compartilhamento de postes exige governanca documental integrada",
-    summary: "Fluxos centralizados conectam censo, regularizacao, anexos, notificacoes e historicos para melhorar rastreabilidade operacional.",
+    summary: "Fluxos centralizados conectam censo, regularização, anexos, notificações e históricos para melhorar rastreabilidade operacional.",
     date: "05/06/2026",
     imageUrl: "/edp-energy-hero.svg",
     url: "https://www.edp.com.br/"
@@ -67,8 +67,8 @@ const fallbackArticles: EnergyNewsArticle[] = [
   {
     id: "fallback-regulacao",
     category: "Regulacao",
-    title: "Rastreabilidade se torna pilar para auditorias e comunicacoes formais",
-    summary: "Historicos, evidencias e PDFs consistentes ajudam a sustentar governanca e compliance em ciclos de notificacao.",
+    title: "Rastreabilidade se torna pilar para auditorias e comunicações formais",
+    summary: "Históricos, evidências e PDFs consistentes ajudam a sustentar governança e compliance em ciclos de notificação.",
     date: "05/06/2026",
     imageUrl: "/edp-energy-hero.svg",
     url: "https://www.edp.com.br/"
@@ -86,7 +86,7 @@ const fallbackArticles: EnergyNewsArticle[] = [
     id: "fallback-seguranca",
     category: "Seguranca Operacional",
     title: "Controle de ocupacoes apoia prevencao de riscos em redes eletricas",
-    summary: "Acompanhamento continuo melhora priorizacao de pendencias tecnicas e ajuda equipes a atuar com mais seguranca.",
+    summary: "Acompanhamento contínuo melhora priorização de pendências técnicas e ajuda equipes a atuar com mais segurança.",
     date: "05/06/2026",
     imageUrl: "/edp-energy-hero.svg",
     url: "https://www.edp.com.br/"

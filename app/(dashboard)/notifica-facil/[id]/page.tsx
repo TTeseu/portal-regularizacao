@@ -5,9 +5,9 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Download, ExternalLink, FileText, ImageIcon, Trash2 } from "lucide-react";
 import { canEdit, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { buildNotificaFacilHtml } from "@/lib/notifica-facil-html";
+import { buildNotificaFacilHtml, sanitizeNotificaFacilHtml } from "@/lib/notifica-facil-html";
 import { NotificaFacilForm } from "@/components/notifica-facil-form";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatPtBrDisplay } from "@/lib/format";
 import { deleteNotificaFacilNotification, updateNotificaFacilNotification } from "../actions";
 
 export default async function NotificaFacilDetailPage({
@@ -30,7 +30,7 @@ export default async function NotificaFacilDetailPage({
 
   if (!notification) notFound();
   const mayEdit = canEdit(user);
-  const html = notification.html_content || buildNotificaFacilHtml(notification);
+  const html = sanitizeNotificaFacilHtml(notification.html_content || buildNotificaFacilHtml(notification));
   const backHref = getSafeBackHref(query?.from, notification);
   const evidences = collectEvidences(notification.fotos_censo, notification.ocr_legendas);
   const attachments = collectAttachments(notification.notificacao_assinada_anexos, notification.anexos_resposta_email);
@@ -67,17 +67,17 @@ export default async function NotificaFacilDetailPage({
       <section className="grid gap-4 md:grid-cols-4">
         <Info label="Status" value={notification.status} />
         <Info label="Downloads" value={String(notification.download_count)} />
-        <Info label="Ultimo download" value={formatDateTime(notification.last_downloaded_at)} />
-        <Info label="PDF salvo" value={notification.pdf_url || notification.pdf_base64 ? "Sim" : "Nao"} />
+        <Info label="Último download" value={formatDateTime(notification.last_downloaded_at)} />
+        <Info label="PDF salvo" value={notification.pdf_url || notification.pdf_base64 ? "Sim" : "Não"} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1fr_420px]">
         <div className="panel overflow-hidden">
           <div className="flex items-center gap-2 border-b border-line bg-surface px-5 py-4">
             <FileText className="text-edp" size={18} />
-            <h2 className="font-bold text-white">Previa do documento</h2>
+            <h2 className="font-bold text-white">Prévia do documento</h2>
           </div>
-          <iframe className="h-[720px] w-full bg-white" sandbox="" srcDoc={html} title="Previa Notifica Facil" />
+          <iframe className="h-[720px] w-full bg-white" sandbox="" srcDoc={html} title="Prévia Notifica Fácil" />
         </div>
 
         <aside className="space-y-4">
@@ -87,9 +87,9 @@ export default async function NotificaFacilDetailPage({
               <Row label="Protocolo" value={notification.numero_protocolo} />
               <Row label="Contrato" value={notification.contrato_numero} />
               <Row label="CNPJ" value={notification.cnpj} />
-              <Row label="Cidade" value={notification.empresa_cidade} />
+              <Row label="Cidade" value={formatPtBrDisplay(notification.empresa_cidade)} />
               <Row label="Ordem venda" value={notification.ordem_venda} />
-              <Row label="Pendencia tecnica" value={notification.pendencia_tecnica ? "Sim" : "Nao"} />
+              <Row label="Pendência técnica" value={notification.pendencia_tecnica ? "Sim" : "Não"} />
               <Row label="Poste" value={notification.numero_poste} />
             </dl>
           </div>
@@ -97,7 +97,7 @@ export default async function NotificaFacilDetailPage({
           <EvidencePanel evidences={evidences} attachments={attachments} />
 
           <div className="panel p-5">
-            <h2 className="mb-3 font-bold text-white">Historico</h2>
+            <h2 className="mb-3 font-bold text-white">Histórico</h2>
             <div className="space-y-3">
               {logs.map((log) => (
                 <div key={log.id} className="rounded-xl border border-line bg-surface p-3 text-sm">
@@ -212,7 +212,7 @@ function EvidencePanel({
           ))}
         </div>
       ) : (
-        <p className="text-sm text-edp-muted">Nenhuma foto vinculada a esta notificacao.</p>
+        <p className="text-sm text-edp-muted">Nenhuma foto vinculada a esta notificação.</p>
       )}
 
       {attachments.length ? (

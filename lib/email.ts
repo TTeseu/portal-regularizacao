@@ -12,7 +12,7 @@ type AccessRequestUser = {
 };
 
 function sender() {
-  return process.env.EMAIL_FROM || process.env.SMTP_USER || "Portal de Regularizacao <no-reply@portal-regularizacao.local>";
+  return process.env.EMAIL_FROM || process.env.SMTP_USER || "Portal de Regularização <no-reply@portal-regularizacao.local>";
 }
 
 function appUrl() {
@@ -105,7 +105,7 @@ export async function notifyAdminsNewAccessRequest(user: AccessRequestUser) {
     email: targetEmail,
     action: "reject"
   })}` : `${appUrl()}/usuarios`;
-  const subject = "Novo pedido de acesso - Portal de Regularizacao";
+  const subject = "Novo pedido de acesso - Portal de Regularização";
   const text = [
     "Um novo usuario solicitou acesso ao sistema.",
     "",
@@ -122,7 +122,7 @@ export async function notifyAdminsNewAccessRequest(user: AccessRequestUser) {
     <div style="margin:0;background:#f4f7fa;padding:28px;font-family:Inter,Arial,sans-serif;color:#172033">
       <div style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden">
         <div style="background:#1E2D44;padding:24px 28px;color:#ffffff">
-          <div style="font-size:13px;font-weight:700;color:#00E676;text-transform:uppercase;letter-spacing:.04em">Portal de Regularizacao</div>
+          <div style="font-size:13px;font-weight:700;color:#00E676;text-transform:uppercase;letter-spacing:.04em">Portal de Regularização</div>
           <h1 style="margin:10px 0 0;font-size:24px;line-height:1.25">Novo pedido de acesso</h1>
         </div>
         <div style="padding:28px">

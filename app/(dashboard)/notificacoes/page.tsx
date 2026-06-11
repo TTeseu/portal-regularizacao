@@ -6,7 +6,7 @@ import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { STATUS_OPTIONS, ORIGEM_OPTIONS } from "@/lib/constants";
 import { PageTitle } from "@/components/page-title";
 import { StatusBadge } from "@/components/status-badge";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatPtBrDisplay } from "@/lib/format";
 
 export default async function NotificacoesPage({
   searchParams
@@ -144,7 +144,7 @@ export default async function NotificacoesPage({
                   <td className="px-4 py-3"><input type="checkbox" name="ids" value={item.id} /></td>
                   <td className="px-4 py-3 font-medium">{item.numero_oficio || "-"}</td>
                   <td className="px-4 py-3">{item.empresa || "-"}</td>
-                  <td className="px-4 py-3">{item.cidade || "-"}</td>
+                  <td className="px-4 py-3">{formatPtBrDisplay(item.cidade)}</td>
                   <td className="px-4 py-3">{item.lote_nome || item.lote_id || "-"}</td>
                   <td className="px-4 py-3">{item.origem}</td>
                   <td className="px-4 py-3"><StatusBadge status={item.status} /></td>

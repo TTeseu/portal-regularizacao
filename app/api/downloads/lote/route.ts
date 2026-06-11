@@ -7,16 +7,16 @@ import { buildPdfZip, zipResponse } from "@/lib/pdf-bundle";
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const loteId = url.searchParams.get("lote_id") || url.searchParams.get("lote");
-  if (!loteId) return new NextResponse("lote_id obrigatorio", { status: 400 });
+  if (!loteId) return new NextResponse("lote_id obrigatório", { status: 400 });
   const user = await getCurrentUser();
-  if (!canAccessPortal(user)) return new NextResponse("Acesso nao aprovado", { status: 403 });
+  if (!canAccessPortal(user)) return new NextResponse("Acesso não aprovado", { status: 403 });
   const notificacoes = await prisma.notificacao.findMany({
     where: { OR: [{ lote_id: loteId }, { lote_nome: loteId }] },
     orderBy: { created_date: "asc" }
   });
   const ids = notificacoes.map((item) => item.id);
 
-  if (ids.length === 0) return new NextResponse("Lote nao encontrado", { status: 404 });
+  if (ids.length === 0) return new NextResponse("Lote não encontrado", { status: 404 });
 
   await prisma.$transaction([
     prisma.notificacao.updateMany({

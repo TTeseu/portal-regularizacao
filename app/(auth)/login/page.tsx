@@ -35,8 +35,8 @@ export default async function LoginPage({
           {params?.error ? (
             <div className="mb-5 rounded-xl border border-red-300/25 bg-red-500/10 px-4 py-3 text-sm text-red-100">
               {params.error === "google_not_configured"
-                ? "Login Google ainda nao esta configurado no ambiente de producao."
-                : "Nao foi possivel entrar. Verifique a conta utilizada."}
+                ? "Login Google ainda não está configurado no ambiente de produção."
+                : "Não foi possível entrar. Verifique a conta utilizada."}
             </div>
           ) : null}
 

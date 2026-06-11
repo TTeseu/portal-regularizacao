@@ -49,7 +49,7 @@ export async function GET(request: Request) {
   });
 
   if (!user) {
-    return htmlPage("Usuario nao encontrado", "O pedido de acesso nao foi localizado no banco de dados.", "danger");
+    return htmlPage("Usuário não encontrado", "O pedido de acesso não foi localizado no banco de dados.", "danger");
   }
 
   if (payload.action === "approve") {
@@ -67,11 +67,11 @@ export async function GET(request: Request) {
       }
     });
 
-    return htmlPage("Acesso aprovado", `O usuario ${user.email} ja pode acessar o Portal de Notificacoes EDP.`, "success");
+    return htmlPage("Acesso aprovado", `O usuário ${user.email} já pode acessar o Portal de Notificações EDP.`, "success");
   }
 
   if (isSuperAdminEmail(user.email)) {
-    return htmlPage("Acao bloqueada", "O administrador principal nao pode ser recusado.", "danger");
+    return htmlPage("Ação bloqueada", "O administrador principal não pode ser recusado.", "danger");
   }
 
   await prisma.user.update({
@@ -84,5 +84,5 @@ export async function GET(request: Request) {
     }
   });
 
-  return htmlPage("Acesso negado", `O usuario ${user.email} foi marcado como acesso recusado.`, "danger");
+  return htmlPage("Acesso negado", `O usuário ${user.email} foi marcado como acesso recusado.`, "danger");
 }

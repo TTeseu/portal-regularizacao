@@ -1,7 +1,7 @@
 import type { Notificacao } from "@prisma/client";
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
-import { buildNotificacaoHtml } from "@/lib/notificacao-html";
+import { buildNotificacaoHtml, sanitizeNotificacaoHtml } from "@/lib/notificacao-html";
 
 type PdfCacheResult = {
   bytes: Uint8Array;
@@ -81,7 +81,11 @@ export async function storePdfForNotificacao(notificacao: Notificacao, html = bu
 }
 
 export async function ensurePdfForNotificacao(notificacao: Notificacao): Promise<PdfCacheResult> {
-  if (notificacao.pdf_base64) {
+  const needsTemplateRefresh = Boolean(
+    notificacao.html_content && sanitizeNotificacaoHtml(notificacao.html_content) !== notificacao.html_content
+  );
+
+  if (!needsTemplateRefresh && notificacao.pdf_base64) {
     return {
       bytes: Buffer.from(notificacao.pdf_base64, "base64"),
       url: notificacao.pdfUrl || `/api/notificacoes/${notificacao.id}/pdf`,
@@ -89,7 +93,7 @@ export async function ensurePdfForNotificacao(notificacao: Notificacao): Promise
     };
   }
 
-  if (isExternalPdfUrl(notificacao.pdfUrl) && !isSelfPdfRoute(notificacao.pdfUrl, notificacao.id)) {
+  if (!needsTemplateRefresh && isExternalPdfUrl(notificacao.pdfUrl) && !isSelfPdfRoute(notificacao.pdfUrl, notificacao.id)) {
     const bytes = await readExternalPdf(notificacao.pdfUrl!);
     if (bytes) {
       return {

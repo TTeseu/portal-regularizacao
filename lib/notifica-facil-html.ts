@@ -106,6 +106,10 @@ function replaceAddressTable(template: string, rows: string) {
   );
 }
 
+export function sanitizeNotificaFacilHtml(html: string) {
+  return html.replace(/<div class="assinatura-label">Assinatura<\/div>/gi, "");
+}
+
 export function buildNotificaFacilHtml(notification: NotificaFacilNotification) {
   let html = loadTemplate();
 
@@ -141,5 +145,5 @@ export function buildNotificaFacilHtml(notification: NotificaFacilNotification) 
     html = html.replaceAll(placeholder, value);
   }
 
-  return html;
+  return sanitizeNotificaFacilHtml(html);
 }

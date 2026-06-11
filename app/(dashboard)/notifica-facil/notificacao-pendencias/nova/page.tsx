@@ -39,7 +39,7 @@ export default async function NovaNotificacaoPendenciaPage() {
   }));
 
   const tipos = Array.from(new Set([
-    "Ocupacao Irregular - Descumprimento ao Contrato e Normas Tecnicas",
+    "Ocupação Irregular - Descumprimento ao Contrato e Normas Técnicas",
     ...tiposRows.map((row) => row.tipo_servico).filter((tipo): tipo is string => Boolean(tipo))
   ]));
 

@@ -34,24 +34,24 @@ type NavItem = {
 };
 
 const regularizacaoNav: NavItem[] = [
-  { href: "/home", label: "Inicio", icon: LayoutDashboard },
+  { href: "/home", label: "Início", icon: LayoutDashboard },
   { href: "/regularizacao", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/notificacoes/nova", label: "Gerar Notificacao", icon: FileText },
-  { href: "/notificacoes", label: "Buscar Notificacoes", icon: Search },
+  { href: "/notificacoes/nova", label: "Gerar Notificação", icon: FileText },
+  { href: "/notificacoes", label: "Buscar Notificações", icon: Search },
   { href: "/empresas", label: "Empresas", icon: Building2 },
   { href: "/notificacoes?origem=importacao", label: "Importar Dados", icon: Database },
-  { href: "/usuarios", label: "Usuarios", icon: Users, adminOnly: true }
+  { href: "/usuarios", label: "Usuários", icon: Users, adminOnly: true }
 ];
 
 const notificaFacilNav: NavItem[] = [
   { href: "/notifica-facil", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/notifica-facil/nova", label: "Nova Notificacao", icon: FileText },
+  { href: "/notifica-facil/nova", label: "Nova Notificação", icon: FileText },
   { href: "/notifica-facil/importar-csv", label: "Importar CSV", icon: Upload },
   { href: "/notifica-facil/importar-censo", label: "Importar CENSO", icon: Bell },
-  { href: "/notifica-facil/historico-censo", label: "Historico CENSO", icon: Clock3 },
-  { href: "/notifica-facil/pendencia-tecnica", label: "Pendencia Tecnica", icon: AlertTriangle },
-  { href: "/notifica-facil/historico-pendencia-tecnica", label: "Historico Pendencia Tecnica", icon: History },
-  { href: "/notifica-facil/notificacao-pendencias", label: "Notificacao das Pendencias", icon: FileClock },
+  { href: "/notifica-facil/historico-censo", label: "Histórico CENSO", icon: Clock3 },
+  { href: "/notifica-facil/pendencia-tecnica", label: "Pendência Técnica", icon: AlertTriangle },
+  { href: "/notifica-facil/historico-pendencia-tecnica", label: "Histórico Pendência Técnica", icon: History },
+  { href: "/notifica-facil/notificacao-pendencias", label: "Notificação das Pendências", icon: FileClock },
   { href: "/notifica-facil/stand-by", label: "Stand-by", icon: Clock3 },
   { href: "/notifica-facil/pdfs", label: "Todos os PDFs", icon: FileArchive }
 ];
@@ -103,8 +103,8 @@ export function AppShellChrome({ children, user }: { children: React.ReactNode; 
   const pathname = usePathname();
   const isNotificaFacil = pathname.startsWith("/notifica-facil");
   const visibleNav = (isNotificaFacil ? notificaFacilNav : regularizacaoNav).filter((item) => !item.adminOnly || user.role === "admin");
-  const moduleName = isNotificaFacil ? "Notifica Facil" : "Portal";
-  const moduleSubtitle = isNotificaFacil ? "Telecom a Revelia" : "Regularizacao";
+  const moduleName = isNotificaFacil ? "Notifica Fácil" : "Portal";
+  const moduleSubtitle = isNotificaFacil ? "Telecom à Revelia" : "Regularização";
 
   return (
     <div className="min-h-screen bg-edp-navy edp-technical-bg">
@@ -132,7 +132,7 @@ export function AppShellChrome({ children, user }: { children: React.ReactNode; 
             <div className="hidden h-9 border-l border-line lg:block" />
             <div className="text-right">
               <div className="text-sm font-semibold text-white">{user.full_name || user.email}</div>
-              <div className="text-xs text-edp-muted">{user.role === "admin" ? "Administrador" : "Usuario"}</div>
+              <div className="text-xs text-edp-muted">{user.role === "admin" ? "Administrador" : "Usuário"}</div>
             </div>
             <form action="/api/auth/logout" method="post">
               <button className="btn-secondary" title="Sair">

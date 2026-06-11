@@ -31,7 +31,7 @@ export function NotificaFacilProcessPage({
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-edp/25 bg-edp/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-edp">
                   <Zap size={13} />
-                  Processo Notifica Facil
+                  Processo Notifica Fácil
                 </div>
                 <h1 className="mt-3 text-3xl font-bold tracking-tight text-white">{title}</h1>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-edp-muted">{description}</p>
@@ -48,7 +48,7 @@ export function NotificaFacilProcessPage({
         </div>
         <h2 className="mt-5 text-xl font-bold text-white">Tela do processo preparada</h2>
         <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-edp-muted">
-          Esta aba fica isolada dentro do modulo Notifica Facil, seguindo o fluxo do Base44 sem misturar com o Portal de Regularizacao. A camada visual permanece no padrao EDP escuro.
+          Esta aba fica isolada dentro do módulo Notifica Fácil, seguindo o fluxo do Base44 sem misturar com o Portal de Regularização. A camada visual permanece no padrão EDP escuro.
         </p>
       </section>
     </div>

@@ -8,8 +8,8 @@ export default function HistoricoPendenciaTecnicaPage({
 }) {
   return (
     <NotificaFacilPendenciasPage
-      title="Historico Pendencia Tecnica"
-      description="Historico das tratativas de pendencia tecnica, incluindo PT notificado, datas, logs e documentos vinculados."
+      title="Histórico Pendência Técnica"
+      description="Histórico das tratativas de pendência técnica, incluindo PT notificado, datas, logs e documentos vinculados."
       mode="historico"
       icon={<History size={24} />}
       searchParams={searchParams}

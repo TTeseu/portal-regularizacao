@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const ids = formData.getAll("ids").map(String).filter(Boolean);
   const user = await getCurrentUser();
-  if (!canAccessPortal(user)) return new NextResponse("Acesso nao aprovado", { status: 403 });
+  if (!canAccessPortal(user)) return new NextResponse("Acesso não aprovado", { status: 403 });
   if (ids.length === 0) return NextResponse.redirect(new URL("/notificacoes", request.url), 303);
 
   const notificacoes = await prisma.notificacao.findMany({ where: { id: { in: ids } } });
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
         created_by_id: user?.id,
         created_by: user?.email,
         tipo: "selecao",
-        descricao: `Download de ${ids.length} arquivo(s) por selecao`,
+        descricao: `Download de ${ids.length} arquivo(s) por seleção`,
         quantidade_arquivos: ids.length,
         ids_baixados: ids,
         usuario_nome: user?.full_name || user?.email || "Sistema"

@@ -10,10 +10,10 @@ export async function GET(
 ) {
   const { id } = await params;
   const user = await getCurrentUser();
-  if (!canAccessPortal(user)) return new NextResponse("Acesso nao aprovado", { status: 403 });
+  if (!canAccessPortal(user)) return new NextResponse("Acesso não aprovado", { status: 403 });
 
   const notificacao = await prisma.notificacao.findUnique({ where: { id } });
-  if (!notificacao) return new NextResponse("Notificacao nao encontrada", { status: 404 });
+  if (!notificacao) return new NextResponse("Notificação não encontrada", { status: 404 });
 
   const cachedPdf = await ensurePdfForNotificacao(notificacao);
 
@@ -35,17 +35,13 @@ export async function GET(
         created_by_id: user?.id,
         created_by: user?.email,
         tipo: "selecao",
-        descricao: `Download PDF da notificacao ${notificacao.numero_oficio || id}`,
+        descricao: `Download PDF da notificação ${notificacao.numero_oficio || id}`,
         quantidade_arquivos: 1,
         ids_baixados: [id],
         usuario_nome: user?.full_name || user?.email || "Sistema"
       }
     })
   ]);
-
-  if (cachedPdf.source === "blob") {
-    return NextResponse.redirect(cachedPdf.url);
-  }
 
   return pdfResponse(cachedPdf.bytes, `notificacao-${id}.pdf`);
 }

@@ -1,7 +1,7 @@
 import type { NotificaFacilNotification } from "@prisma/client";
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
-import { buildNotificaFacilHtml } from "@/lib/notifica-facil-html";
+import { buildNotificaFacilHtml, sanitizeNotificaFacilHtml } from "@/lib/notifica-facil-html";
 import { pdfResponse, renderPdfFromHtml } from "@/lib/pdf-cache";
 
 type PdfCacheResult = {
@@ -59,7 +59,11 @@ export async function storePdfForNotificaFacil(notification: NotificaFacilNotifi
 }
 
 export async function ensurePdfForNotificaFacil(notification: NotificaFacilNotification): Promise<PdfCacheResult> {
-  if (notification.pdf_base64) {
+  const needsTemplateRefresh = Boolean(
+    notification.html_content && sanitizeNotificaFacilHtml(notification.html_content) !== notification.html_content
+  );
+
+  if (!needsTemplateRefresh && notification.pdf_base64) {
     return {
       bytes: Buffer.from(notification.pdf_base64, "base64"),
       url: notification.pdf_url || `/api/notifica-facil/notifications/${notification.id}/pdf`,
@@ -67,14 +71,14 @@ export async function ensurePdfForNotificaFacil(notification: NotificaFacilNotif
     };
   }
 
-  if (isExternalPdfUrl(notification.pdf_url) && !isSelfPdfRoute(notification.pdf_url, notification.id)) {
+  if (!needsTemplateRefresh && isExternalPdfUrl(notification.pdf_url) && !isSelfPdfRoute(notification.pdf_url, notification.id)) {
     const bytes = await readExternalPdf(notification.pdf_url!);
     if (bytes) {
       return { bytes, url: notification.pdf_url!, source: "blob" };
     }
   }
 
-  return storePdfForNotificaFacil(notification, notification.html_content || buildNotificaFacilHtml(notification));
+  return storePdfForNotificaFacil(notification, sanitizeNotificaFacilHtml(notification.html_content || buildNotificaFacilHtml(notification)));
 }
 
 export { pdfResponse };
