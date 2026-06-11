@@ -34,10 +34,6 @@ export default async function NotificacaoDetailPage({
         subtitle={`${notificacao.empresa || "Sem empresa"} · ${notificacao.cidade || "Sem cidade"}`}
         action={
           <div className="flex flex-wrap gap-2">
-            <a className="btn-secondary" href={`/api/notificacoes/${id}/download`}>
-              <Download size={16} />
-              HTML
-            </a>
             <a className="btn-primary" href={`/api/notificacoes/${id}/pdf`}>
               <FileText size={16} />
               PDF

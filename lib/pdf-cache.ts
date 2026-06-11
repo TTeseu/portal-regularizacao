@@ -29,15 +29,28 @@ function toArrayBuffer(bytes: Uint8Array) {
 export async function renderPdfFromHtml(html: string) {
   const chromium = await import("@sparticuz/chromium");
   const puppeteer = await import("puppeteer-core");
+  chromium.default.setGraphicsMode = false;
+  const headless = "shell" as const;
+  const defaultViewport = {
+    deviceScaleFactor: 1,
+    hasTouch: false,
+    height: 1080,
+    isLandscape: false,
+    isMobile: false,
+    width: 1440
+  };
   const browser = await puppeteer.launch({
-    args: [...chromium.default.args, "--hide-scrollbars", "--disable-web-security"],
+    args: await puppeteer.defaultArgs({ args: chromium.default.args, headless }),
+    defaultViewport,
     executablePath: await chromium.default.executablePath(),
-    headless: true
+    headless
   });
 
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "load" });
+    await page.setJavaScriptEnabled(false);
+    await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.emulateMediaType("screen");
     return page.pdf({ format: "A4", printBackground: true });
   } finally {
     await browser.close();
