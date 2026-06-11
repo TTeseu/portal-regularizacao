@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { canAccessPortal, getCurrentUser } from "@/lib/auth";
 import { buildPdfZip, zipResponse } from "@/lib/pdf-bundle";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 export async function GET() {
   const user = await getCurrentUser();
   if (!canAccessPortal(user)) return new NextResponse("Acesso não aprovado", { status: 403 });

@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { canAccessPortal, getCurrentUser } from "@/lib/auth";
 import { buildPdfZip, zipResponse } from "@/lib/pdf-bundle";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   const formData = await request.formData();
   const ids = formData.getAll("ids").map(String).filter(Boolean);

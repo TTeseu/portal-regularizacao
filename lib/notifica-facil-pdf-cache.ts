@@ -25,9 +25,17 @@ function isSelfPdfRoute(value?: string | null, id?: string) {
 async function readExternalPdf(url: string) {
   const response = await fetch(url);
   if (!response.ok) return null;
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  const looksLikePdf =
+    bytes.length > 4 &&
+    bytes[0] === 0x25 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x44 &&
+    bytes[3] === 0x46;
+  if (looksLikePdf) return bytes;
+
   const contentType = response.headers.get("content-type") || "";
-  if (!contentType.includes("pdf")) return null;
-  return new Uint8Array(await response.arrayBuffer());
+  return contentType.includes("pdf") ? bytes : null;
 }
 
 export async function storePdfForNotificaFacil(notification: NotificaFacilNotification, html = buildNotificaFacilHtml(notification)) {
@@ -59,11 +67,7 @@ export async function storePdfForNotificaFacil(notification: NotificaFacilNotifi
 }
 
 export async function ensurePdfForNotificaFacil(notification: NotificaFacilNotification): Promise<PdfCacheResult> {
-  const needsTemplateRefresh = Boolean(
-    notification.html_content && sanitizeNotificaFacilHtml(notification.html_content) !== notification.html_content
-  );
-
-  if (!needsTemplateRefresh && notification.pdf_base64) {
+  if (notification.pdf_base64) {
     return {
       bytes: Buffer.from(notification.pdf_base64, "base64"),
       url: notification.pdf_url || `/api/notifica-facil/notifications/${notification.id}/pdf`,
@@ -71,7 +75,7 @@ export async function ensurePdfForNotificaFacil(notification: NotificaFacilNotif
     };
   }
 
-  if (!needsTemplateRefresh && isExternalPdfUrl(notification.pdf_url) && !isSelfPdfRoute(notification.pdf_url, notification.id)) {
+  if (isExternalPdfUrl(notification.pdf_url) && !isSelfPdfRoute(notification.pdf_url, notification.id)) {
     const bytes = await readExternalPdf(notification.pdf_url!);
     if (bytes) {
       return { bytes, url: notification.pdf_url!, source: "blob" };

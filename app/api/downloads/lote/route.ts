@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { canAccessPortal, getCurrentUser } from "@/lib/auth";
 import { buildPdfZip, zipResponse } from "@/lib/pdf-bundle";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const loteId = url.searchParams.get("lote_id") || url.searchParams.get("lote");

@@ -1,7 +1,7 @@
 import type { Notificacao } from "@prisma/client";
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
-import { buildNotificacaoHtml, sanitizeNotificacaoHtml } from "@/lib/notificacao-html";
+import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 
 type PdfCacheResult = {
   bytes: Uint8Array;
@@ -30,7 +30,7 @@ export async function renderPdfFromHtml(html: string) {
   const chromium = await import("@sparticuz/chromium");
   const puppeteer = await import("puppeteer-core");
   const browser = await puppeteer.launch({
-    args: chromium.default.args,
+    args: [...chromium.default.args, "--hide-scrollbars", "--disable-web-security"],
     executablePath: await chromium.default.executablePath(),
     headless: true
   });
@@ -47,9 +47,17 @@ export async function renderPdfFromHtml(html: string) {
 async function readExternalPdf(url: string) {
   const response = await fetch(url);
   if (!response.ok) return null;
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  const looksLikePdf =
+    bytes.length > 4 &&
+    bytes[0] === 0x25 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x44 &&
+    bytes[3] === 0x46;
+  if (looksLikePdf) return bytes;
+
   const contentType = response.headers.get("content-type") || "";
-  if (!contentType.includes("pdf")) return null;
-  return new Uint8Array(await response.arrayBuffer());
+  return contentType.includes("pdf") ? bytes : null;
 }
 
 export async function storePdfForNotificacao(notificacao: Notificacao, html = buildNotificacaoHtml(notificacao)) {
@@ -81,11 +89,7 @@ export async function storePdfForNotificacao(notificacao: Notificacao, html = bu
 }
 
 export async function ensurePdfForNotificacao(notificacao: Notificacao): Promise<PdfCacheResult> {
-  const needsTemplateRefresh = Boolean(
-    notificacao.html_content && sanitizeNotificacaoHtml(notificacao.html_content) !== notificacao.html_content
-  );
-
-  if (!needsTemplateRefresh && notificacao.pdf_base64) {
+  if (notificacao.pdf_base64) {
     return {
       bytes: Buffer.from(notificacao.pdf_base64, "base64"),
       url: notificacao.pdfUrl || `/api/notificacoes/${notificacao.id}/pdf`,
@@ -93,7 +97,7 @@ export async function ensurePdfForNotificacao(notificacao: Notificacao): Promise
     };
   }
 
-  if (!needsTemplateRefresh && isExternalPdfUrl(notificacao.pdfUrl) && !isSelfPdfRoute(notificacao.pdfUrl, notificacao.id)) {
+  if (isExternalPdfUrl(notificacao.pdfUrl) && !isSelfPdfRoute(notificacao.pdfUrl, notificacao.id)) {
     const bytes = await readExternalPdf(notificacao.pdfUrl!);
     if (bytes) {
       return {

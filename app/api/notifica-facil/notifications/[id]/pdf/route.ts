@@ -3,6 +3,9 @@ import { canAccessPortal, getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ensurePdfForNotificaFacil, pdfResponse } from "@/lib/notifica-facil-pdf-cache";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
