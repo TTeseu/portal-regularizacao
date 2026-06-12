@@ -2,7 +2,9 @@
 
 import type { NotificaFacilNotification } from "@prisma/client";
 import { Calculator, CheckCircle2, FileText, Plus, Save, Search, Trash2 } from "lucide-react";
+import type { HTMLAttributes, ReactNode } from "react";
 import { useMemo, useState } from "react";
+import { applyCNPJMask, cnpjDigits, formatCNPJDisplay, isValidCNPJ } from "@/lib/cnpj";
 
 const STATUS_OPTIONS = [
   "Aguardando assinatura Gestor",
@@ -314,7 +316,7 @@ function initialValues(notification?: NotificaFacilNotification | null, nextNume
     data_notificacao: date,
     prazo_resposta: normalizeDateForInput(notification?.prazo_resposta) || addDaysIso(date, 10),
     data_email_encaminhado: normalizeDateForInput(notification?.data_email_encaminhado),
-    cnpj: notification?.cnpj || "",
+    cnpj: applyCNPJMask(notification?.cnpj),
     contrato_numero: notification?.contrato_numero || "",
     ac: notification?.ac || "",
     numero_nome_empresa: notification?.numero_nome_empresa || "",
@@ -363,6 +365,7 @@ export function NotificaFacilForm({
   const [addressRows, setAddressRows] = useState(() => parseAddressInput(initialValues(notification, nextNumero).enderecos_revelia));
   const [companyQuery, setCompanyQuery] = useState(notification?.empresa || "");
   const [showCompanyResults, setShowCompanyResults] = useState(false);
+  const [cnpjInvalid, setCnpjInvalid] = useState(false);
   const [prazoTouched, setPrazoTouched] = useState(Boolean(notification?.prazo_resposta));
   const [mostrarCelebradoEm, setMostrarCelebradoEm] = useState(notification?.mostrar_celebrado_em ?? true);
   const isEditing = Boolean(notification);
@@ -378,6 +381,7 @@ export function NotificaFacilForm({
           [
             item.empresa,
             item.cnpj,
+            formatCNPJDisplay(item.cnpj),
             item.contrato_numero,
             item.empresa_cidade,
             item.numero_parceiro
@@ -453,7 +457,7 @@ export function NotificaFacilForm({
       numero_nome_empresa: company.numero_nome_empresa || "",
       celebrado_em: company.celebrado_em || "",
       numero_parceiro: company.numero_parceiro || "",
-      cnpj: company.cnpj || "",
+      cnpj: applyCNPJMask(company.cnpj),
       texto_contrato_7_14: company.texto_contrato_7_14 || "",
       texto_ocupacao_revelia: company.texto_ocupacao_revelia || "",
       texto_23_3: company.texto_23_3 || "",
@@ -515,7 +519,7 @@ export function NotificaFacilForm({
                       >
                         <span className="block font-bold">{company.empresa}</span>
                         <span className="mt-1 block text-xs text-edp-muted">
-                          CNPJ: {company.cnpj || "-"} | Contrato: {company.contrato_numero || "-"} | {company.empresa_cidade || "-"} {company.empresa_estado ? `- ${company.empresa_estado}` : ""}
+                          CNPJ: {formatCNPJDisplay(company.cnpj)} | Contrato: {company.contrato_numero || "-"} | {company.empresa_cidade || "-"} {company.empresa_estado ? `- ${company.empresa_estado}` : ""}
                         </span>
                       </button>
                     ))
@@ -568,7 +572,21 @@ export function NotificaFacilForm({
         <Section title="Dados da empresa e contrato" description="Campos preenchidos automaticamente pela base CSV e editáveis antes de salvar.">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <Input className="xl:col-span-2" label="Nome da Empresa" name="empresa" value={values.empresa} onChange={(value) => setField("empresa", value)} required />
-            <Input label="CNPJ" name="cnpj" value={values.cnpj} onChange={(value) => setField("cnpj", value)} />
+            <Input
+              label="CNPJ"
+              name="cnpj"
+              value={values.cnpj}
+              onChange={(value) => {
+                const digits = cnpjDigits(value);
+                const masked = applyCNPJMask(value);
+                setCnpjInvalid(Boolean(masked) && (digits.length !== 14 || !isValidCNPJ(masked)));
+                setField("cnpj", masked);
+              }}
+              inputMode="numeric"
+              maxLength={18}
+              placeholder="00.000.000/0000-00"
+              invalidMessage={values.cnpj && (!isValidCNPJ(values.cnpj) || cnpjInvalid) ? "CNPJ inválido." : ""}
+            />
             <Input label="Contrato Nº" name="contrato_numero" value={values.contrato_numero} onChange={(value) => setField("contrato_numero", value)} />
             <Input label="A/C" name="ac" value={values.ac} onChange={(value) => setField("ac", value)} />
             <Input label="Número/Nome da Empresa" name="numero_nome_empresa" value={values.numero_nome_empresa} onChange={(value) => setField("numero_nome_empresa", value)} />
@@ -721,7 +739,7 @@ function Section({
 }: {
   title: string;
   description?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <section className="rounded-2xl border border-line bg-card/50 p-5">
@@ -739,7 +757,7 @@ function Section({
   );
 }
 
-function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
+function Field({ label, children, className = "" }: { label: string; children: ReactNode; className?: string }) {
   return (
     <label className={`block ${className}`}>
       <span className="label">{label}</span>
@@ -755,7 +773,11 @@ function Input({
   onChange,
   type = "text",
   required = false,
-  className = ""
+  className = "",
+  inputMode,
+  maxLength,
+  placeholder,
+  invalidMessage = ""
 }: {
   label: string;
   name: keyof FormValues;
@@ -764,6 +786,10 @@ function Input({
   type?: string;
   required?: boolean;
   className?: string;
+  inputMode?: HTMLAttributes<HTMLInputElement>["inputMode"];
+  maxLength?: number;
+  placeholder?: string;
+  invalidMessage?: string;
 }) {
   return (
     <Field label={label} className={className}>
@@ -772,9 +798,18 @@ function Input({
         name={name}
         type={type}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          event.currentTarget.setCustomValidity("");
+          onChange(event.target.value);
+        }}
+        onBlur={(event) => event.currentTarget.setCustomValidity(invalidMessage)}
+        onInvalid={(event) => event.currentTarget.setCustomValidity(invalidMessage)}
+        inputMode={inputMode}
+        maxLength={maxLength}
+        placeholder={placeholder}
         required={required}
       />
+      {invalidMessage ? <span className="mt-1 block text-xs font-semibold text-red-300">{invalidMessage}</span> : null}
     </Field>
   );
 }

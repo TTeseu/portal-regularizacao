@@ -9,10 +9,15 @@ import { prisma } from "@/lib/prisma";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 import { buildNotificaFacilHtml } from "@/lib/notifica-facil-html";
 import { storePdfForNotificaFacil } from "@/lib/notifica-facil-pdf-cache";
+import { requireFormattedCNPJ } from "@/lib/cnpj";
 
 function text(formData: FormData, key: string) {
   const value = String(formData.get(key) || "").trim();
   return value || null;
+}
+
+function cnpjText(formData: FormData, key = "cnpj") {
+  return requireFormattedCNPJ(text(formData, key));
 }
 
 function numberValue(formData: FormData, key: string) {
@@ -149,7 +154,7 @@ function formToData(formData: FormData): Prisma.NotificaFacilNotificationUncheck
     ano_vencimento_contrato: text(formData, "ano_vencimento_contrato"),
     celebrado_em: text(formData, "celebrado_em"),
     mostrar_celebrado_em: checked(formData, "mostrar_celebrado_em"),
-    cnpj: text(formData, "cnpj"),
+    cnpj: cnpjText(formData),
     contrato_numero: text(formData, "contrato_numero"),
     ac: text(formData, "ac"),
     numero_nome_empresa: text(formData, "numero_nome_empresa"),
@@ -301,7 +306,7 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       vencimento_contrato: empresa.vencimento_contrato,
       ano_vencimento_contrato: empresa.ano_vencimento_contrato,
       celebrado_em: empresa.celebrado_em,
-      cnpj: empresa.cnpj,
+      cnpj: requireFormattedCNPJ(empresa.cnpj),
       contrato_numero: empresa.contrato_numero,
       ac: empresa.ac,
       numero_nome_empresa: empresa.numero_nome_empresa,
@@ -348,7 +353,7 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       numero_nome: empresa.numero_nome_empresa,
       celebrado_em: empresa.celebrado_em,
       numero_parceiro: empresa.numero_parceiro,
-      cnpj: empresa.cnpj,
+      cnpj: requireFormattedCNPJ(empresa.cnpj),
       empresa_rep: null,
       endereco_rep: null,
       bairro_rep: null,

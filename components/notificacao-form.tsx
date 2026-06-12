@@ -1,5 +1,6 @@
 import type { Notificacao } from "@prisma/client";
 import { STATUS_OPTIONS, ORIGEM_OPTIONS, EDIT_RESTRICTED_MESSAGE } from "@/lib/constants";
+import { CNPJInput } from "@/components/cnpj-input";
 
 type Props = {
   notificacao?: Notificacao | null;
@@ -54,7 +55,11 @@ export function NotificacaoForm({ notificacao, action, canEdit }: Props) {
             {fields.map(([name, label]) => (
               <label key={name} className="block">
                 <span className="label">{label}</span>
-                <input className="field mt-1" name={name} defaultValue={value(notificacao, name)} />
+                {name === "cnpj" ? (
+                  <CNPJInput name={name} defaultValue={value(notificacao, name)} />
+                ) : (
+                  <input className="field mt-1" name={name} defaultValue={value(notificacao, name)} />
+                )}
               </label>
             ))}
             <label className="block">

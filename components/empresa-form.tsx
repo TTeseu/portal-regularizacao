@@ -1,5 +1,6 @@
 import type { Empresa } from "@prisma/client";
 import { EDIT_RESTRICTED_MESSAGE } from "@/lib/constants";
+import { CNPJInput } from "@/components/cnpj-input";
 
 type Props = {
   empresa?: Empresa | null;
@@ -33,7 +34,11 @@ export function EmpresaForm({ empresa, action, canEdit }: Props) {
         ].map(([name, label]) => (
           <label key={name} className="block">
             <span className="label">{label}</span>
-            <input className="field mt-1" name={name} required={name === "nome"} defaultValue={value(empresa, name as keyof Empresa)} />
+            {name === "cnpj" ? (
+              <CNPJInput name={name} required={false} defaultValue={value(empresa, name as keyof Empresa)} />
+            ) : (
+              <input className="field mt-1" name={name} required={name === "nome"} defaultValue={value(empresa, name as keyof Empresa)} />
+            )}
           </label>
         ))}
         <label className="flex items-center gap-2 text-sm font-medium md:col-span-2">

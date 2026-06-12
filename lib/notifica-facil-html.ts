@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { NotificaFacilNotification } from "@prisma/client";
+import { formatCNPJDisplay } from "@/lib/cnpj";
 
 let cachedTemplate: string | null = null;
 
@@ -130,7 +131,7 @@ export function buildNotificaFacilHtml(notification: NotificaFacilNotification) 
     "{{NUMERO_CONTRATO}}": text(notification.contrato_numero, "-"),
     "{{A_C}}": text(notification.ac, "-"),
     "{{CELEBRADO_EM}}": text(notification.celebrado_em, "-"),
-    "{{CNPJ_DA_EMPRESA}}": text(notification.cnpj, "-"),
+    "{{CNPJ_DA_EMPRESA}}": formatCNPJDisplay(notification.cnpj),
     "{{TEXTO_CONTRATO_7_14}}": textBlock(notification.texto_contrato_7_14),
     "{{TEXTO_OCUPACAO_REVELIA}}": textBlock(notification.texto_ocupacao_revelia),
     "{{TEXTO_23_3}}": textBlock(notification.texto_23_3),

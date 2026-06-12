@@ -10,10 +10,15 @@ import { storePdfForNotificacao } from "@/lib/pdf-cache";
 import { CLAUSULA_11_6_3_TEXT } from "@/lib/constants";
 import { notifyAdminsNewAccessRequest } from "@/lib/email";
 import { countActiveAdmins, isSuperAdminEmail } from "@/lib/super-admin";
+import { requireFormattedCNPJ } from "@/lib/cnpj";
 
 function stringValue(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
+}
+
+function cnpjValue(formData: FormData, key = "cnpj") {
+  return requireFormattedCNPJ(stringValue(formData, key));
 }
 
 function boolValue(formData: FormData, key: string) {
@@ -81,7 +86,7 @@ export async function createNotificacao(formData: FormData) {
     numero_nome: stringValue(formData, "numero_nome"),
     celebrado_em: stringValue(formData, "celebrado_em"),
     numero_parceiro: stringValue(formData, "numero_parceiro"),
-    cnpj: stringValue(formData, "cnpj"),
+    cnpj: cnpjValue(formData),
     empresa_rep: stringValue(formData, "empresa_rep"),
     endereco_rep: stringValue(formData, "endereco_rep"),
     bairro_rep: stringValue(formData, "bairro_rep"),
@@ -162,7 +167,7 @@ export async function createNotificacoesWizard(formData: FormData) {
       numero_oficio: numeroOficio,
       data_notificacao: dataNotificacao,
       empresa: empresa.nome,
-      cnpj: empresa.cnpj,
+      cnpj: requireFormattedCNPJ(empresa.cnpj),
       contrato_numero: empresa.contrato_numero,
       endereco: empresa.endereco,
       cidade: empresa.cidade,
@@ -218,7 +223,7 @@ export async function updateNotificacao(id: string, formData: FormData) {
       numero_nome: stringValue(formData, "numero_nome"),
       celebrado_em: stringValue(formData, "celebrado_em"),
       numero_parceiro: stringValue(formData, "numero_parceiro"),
-      cnpj: stringValue(formData, "cnpj"),
+      cnpj: cnpjValue(formData),
       empresa_rep: stringValue(formData, "empresa_rep"),
       endereco_rep: stringValue(formData, "endereco_rep"),
       bairro_rep: stringValue(formData, "bairro_rep"),
@@ -270,7 +275,7 @@ export async function createEmpresa(formData: FormData) {
       created_by_id: user.id,
       created_by: user.email,
       nome: stringValue(formData, "nome") || "Sem nome",
-      cnpj: stringValue(formData, "cnpj"),
+      cnpj: cnpjValue(formData),
       contrato_numero: stringValue(formData, "contrato_numero"),
       endereco: stringValue(formData, "endereco"),
       cidade: stringValue(formData, "cidade"),
@@ -291,7 +296,7 @@ export async function updateEmpresa(id: string, formData: FormData) {
     data: {
       updated_date: new Date(),
       nome: stringValue(formData, "nome") || "Sem nome",
-      cnpj: stringValue(formData, "cnpj"),
+      cnpj: cnpjValue(formData),
       contrato_numero: stringValue(formData, "contrato_numero"),
       endereco: stringValue(formData, "endereco"),
       cidade: stringValue(formData, "cidade"),

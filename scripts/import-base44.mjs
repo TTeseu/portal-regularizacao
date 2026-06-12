@@ -20,6 +20,24 @@ function pick(row, fields) {
   return Object.fromEntries(fields.map((field) => [field, row[field] ?? null]));
 }
 
+function formatCNPJ(value, label = "CNPJ") {
+  if (value === null || value === undefined || String(value).trim() === "") return null;
+  const digits = String(value).replace(/\D/g, "");
+  if (digits.length !== 14) throw new Error(`${label} inválido.`);
+  return digits
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4")
+    .replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/, "$1.$2.$3/$4-$5");
+}
+
+function normalizeCNPJFields(data, fields, rowId) {
+  for (const field of fields) {
+    if (field in data) data[field] = formatCNPJ(data[field], `${field} do registro ${rowId || "sem id"}`);
+  }
+  return data;
+}
+
 async function readJson(name) {
   return JSON.parse(await readFile(path.join(sourceDir, `${name}.json`), "utf8"));
 }
@@ -39,6 +57,7 @@ const notificacaoFields = [
 
 const empresas = await readJson("Empresa");
 for (const row of empresas) {
+  const formattedCNPJ = formatCNPJ(row.cnpj, `cnpj da empresa ${row.id || row.nome || "sem id"}`);
   await prisma.empresa.upsert({
     where: { id: row.id },
     update: {
@@ -48,7 +67,7 @@ for (const row of empresas) {
       created_by: row.created_by ?? null,
       is_sample: Boolean(row.is_sample),
       nome: row.nome || "Sem nome",
-      cnpj: row.cnpj ?? null,
+      cnpj: formattedCNPJ,
       contrato_numero: row.contrato_numero ?? null,
       endereco: row.endereco ?? null,
       cidade: row.cidade ?? null,
@@ -65,7 +84,7 @@ for (const row of empresas) {
       created_by: row.created_by ?? null,
       is_sample: Boolean(row.is_sample),
       nome: row.nome || "Sem nome",
-      cnpj: row.cnpj ?? null,
+      cnpj: formattedCNPJ,
       contrato_numero: row.contrato_numero ?? null,
       endereco: row.endereco ?? null,
       cidade: row.cidade ?? null,
@@ -118,6 +137,7 @@ for (const row of notificacoes) {
     download_count: intValue(row.download_count),
     last_downloaded_at: dt(row.last_downloaded_at)
   };
+  normalizeCNPJFields(common, ["cnpj", "cnpj_empresa_1", "cnpj_empresa_2", "cnpj_condominio"], row.id);
   await prisma.notificacao.upsert({
     where: { id: row.id },
     update: common,

@@ -83,6 +83,24 @@ function pick(row, fields) {
   return Object.fromEntries(fields.map((field) => [field, row[field] ?? null]));
 }
 
+function formatCNPJ(value, label = "CNPJ") {
+  if (value === null || value === undefined || String(value).trim() === "") return null;
+  const digits = String(value).replace(/\D/g, "");
+  if (digits.length !== 14) throw new Error(`${label} inválido.`);
+  return digits
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4")
+    .replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/, "$1.$2.$3/$4-$5");
+}
+
+function normalizeCNPJFields(data, fields, rowId) {
+  for (const field of fields) {
+    if (field in data) data[field] = formatCNPJ(data[field], `${field} do registro ${rowId || "sem id"}`);
+  }
+  return data;
+}
+
 async function readJson(name) {
   if (consolidatedExport) {
     const rows = consolidatedExport[name];
@@ -184,7 +202,7 @@ for (const entityName of rawEntityNames) {
 }
 
 await createManyInBatches(prisma.notificaFacilNotification, (await readJson("Notification")).map((row) => {
-  return {
+  const data = {
     id: row.id,
     ...baseFields(row),
     empresa: row.empresa || "Sem empresa",
@@ -210,15 +228,17 @@ await createManyInBatches(prisma.notificaFacilNotification, (await readJson("Not
     fotos_censo: jsonValue(row.fotos_censo),
     ocr_legendas: jsonValue(row.ocr_legendas)
   };
+  return normalizeCNPJFields(data, ["cnpj"], row.id);
 }), "Notification");
 
 await createManyInBatches(prisma.notificaFacilBaseNotificacao, (await readJson("BaseNotificacao")).map((row) => {
-  return {
+  const data = {
     id: row.id,
     ...baseFields(row),
     empresa: row.empresa || "Sem empresa",
     ...pick(row, baseNotificacaoFields)
   };
+  return normalizeCNPJFields(data, ["cnpj"], row.id);
 }), "BaseNotificacao");
 
 await createManyInBatches(prisma.notificaFacilEmpresa, (await readJson("Empresa")).map((row) => {
@@ -226,7 +246,7 @@ await createManyInBatches(prisma.notificaFacilEmpresa, (await readJson("Empresa"
     id: row.id,
     ...baseFields(row),
     nome: row.nome || row.empresa || "Sem nome",
-    cnpj: row.cnpj ?? null,
+    cnpj: formatCNPJ(row.cnpj, `cnpj da empresa ${row.id || row.nome || "sem id"}`),
     contrato_numero: row.contrato_numero ?? null,
     endereco: row.endereco ?? null,
     cidade: row.cidade ?? null,

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { CLAUSULA_11_6_3_TEXT, EDIT_RESTRICTED_MESSAGE } from "@/lib/constants";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
+import { formatCNPJDisplay } from "@/lib/cnpj";
 
 type EmpresaOption = {
   id: string;
@@ -196,7 +197,7 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action, backH
     const term = query.trim().toLowerCase();
     if (!term) return empresas;
     return empresas.filter((empresa) =>
-      [empresa.nome, empresa.cnpj, empresa.contrato_numero, empresa.cidade, empresa.estado]
+      [empresa.nome, empresa.cnpj, formatCNPJDisplay(empresa.cnpj), empresa.contrato_numero, empresa.cidade, empresa.estado]
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
@@ -396,7 +397,7 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action, backH
                     <input type="checkbox" className="mt-1 h-4 w-4 rounded border-white/20 bg-edp-navy accent-[#00E676]" checked={selected} onChange={() => toggleEmpresa(empresa.id)} />
                     <span>
                       <span className="block font-bold text-white">{empresa.nome}</span>
-                      <span className="block text-sm text-edp-muted">CNPJ: {empresa.cnpj || "-"} | Contrato: {empresa.contrato_numero || "-"}</span>
+                      <span className="block text-sm text-edp-muted">CNPJ: {formatCNPJDisplay(empresa.cnpj)} | Contrato: {empresa.contrato_numero || "-"}</span>
                       <span className="block text-xs uppercase text-edp-muted/80">{empresa.cidade || "-"}{empresa.estado ? ` - ${empresa.estado}` : ""}</span>
                     </span>
                   </label>
@@ -689,7 +690,7 @@ function PreviewCard({ empresa, previewHtml, onPrint, onView }: { empresa?: Empr
           <FileText className="mt-1 text-edp" size={20} />
           <div>
             <h3 className="font-bold text-white">PDF 1 - {empresa?.nome || "Empresa selecionada"}</h3>
-            <p className="text-sm text-edp-muted">CNPJ: {empresa?.cnpj || "-"} | Contrato: {empresa?.contrato_numero || "-"}</p>
+            <p className="text-sm text-edp-muted">CNPJ: {formatCNPJDisplay(empresa?.cnpj)} | Contrato: {empresa?.contrato_numero || "-"}</p>
           </div>
         </div>
         <div className="flex gap-2">

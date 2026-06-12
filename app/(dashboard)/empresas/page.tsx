@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { PageTitle } from "@/components/page-title";
 import { formatPtBrDisplay } from "@/lib/format";
+import { cnpjSearchTerm, formatCNPJDisplay } from "@/lib/cnpj";
 
 export default async function EmpresasPage({
   searchParams
@@ -15,7 +16,7 @@ export default async function EmpresasPage({
   const user = await requireUser();
   const where: Prisma.EmpresaWhereInput = {};
   if (params.q) {
-    const search = { contains: params.q, mode: "insensitive" as const };
+    const search = { contains: cnpjSearchTerm(params.q), mode: "insensitive" as const };
     where.OR = [{ nome: search }, { cnpj: search }, { contrato_numero: search }, { cidade: search }];
   }
 
@@ -68,7 +69,7 @@ export default async function EmpresasPage({
               {empresas.map((empresa) => (
                 <tr key={empresa.id}>
                   <td className="px-4 py-3 font-medium">{empresa.nome}</td>
-                  <td className="px-4 py-3">{empresa.cnpj || "-"}</td>
+                  <td className="px-4 py-3">{formatCNPJDisplay(empresa.cnpj)}</td>
                   <td className="px-4 py-3">{empresa.contrato_numero || "-"}</td>
                   <td className="px-4 py-3">{formatPtBrDisplay(empresa.cidade)}</td>
                   <td className="px-4 py-3">{empresa.tem_clausula_11_6_3 ? "Sim" : "Não"}</td>

@@ -9,6 +9,7 @@ import { buildNotificaFacilHtml, sanitizeNotificaFacilHtml } from "@/lib/notific
 import { NotificaFacilForm } from "@/components/notifica-facil-form";
 import { formatDateTime, formatPtBrDisplay } from "@/lib/format";
 import { deleteNotificaFacilNotification, updateNotificaFacilNotification } from "../actions";
+import { formatCNPJDisplay } from "@/lib/cnpj";
 
 export default async function NotificaFacilDetailPage({
   params,
@@ -86,7 +87,7 @@ export default async function NotificaFacilDetailPage({
             <dl className="space-y-3 text-sm">
               <Row label="Protocolo" value={notification.numero_protocolo} />
               <Row label="Contrato" value={notification.contrato_numero} />
-              <Row label="CNPJ" value={notification.cnpj} />
+              <Row label="CNPJ" value={formatCNPJDisplay(notification.cnpj)} />
               <Row label="Cidade" value={formatPtBrDisplay(notification.empresa_cidade)} />
               <Row label="Ordem venda" value={notification.ordem_venda} />
               <Row label="Pendência técnica" value={notification.pendencia_tecnica ? "Sim" : "Não"} />

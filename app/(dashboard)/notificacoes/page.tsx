@@ -7,6 +7,7 @@ import { STATUS_OPTIONS, ORIGEM_OPTIONS } from "@/lib/constants";
 import { PageTitle } from "@/components/page-title";
 import { StatusBadge } from "@/components/status-badge";
 import { formatDateTime, formatPtBrDisplay } from "@/lib/format";
+import { cnpjSearchTerm } from "@/lib/cnpj";
 
 export default async function NotificacoesPage({
   searchParams
@@ -29,11 +30,13 @@ export default async function NotificacoesPage({
   if (params.vencimento) where.vencimento = { contains: params.vencimento, mode: "insensitive" };
   if (params.q) {
     const search = { contains: params.q, mode: "insensitive" as const };
+    const cnpjSearch = { contains: cnpjSearchTerm(params.q), mode: "insensitive" as const };
     where.OR = [
       { numero_oficio: search },
       { empresa: search },
       { cidade: search },
       { cnpj: search },
+      { cnpj: cnpjSearch },
       { contrato_numero: search },
       { lote_nome: search }
     ];

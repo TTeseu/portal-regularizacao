@@ -18,6 +18,7 @@ import {
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { formatPtBrDisplay } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import { cnpjSearchTerm } from "@/lib/cnpj";
 
 const statuses = [
   "Aguardando assinatura Gestor",
@@ -55,9 +56,11 @@ export default async function NotificaFacilPage({
   if (values.cidade) where.empresa_cidade = { contains: values.cidade, mode: "insensitive" };
   if (values.q) {
     const q = { contains: values.q, mode: "insensitive" as const };
+    const cnpj = { contains: cnpjSearchTerm(values.q), mode: "insensitive" as const };
     where.OR = [
       { empresa: q },
       { cnpj: q },
+      { cnpj },
       { contrato_numero: q },
       { numero_notificacao: q },
       { numero_registro_censo: q },

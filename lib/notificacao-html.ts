@@ -1,4 +1,5 @@
 import type { Notificacao } from "@prisma/client";
+import { formatCNPJDisplay } from "@/lib/cnpj";
 
 type AddressRow = {
   endereco: string;
@@ -82,7 +83,8 @@ function companyAddress(notificacao: Notificacao) {
 
 function companyQualification(notificacao: Notificacao, empresa: string) {
   const endereco = companyAddress(notificacao);
-  const cnpj = notificacao.cnpj || notificacao.cnpj_empresa_1 || notificacao.cnpj_empresa_2 || notificacao.cnpj_condominio || "";
+  const rawCnpj = notificacao.cnpj || notificacao.cnpj_empresa_1 || notificacao.cnpj_empresa_2 || notificacao.cnpj_condominio || "";
+  const cnpj = rawCnpj ? formatCNPJDisplay(rawCnpj) : "";
   return `${empresa}${endereco ? `, COM SEDE NA ${endereco}` : ""}${cnpj ? `, INSCRITA NO CNPJ/MF SOB O N.º ${cnpj}` : ""}`;
 }
 
