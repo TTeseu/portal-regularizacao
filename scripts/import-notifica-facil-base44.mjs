@@ -11,6 +11,7 @@ const sourcePath = sourceArg ? path.resolve(sourceArg) : path.resolve("exports",
 const sourceInfo = await stat(sourcePath);
 let consolidatedExport = null;
 const importedAt = new Date();
+let invalidCnpjCount = 0;
 
 if (sourceInfo.isFile()) {
   const parsed = JSON.parse(await readFile(sourcePath, "utf8"));
@@ -94,7 +95,11 @@ function pick(row, fields) {
 function formatCNPJ(value, label = "CNPJ") {
   if (value === null || value === undefined || String(value).trim() === "") return null;
   const digits = String(value).replace(/\D/g, "");
-  if (digits.length !== 14) throw new Error(`${label} inválido.`);
+  if (digits.length !== 14) {
+    invalidCnpjCount += 1;
+    if (invalidCnpjCount <= 5) console.log(`CNPJ invalido ignorado: ${label}`);
+    return null;
+  }
   return digits
     .replace(/^(\d{2})(\d)/, "$1.$2")
     .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
@@ -333,6 +338,10 @@ await createManyInBatches(prisma.notificaFacilRelatorioEmpresaClandestina, (awai
     censo_draft_id: row.censo_draft_id ?? null
   };
 }), "RelatorioEmpresaClandestina");
+
+if (invalidCnpjCount > 0) {
+  console.log(`CNPJs invalidos ignorados na importacao estruturada: ${invalidCnpjCount}`);
+}
 
 console.log("Importacao do Notifica Facil concluida");
 await prisma.$disconnect();
