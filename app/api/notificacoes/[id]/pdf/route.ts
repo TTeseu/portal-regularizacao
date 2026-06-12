@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { canAccessPortal, getCurrentUser } from "@/lib/auth";
 import { ensurePdfForNotificacao, pdfResponse } from "@/lib/pdf-cache";
+import { regularizacaoPdfFilename } from "@/lib/download-filename";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -46,5 +47,5 @@ export async function GET(
     })
   ]);
 
-  return pdfResponse(cachedPdf.bytes, `notificacao-${id}.pdf`);
+  return pdfResponse(cachedPdf.bytes, regularizacaoPdfFilename(notificacao));
 }

@@ -1,8 +1,10 @@
+export const BR_TIME_ZONE = "America/Sao_Paulo";
+
 export function formatDate(value?: Date | string | null) {
   if (!value) return "-";
   const date = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return String(value);
-  return new Intl.DateTimeFormat("pt-BR").format(date);
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: BR_TIME_ZONE }).format(date);
 }
 
 export function formatDateTime(value?: Date | string | null) {
@@ -11,7 +13,8 @@ export function formatDateTime(value?: Date | string | null) {
   if (Number.isNaN(date.getTime())) return String(value);
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
-    timeStyle: "short"
+    timeStyle: "short",
+    timeZone: BR_TIME_ZONE
   }).format(date);
 }
 

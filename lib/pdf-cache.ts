@@ -161,10 +161,11 @@ export async function ensurePdfForNotificacao(notificacao: Notificacao): Promise
 }
 
 export function pdfResponse(bytes: Uint8Array, filename: string) {
+  const asciiFilename = filename.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7E]/g, "");
   return new Response(toArrayBuffer(bytes), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
       "Cache-Control": "private, max-age=31536000, immutable"
     }
   });

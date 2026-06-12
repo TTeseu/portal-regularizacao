@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { canAccessPortal, getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ensurePdfForNotificaFacil, pdfResponse } from "@/lib/notifica-facil-pdf-cache";
+import { notificaFacilPdfFilename } from "@/lib/download-filename";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -26,6 +27,5 @@ export async function GET(
   });
 
   const cached = await ensurePdfForNotificaFacil(notification);
-  const filename = `${notification.numero_notificacao || notification.numero_registro_censo || notification.id}.pdf`;
-  return pdfResponse(cached.bytes, filename);
+  return pdfResponse(cached.bytes, notificaFacilPdfFilename(notification));
 }

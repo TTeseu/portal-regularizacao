@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { AlertTriangle, ArrowLeft, Bell, CheckCircle2, Clock3, Download, FileText, Plus, Search } from "lucide-react";
 import { Prisma } from "@prisma/client";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
-import { formatPtBrDisplay } from "@/lib/format";
+import { formatDate, formatDateTime, formatPtBrDisplay } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { markNotificaFacilPtNotificado } from "@/app/(dashboard)/notifica-facil/actions";
 
@@ -176,7 +176,7 @@ export async function NotificaFacilPendenciasPage({
                     <Link href={`/notifica-facil/${item.id}?from=${encodeURIComponent(modeHref(mode))}`} className="font-bold text-edp hover:text-edp-hover">
                       {item.numero_notificacao || item.numero_protocolo || item.id}
                     </Link>
-                    <div className="mt-1 text-xs text-edp-muted">{item.updated_date ? item.updated_date.toLocaleDateString("pt-BR") : "Sem atualização"}</div>
+                    <div className="mt-1 text-xs text-edp-muted">{formatDate(item.updated_date)}</div>
                   </td>
                   <td className="px-5 py-4 text-white">{item.empresa}</td>
                   <td className="px-5 py-4 text-edp-muted">{item.numero_registro_censo || "-"}</td>
@@ -220,7 +220,7 @@ export async function NotificaFacilPendenciasPage({
             {logs.map((log) => (
               <div key={log.id} className="rounded-2xl border border-line bg-surface p-4">
                 <div className="font-bold text-white">{log.action}</div>
-                <div className="mt-1 text-xs text-edp-muted">{log.timestamp.toLocaleString("pt-BR")} - {log.user_name || log.user_email}</div>
+                <div className="mt-1 text-xs text-edp-muted">{formatDateTime(log.timestamp)} - {log.user_name || log.user_email}</div>
                 <div className="mt-2 text-sm text-edp-muted">{log.details || log.field_changed || "Registro de alteração"}</div>
               </div>
             ))}

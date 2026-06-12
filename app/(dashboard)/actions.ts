@@ -11,6 +11,7 @@ import { CLAUSULA_11_6_3_TEXT } from "@/lib/constants";
 import { notifyAdminsNewAccessRequest } from "@/lib/email";
 import { countActiveAdmins, isSuperAdminEmail } from "@/lib/super-admin";
 import { requireFormattedCNPJ } from "@/lib/cnpj";
+import { BR_TIME_ZONE } from "@/lib/format";
 
 function stringValue(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -114,6 +115,7 @@ export async function createNotificacao(formData: FormData) {
   const created = await prisma.notificacao.create({ data });
   await storePdfForNotificacao(created, buildNotificacaoHtml(created));
 
+  revalidatePath("/regularizacao");
   revalidatePath("/notificacoes");
   redirect(`/notificacoes/${id}`);
 }
@@ -148,7 +150,7 @@ export async function createNotificacoesWizard(formData: FormData) {
   const createdIds: string[] = [];
   const now = new Date();
   const loteId = randomUUID();
-  const loteNome = stringValue(formData, "lote_nome") || `Geracao ${now.toLocaleDateString("pt-BR")} - ${empresas.length} ${pluralLabel(empresas.length)}`;
+  const loteNome = stringValue(formData, "lote_nome") || `Geracao ${now.toLocaleDateString("pt-BR", { timeZone: BR_TIME_ZONE })} - ${empresas.length} ${pluralLabel(empresas.length)}`;
   const tipo = stringValue(formData, "tipo_notificacao");
   const numeroOficio = stringValue(formData, "numero_oficio");
   const dataNotificacao = dateFromInput(stringValue(formData, "data_notificacao"));
@@ -189,11 +191,12 @@ export async function createNotificacoesWizard(formData: FormData) {
   }
 
   revalidatePath("/");
+  revalidatePath("/regularizacao");
   revalidatePath("/notificacoes");
   if (createdIds.length === 1) {
-    redirect(`/notificacoes/${createdIds[0]}`);
+    redirect(`/notificacoes?lote=${encodeURIComponent(loteNome)}`);
   }
-  redirect(`/notificacoes?lote=${encodeURIComponent(loteNome)}`);
+  redirect("/regularizacao");
 }
 
 export async function updateNotificacao(id: string, formData: FormData) {
@@ -249,6 +252,7 @@ export async function updateNotificacao(id: string, formData: FormData) {
     }
   });
   await storePdfForNotificacao(updated, buildNotificacaoHtml(updated));
+  revalidatePath("/regularizacao");
   revalidatePath("/notificacoes");
   revalidatePath(`/notificacoes/${id}`);
   redirect(`/notificacoes/${id}`);
@@ -260,6 +264,7 @@ export async function markNotificacao(id: string, field: "visualizada" | "arquiv
     where: { id },
     data: { [field]: value, updated_date: new Date() }
   });
+  revalidatePath("/regularizacao");
   revalidatePath("/notificacoes");
   revalidatePath(`/notificacoes/${id}`);
 }

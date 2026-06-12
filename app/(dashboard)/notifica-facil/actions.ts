@@ -10,6 +10,7 @@ import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 import { buildNotificaFacilHtml } from "@/lib/notifica-facil-html";
 import { storePdfForNotificaFacil } from "@/lib/notifica-facil-pdf-cache";
 import { requireFormattedCNPJ } from "@/lib/cnpj";
+import { BR_TIME_ZONE } from "@/lib/format";
 
 function text(formData: FormData, key: string) {
   const value = String(formData.get(key) || "").trim();
@@ -274,7 +275,7 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
 
   const now = new Date();
   const loteId = randomUUID();
-  const loteNome = text(formData, "lote_nome") || `Notifica Fácil - ${now.toLocaleDateString("pt-BR")} - ${empresas.length} ${pluralLabel(empresas.length)}`;
+  const loteNome = text(formData, "lote_nome") || `Notifica Fácil - ${now.toLocaleDateString("pt-BR", { timeZone: BR_TIME_ZONE })} - ${empresas.length} ${pluralLabel(empresas.length)}`;
   const tipo = text(formData, "tipo_notificacao") || "Ocupação Irregular";
   const numeroOficio = text(formData, "numero_oficio");
   const dataNotificacao = dateFromInput(text(formData, "data_notificacao"));

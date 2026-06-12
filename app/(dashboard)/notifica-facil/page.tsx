@@ -16,7 +16,7 @@ import {
   Users
 } from "lucide-react";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
-import { formatPtBrDisplay } from "@/lib/format";
+import { formatDate, formatPtBrDisplay } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { cnpjSearchTerm } from "@/lib/cnpj";
 
@@ -216,7 +216,7 @@ export default async function NotificaFacilPage({
                         <Link href={`/notifica-facil/${item.id}`} className="font-bold text-edp hover:text-edp-hover">
                           {item.numero_notificacao || item.numero_protocolo || item.id}
                         </Link>
-                        <div className="mt-1 text-xs text-edp-muted">{item.created_date ? item.created_date.toLocaleDateString("pt-BR") : "Sem data"}</div>
+                        <div className="mt-1 text-xs text-edp-muted">{formatDate(item.created_date)}</div>
                       </td>
                       <td className="px-5 py-4 text-white">{item.empresa}</td>
                       <td className="px-5 py-4 text-edp-muted">{item.numero_registro_censo || "-"}</td>
