@@ -1,4 +1,5 @@
 import type { Notificacao } from "@prisma/client";
+import PDFDocument from "pdfkit";
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
@@ -26,35 +27,73 @@ function toArrayBuffer(bytes: Uint8Array) {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
+function decodeHtml(value: string) {
+  return value
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&Aacute;/g, "Á")
+    .replace(/&aacute;/g, "á")
+    .replace(/&Eacute;/g, "É")
+    .replace(/&eacute;/g, "é")
+    .replace(/&Iacute;/g, "Í")
+    .replace(/&iacute;/g, "í")
+    .replace(/&Oacute;/g, "Ó")
+    .replace(/&oacute;/g, "ó")
+    .replace(/&Uacute;/g, "Ú")
+    .replace(/&uacute;/g, "ú")
+    .replace(/&Ccedil;/g, "Ç")
+    .replace(/&ccedil;/g, "ç")
+    .replace(/&Atilde;/g, "Ã")
+    .replace(/&atilde;/g, "ã")
+    .replace(/&Otilde;/g, "Õ")
+    .replace(/&otilde;/g, "õ");
+}
+
+function htmlToPlainText(html: string) {
+  return decodeHtml(
+    html
+      .replace(/<script[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[\s\S]*?<\/style>/gi, "")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/(p|div|section|h1|h2|h3|li)>/gi, "\n\n")
+      .replace(/<\/tr>/gi, "\n")
+      .replace(/<\/t[dh]>\s*<t[dh][^>]*>/gi, " | ")
+      .replace(/<[^>]+>/g, "")
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+  );
+}
+
+function collectPdf(doc: PDFKit.PDFDocument) {
+  return new Promise<Uint8Array>((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+    doc.on("end", () => resolve(new Uint8Array(Buffer.concat(chunks))));
+    doc.on("error", reject);
+    doc.end();
+  });
+}
+
 export async function renderPdfFromHtml(html: string) {
-  const chromium = await import("@sparticuz/chromium");
-  const puppeteer = await import("puppeteer-core");
-  chromium.default.setGraphicsMode = false;
-  const headless = "shell" as const;
-  const defaultViewport = {
-    deviceScaleFactor: 1,
-    hasTouch: false,
-    height: 1080,
-    isLandscape: false,
-    isMobile: false,
-    width: 1440
-  };
-  const browser = await puppeteer.launch({
-    args: await puppeteer.defaultArgs({ args: chromium.default.args, headless }),
-    defaultViewport,
-    executablePath: await chromium.default.executablePath(),
-    headless
+  const text = htmlToPlainText(html);
+  const doc = new PDFDocument({
+    size: "A4",
+    margins: { top: 56, right: 62, bottom: 56, left: 62 },
+    bufferPages: true
   });
 
-  try {
-    const page = await browser.newPage();
-    await page.setJavaScriptEnabled(false);
-    await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 30000 });
-    await page.emulateMediaType("screen");
-    return page.pdf({ format: "A4", printBackground: true });
-  } finally {
-    await browser.close();
-  }
+  doc.font("Times-Roman").fontSize(10).fillColor("#000");
+  doc.text(text || "Documento sem conteúdo.", {
+    align: "justify",
+    lineGap: 3
+  });
+
+  return collectPdf(doc);
 }
 
 async function readExternalPdf(url: string) {
