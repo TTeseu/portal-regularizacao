@@ -2,7 +2,13 @@ import type { NotificaFacilNotification } from "@prisma/client";
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { buildNotificaFacilHtml, sanitizeNotificaFacilHtml } from "@/lib/notifica-facil-html";
-import { pdfResponse, renderPdfFromHtml } from "@/lib/pdf-cache";
+import {
+  PDF_RENDERER_VERSION,
+  hasCurrentPdfRenderer,
+  markPdfRoute,
+  pdfResponse,
+  renderPdfFromHtml
+} from "@/lib/pdf-cache";
 
 type PdfCacheResult = {
   bytes: Uint8Array;
@@ -40,11 +46,11 @@ async function readExternalPdf(url: string) {
 
 export async function storePdfForNotificaFacil(notification: NotificaFacilNotification, html = buildNotificaFacilHtml(notification)) {
   const pdf = new Uint8Array(await renderPdfFromHtml(html));
-  let pdfUrl = `/api/notifica-facil/notifications/${notification.id}/pdf`;
+  let pdfUrl = markPdfRoute(`/api/notifica-facil/notifications/${notification.id}/pdf`);
   let pdfBase64: string | null = Buffer.from(pdf).toString("base64");
 
   if (hasBlobToken()) {
-    const blob = await put(`notifica-facil/notifications/${notification.id}.pdf`, Buffer.from(pdf), {
+    const blob = await put(`notifica-facil/notifications/${PDF_RENDERER_VERSION}/${notification.id}.pdf`, Buffer.from(pdf), {
       access: "public",
       contentType: "application/pdf",
       allowOverwrite: true
@@ -67,15 +73,15 @@ export async function storePdfForNotificaFacil(notification: NotificaFacilNotifi
 }
 
 export async function ensurePdfForNotificaFacil(notification: NotificaFacilNotification): Promise<PdfCacheResult> {
-  if (notification.pdf_base64) {
+  if (notification.pdf_base64 && hasCurrentPdfRenderer(notification.pdf_url)) {
     return {
       bytes: Buffer.from(notification.pdf_base64, "base64"),
-      url: notification.pdf_url || `/api/notifica-facil/notifications/${notification.id}/pdf`,
+      url: notification.pdf_url || markPdfRoute(`/api/notifica-facil/notifications/${notification.id}/pdf`),
       source: "database"
     };
   }
 
-  if (isExternalPdfUrl(notification.pdf_url) && !isSelfPdfRoute(notification.pdf_url, notification.id)) {
+  if (isExternalPdfUrl(notification.pdf_url) && !isSelfPdfRoute(notification.pdf_url, notification.id) && hasCurrentPdfRenderer(notification.pdf_url)) {
     const bytes = await readExternalPdf(notification.pdf_url!);
     if (bytes) {
       return { bytes, url: notification.pdf_url!, source: "blob" };

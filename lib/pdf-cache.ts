@@ -1,8 +1,12 @@
 import type { Notificacao } from "@prisma/client";
-import PDFDocument from "pdfkit";
+import { existsSync } from "node:fs";
+import chromium from "@sparticuz/chromium";
+import puppeteer from "puppeteer-core";
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
+
+export const PDF_RENDERER_VERSION = "html-render-v2";
 
 type PdfCacheResult = {
   bytes: Uint8Array;
@@ -23,77 +27,70 @@ function isSelfPdfRoute(value?: string | null, id?: string) {
   return value.includes(`/api/notificacoes/${id}/pdf`);
 }
 
+export function hasCurrentPdfRenderer(value?: string | null) {
+  return Boolean(value?.includes(PDF_RENDERER_VERSION));
+}
+
+export function markPdfRoute(url: string) {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}renderer=${PDF_RENDERER_VERSION}`;
+}
+
 function toArrayBuffer(bytes: Uint8Array) {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
-function decodeHtml(value: string) {
-  return value
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&Aacute;/g, "Á")
-    .replace(/&aacute;/g, "á")
-    .replace(/&Eacute;/g, "É")
-    .replace(/&eacute;/g, "é")
-    .replace(/&Iacute;/g, "Í")
-    .replace(/&iacute;/g, "í")
-    .replace(/&Oacute;/g, "Ó")
-    .replace(/&oacute;/g, "ó")
-    .replace(/&Uacute;/g, "Ú")
-    .replace(/&uacute;/g, "ú")
-    .replace(/&Ccedil;/g, "Ç")
-    .replace(/&ccedil;/g, "ç")
-    .replace(/&Atilde;/g, "Ã")
-    .replace(/&atilde;/g, "ã")
-    .replace(/&Otilde;/g, "Õ")
-    .replace(/&otilde;/g, "õ");
-}
+async function getChromeExecutablePath() {
+  const candidates = [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  ].filter(Boolean) as string[];
 
-function htmlToPlainText(html: string) {
-  return decodeHtml(
-    html
-      .replace(/<script[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[\s\S]*?<\/style>/gi, "")
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<\/(p|div|section|h1|h2|h3|li)>/gi, "\n\n")
-      .replace(/<\/tr>/gi, "\n")
-      .replace(/<\/t[dh]>\s*<t[dh][^>]*>/gi, " | ")
-      .replace(/<[^>]+>/g, "")
-      .replace(/[ \t]+\n/g, "\n")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim()
-  );
-}
+  const localPath = candidates.find((path) => existsSync(path));
+  if (localPath) return localPath;
 
-function collectPdf(doc: PDFKit.PDFDocument) {
-  return new Promise<Uint8Array>((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
-    doc.on("end", () => resolve(new Uint8Array(Buffer.concat(chunks))));
-    doc.on("error", reject);
-    doc.end();
-  });
+  return chromium.executablePath();
 }
 
 export async function renderPdfFromHtml(html: string) {
-  const text = htmlToPlainText(html);
-  const doc = new PDFDocument({
-    size: "A4",
-    margins: { top: 56, right: 62, bottom: 56, left: 62 },
-    bufferPages: true
+  const browser = await puppeteer.launch({
+    args: [
+      ...chromium.args,
+      "--disable-web-security",
+      "--font-render-hinting=none"
+    ],
+    defaultViewport: { width: 1280, height: 1600 },
+    executablePath: await getChromeExecutablePath(),
+    headless: true
   });
 
-  doc.font("Times-Roman").fontSize(10).fillColor("#000");
-  doc.text(text || "Documento sem conteúdo.", {
-    align: "justify",
-    lineGap: 3
-  });
-
-  return collectPdf(doc);
+  try {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "load", timeout: 30000 });
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      await Promise.all(
+        Array.from(document.images)
+          .filter((image) => !image.complete)
+          .map((image) => new Promise((resolve) => {
+            image.addEventListener("load", resolve, { once: true });
+            image.addEventListener("error", resolve, { once: true });
+          }))
+      );
+    });
+    await page.emulateMediaType("print");
+    const pdf = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      preferCSSPageSize: true
+    });
+    return new Uint8Array(pdf);
+  } finally {
+    await browser.close();
+  }
 }
 
 async function readExternalPdf(url: string) {
@@ -114,11 +111,11 @@ async function readExternalPdf(url: string) {
 
 export async function storePdfForNotificacao(notificacao: Notificacao, html = buildNotificacaoHtml(notificacao)) {
   const pdf = new Uint8Array(await renderPdfFromHtml(html));
-  let pdfUrl = `/api/notificacoes/${notificacao.id}/pdf`;
+  let pdfUrl = markPdfRoute(`/api/notificacoes/${notificacao.id}/pdf`);
   let pdfBase64: string | null = Buffer.from(pdf).toString("base64");
 
   if (hasBlobToken()) {
-    const blob = await put(`regularizacao/notificacoes/${notificacao.id}.pdf`, Buffer.from(pdf), {
+    const blob = await put(`regularizacao/notificacoes/${PDF_RENDERER_VERSION}/${notificacao.id}.pdf`, Buffer.from(pdf), {
       access: "public",
       contentType: "application/pdf",
       allowOverwrite: true
@@ -141,15 +138,15 @@ export async function storePdfForNotificacao(notificacao: Notificacao, html = bu
 }
 
 export async function ensurePdfForNotificacao(notificacao: Notificacao): Promise<PdfCacheResult> {
-  if (notificacao.pdf_base64) {
+  if (notificacao.pdf_base64 && hasCurrentPdfRenderer(notificacao.pdfUrl)) {
     return {
       bytes: Buffer.from(notificacao.pdf_base64, "base64"),
-      url: notificacao.pdfUrl || `/api/notificacoes/${notificacao.id}/pdf`,
+      url: notificacao.pdfUrl || markPdfRoute(`/api/notificacoes/${notificacao.id}/pdf`),
       source: "database"
     };
   }
 
-  if (isExternalPdfUrl(notificacao.pdfUrl) && !isSelfPdfRoute(notificacao.pdfUrl, notificacao.id)) {
+  if (isExternalPdfUrl(notificacao.pdfUrl) && !isSelfPdfRoute(notificacao.pdfUrl, notificacao.id) && hasCurrentPdfRenderer(notificacao.pdfUrl)) {
     const bytes = await readExternalPdf(notificacao.pdfUrl!);
     if (bytes) {
       return {
