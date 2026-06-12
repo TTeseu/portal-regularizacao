@@ -55,6 +55,14 @@ function hasTechnicalPending(row) {
     || (text.includes("pend") && (text.includes("tecn") || text.includes("técn")));
 }
 
+function isFinalCensoStatus(value) {
+  const normalized = String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  return normalized === "finalizado" || normalized === "excluido";
+}
+
 function jsonValue(value) {
   return value === undefined || value === null ? Prisma.JsonNull : value;
 }
@@ -179,6 +187,26 @@ async function createManyInBatches(model, rows, label, batchSize = 500) {
   console.log(`${label}: ${total} registro(s) importados`);
 }
 
+async function upsertManyInBatches(model, rows, label, batchSize = 100) {
+  let total = 0;
+  for (let index = 0; index < rows.length; index += batchSize) {
+    const batch = rows.slice(index, index + batchSize);
+    if (batch.length === 0) continue;
+    await prisma.$transaction(
+      batch.map((row) => {
+        const { id, ...update } = row;
+        return model.upsert({
+          where: { id },
+          create: row,
+          update
+        });
+      })
+    );
+    total += batch.length;
+  }
+  console.log(`${label}: ${total} registro(s) sincronizados`);
+}
+
 if (replaceExisting) {
   await prisma.$transaction([
     prisma.notificaFacilRawEntity.deleteMany({ where: { entity_name: { in: rawEntityNames } } }),
@@ -201,7 +229,7 @@ for (const entityName of rawEntityNames) {
   );
 }
 
-await createManyInBatches(prisma.notificaFacilNotification, (await readJson("Notification")).map((row) => {
+await upsertManyInBatches(prisma.notificaFacilNotification, (await readJson("Notification")).map((row) => {
   const data = {
     id: row.id,
     ...baseFields(row),
@@ -216,7 +244,7 @@ await createManyInBatches(prisma.notificaFacilNotification, (await readJson("Not
     pendencia_tecnica: hasTechnicalPending(row),
     pt_notificado: boolValue(row.pt_notificado),
     mostrar_celebrado_em: row.mostrar_celebrado_em !== false,
-    censo_finalizado: boolValue(row.censo_finalizado),
+    censo_finalizado: boolValue(row.censo_finalizado) || isFinalCensoStatus(row.status),
     total_ids_identificados: row.total_ids_identificados == null ? null : intValue(row.total_ids_identificados),
     latitude: floatValue(row.latitude),
     longitude: floatValue(row.longitude),

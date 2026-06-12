@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { canEdit, requireUser } from "@/lib/auth";
+import { activeCensoWhere } from "@/lib/notifica-facil-censo";
 import { prisma } from "@/lib/prisma";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 import { buildNotificaFacilHtml } from "@/lib/notifica-facil-html";
@@ -458,7 +459,7 @@ export async function clearNotificaFacilCensoObservacoes() {
   if (!canEdit(user)) redirect("/notifica-facil/importar-censo");
 
   await prisma.notificaFacilNotification.updateMany({
-    where: { numero_registro_censo: { not: null }, censo_finalizado: false },
+    where: activeCensoWhere,
     data: { observacoes: null, updated_date: new Date() }
   });
 

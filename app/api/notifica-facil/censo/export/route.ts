@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { canAccessPortal, getCurrentUser } from "@/lib/auth";
 import { formatDate, formatPtBrDisplay } from "@/lib/format";
+import { activeCensoWhere, historyCensoWhere } from "@/lib/notifica-facil-censo";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -13,18 +14,9 @@ function csvCell(value: unknown) {
 
 function buildWhere(params: URLSearchParams) {
   const filters: Prisma.NotificaFacilNotificationWhereInput[] = [
-    { numero_registro_censo: { not: null } }
+    params.get("historico") === "true" ? historyCensoWhere : activeCensoWhere
   ];
-  if (params.get("historico") === "true") {
-    filters.push({
-      OR: [
-        { censo_finalizado: true },
-        { status: { in: ["Finalizado", "Excluído", "Excluido"] } }
-      ]
-    });
-  } else {
-    filters.push({ censo_finalizado: false });
-  }
+
   const qParam = params.get("q");
   if (qParam) {
     const q = { contains: qParam, mode: "insensitive" as const };

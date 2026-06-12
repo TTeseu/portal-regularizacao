@@ -2,18 +2,11 @@ import Link from "next/link";
 import { ArrowLeft, Download, Filter, Search } from "lucide-react";
 import { Prisma } from "@prisma/client";
 import { formatDate, formatPtBrDisplay } from "@/lib/format";
+import { historyCensoWhere } from "@/lib/notifica-facil-censo";
 import { prisma } from "@/lib/prisma";
 
-const historyWhere: Prisma.NotificaFacilNotificationWhereInput = {
-  numero_registro_censo: { not: null },
-  OR: [
-    { censo_finalizado: true },
-    { status: { in: ["Finalizado", "Excluído", "Excluido"] } }
-  ]
-};
-
 function buildWhere(params: Record<string, string | undefined>) {
-  const filters: Prisma.NotificaFacilNotificationWhereInput[] = [historyWhere];
+  const filters: Prisma.NotificaFacilNotificationWhereInput[] = [historyCensoWhere];
   if (params.q) {
     const q = { contains: params.q, mode: "insensitive" as const };
     filters.push({
@@ -98,7 +91,7 @@ export default async function HistoricoCensoPage({
             <span className="label">Filtrar por Empresa</span>
             <input className="field mt-1" name="empresa" defaultValue={params.empresa || ""} placeholder="Nome da empresa..." />
           </label>
-          <div className="lg:col-span-3 text-sm text-edp-muted">Mostrando {items.length} de {total} registros</div>
+          <div className="text-sm text-edp-muted lg:col-span-3">Mostrando {items.length} de {total} registros</div>
         </form>
       </section>
 

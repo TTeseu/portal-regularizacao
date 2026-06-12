@@ -3,17 +3,13 @@ import { ArrowLeft, Bot, Download, FileSpreadsheet, RefreshCw, Save, Search, Tra
 import { Prisma } from "@prisma/client";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { formatDate, formatPtBrDisplay } from "@/lib/format";
+import { activeCensoWhere } from "@/lib/notifica-facil-censo";
 import { prisma } from "@/lib/prisma";
 import {
   clearNotificaFacilCensoObservacoes,
   importNotificaFacilCensoCsv,
   updateNotificaFacilCensoRegistro
 } from "../actions";
-
-const activeCensoWhere: Prisma.NotificaFacilNotificationWhereInput = {
-  numero_registro_censo: { not: null },
-  censo_finalizado: false
-};
 
 function buildWhere(params: Record<string, string | undefined>) {
   const filters: Prisma.NotificaFacilNotificationWhereInput[] = [activeCensoWhere];
