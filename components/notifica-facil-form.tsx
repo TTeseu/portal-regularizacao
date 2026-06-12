@@ -532,11 +532,13 @@ export function NotificaFacilForm({
           </Section>
         ) : null}
 
-        <Section title="Prévia da Notificação" description="A prévia aparece desde o início e acompanha os campos preenchidos antes de gerar o PDF.">
-          <div className="overflow-hidden rounded-2xl border border-line bg-white">
-            <iframe className="h-[760px] w-full bg-white" sandbox="" srcDoc={previewHtml} title="Prévia da notificação Notifica Fácil" />
-          </div>
-        </Section>
+        {!isEditing ? (
+          <Section title="Prévia da Notificação" description="A prévia aparece desde o início e acompanha os campos preenchidos antes de gerar o PDF.">
+            <div className="overflow-hidden rounded-2xl border border-line bg-white">
+              <iframe className="h-[760px] w-full bg-white" sandbox="" srcDoc={previewHtml} title="Prévia da notificação Notifica Fácil" />
+            </div>
+          </Section>
+        ) : null}
 
         <Section title="Dados da notificação" description="Datas e identificadores principais do fluxo documental.">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

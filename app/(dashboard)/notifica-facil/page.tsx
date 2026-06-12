@@ -34,6 +34,17 @@ const generatedNotificationWhere: Prisma.NotificaFacilNotificationWhereInput = {
   NOT: [{ tipo_servico: "CENSO" }]
 };
 
+const DASHBOARD_BASELINE_CUTOFF = new Date("2026-06-12T17:10:00.000Z");
+const DASHBOARD_BASELINE = {
+  pontosRegularizados: 384,
+  pontosNaoRegularizados: 1499,
+  totalRetroativo: 303555,
+  totalMultas: 504381.24,
+  totalNotificacoes: 46,
+  empresasNotificadas: 18,
+  emailsEnviados: 44
+};
+
 function money(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
@@ -74,25 +85,27 @@ export default async function NotificaFacilPage({
   }
 
   const where = combineWhere(filters);
+  const metricWhere = combineWhere([where, { created_date: { gte: DASHBOARD_BASELINE_CUTOFF } }]);
 
   const [
     items,
-    total,
+    novasNotificacoes,
     concluidas,
     standby,
     empresas,
-    emailEnviados,
-    valorAgg,
-    multaAgg,
-    totalIdsAgg,
-    pontosRegularizadosAgg
+    novasEmpresas,
+    novosEmailsEnviados,
+    novoValorAgg,
+    novaMultaAgg,
+    novosIdsAgg,
+    novosRegularizadosAgg
   ] = await Promise.all([
     prisma.notificaFacilNotification.findMany({
       where,
       orderBy: [{ created_date: "desc" }, { id: "desc" }],
       take: 100
     }),
-    prisma.notificaFacilNotification.count({ where }),
+    prisma.notificaFacilNotification.count({ where: metricWhere }),
     prisma.notificaFacilNotification.count({ where: combineWhere([where, { status: "Finalizar Notificação." }]) }),
     prisma.notificaFacilNotification.count({ where: combineWhere([where, { is_standby: true }]) }),
     prisma.notificaFacilNotification.groupBy({
@@ -101,21 +114,31 @@ export default async function NotificaFacilPage({
       _count: { empresa: true },
       orderBy: { _count: { empresa: "desc" } }
     }),
-    prisma.notificaFacilNotification.count({ where: combineWhere([where, { data_email_encaminhado: { not: null } }]) }),
-    prisma.notificaFacilNotification.aggregate({ where, _sum: { valor_atualizado: true } }),
-    prisma.notificaFacilNotification.aggregate({ where, _sum: { multa: true } }),
-    prisma.notificaFacilNotification.aggregate({ where, _sum: { total_ids_identificados: true } }),
+    prisma.notificaFacilNotification.groupBy({
+      by: ["empresa"],
+      where: metricWhere,
+      _count: { empresa: true }
+    }),
+    prisma.notificaFacilNotification.count({ where: combineWhere([metricWhere, { data_email_encaminhado: { not: null } }]) }),
+    prisma.notificaFacilNotification.aggregate({ where: metricWhere, _sum: { valor_atualizado: true } }),
+    prisma.notificaFacilNotification.aggregate({ where: metricWhere, _sum: { multa: true } }),
+    prisma.notificaFacilNotification.aggregate({ where: metricWhere, _sum: { total_ids_identificados: true } }),
     prisma.notificaFacilNotification.aggregate({
-      where: combineWhere([where, { status: "Finalizar Notificação." }]),
+      where: combineWhere([metricWhere, { status: "Finalizar Notificação." }]),
       _sum: { total_ids_identificados: true }
     })
   ]);
 
-  const totalRetroativo = valorAgg._sum.valor_atualizado || 0;
-  const totalMultas = multaAgg._sum.multa || 0;
+  const total = DASHBOARD_BASELINE.totalNotificacoes + novasNotificacoes;
+  const totalRetroativo = DASHBOARD_BASELINE.totalRetroativo + (novoValorAgg._sum.valor_atualizado || 0);
+  const totalMultas = DASHBOARD_BASELINE.totalMultas + (novaMultaAgg._sum.multa || 0);
   const multaMaisRetroativo = totalRetroativo + totalMultas;
-  const pontosRegularizados = pontosRegularizadosAgg._sum.total_ids_identificados || 0;
-  const pontosNaoRegularizados = Math.max((totalIdsAgg._sum.total_ids_identificados || 0) - pontosRegularizados, 0);
+  const novosPontosRegularizados = novosRegularizadosAgg._sum.total_ids_identificados || 0;
+  const novosPontosNaoRegularizados = Math.max((novosIdsAgg._sum.total_ids_identificados || 0) - novosPontosRegularizados, 0);
+  const pontosRegularizados = DASHBOARD_BASELINE.pontosRegularizados + novosPontosRegularizados;
+  const pontosNaoRegularizados = DASHBOARD_BASELINE.pontosNaoRegularizados + novosPontosNaoRegularizados;
+  const empresasNotificadas = DASHBOARD_BASELINE.empresasNotificadas + novasEmpresas.length;
+  const emailEnviados = DASHBOARD_BASELINE.emailsEnviados + novosEmailsEnviados;
 
   return (
     <div className="mx-auto max-w-[1500px] space-y-8">
@@ -154,7 +177,7 @@ export default async function NotificaFacilPage({
         <Metric label="Total multas" value={money(totalMultas)} hint="Soma no filtro atual" icon={<DollarSign size={24} />} tone="red" />
         <Metric label="Multa + Retroativo" value={money(multaMaisRetroativo)} hint="Valor operacional total" icon={<DollarSign size={24} />} tone="green" />
         <Metric label="Total de notificações" value={total} hint="Notificações geradas" icon={<FileText size={24} />} tone="blue" />
-        <Metric label="Empresas notificadas" value={empresas.length} hint="Empresas únicas" icon={<Building2 size={24} />} tone="blue" />
+        <Metric label="Empresas notificadas" value={empresasNotificadas} hint="Empresas únicas" icon={<Building2 size={24} />} tone="blue" />
         <Metric label="E-mails enviados" value={emailEnviados} hint="Com data de envio" icon={<Users size={24} />} tone="purple" />
       </section>
 
