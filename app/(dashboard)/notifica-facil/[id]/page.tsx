@@ -123,7 +123,7 @@ export default async function NotificaFacilDetailPage({
   );
 }
 
-function getSafeBackHref(value: string | undefined, notification: { pendencia_tecnica: boolean; pt_notificado: boolean; pt_data_notificado?: string | null }) {
+function getSafeBackHref(value: string | undefined, notification: { numero_notificacao?: string | null; pendencia_tecnica: boolean; pt_notificado: boolean; pt_data_notificado?: string | null }) {
   const allowed = new Set([
     "/notifica-facil",
     "/notifica-facil/pendencia-tecnica",
@@ -133,7 +133,7 @@ function getSafeBackHref(value: string | undefined, notification: { pendencia_te
     "/notifica-facil/pdfs"
   ]);
   if (value && allowed.has(value)) return value;
-  if (notification.pendencia_tecnica || notification.pt_notificado || notification.pt_data_notificado) {
+  if (!notification.numero_notificacao && (notification.pendencia_tecnica || notification.pt_notificado || notification.pt_data_notificado)) {
     return "/notifica-facil/pendencia-tecnica";
   }
   return "/notifica-facil";

@@ -511,7 +511,7 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       data_notificacao: dataNotificacao,
       prazo_resposta: prazoDias,
       status: "Aguardando assinatura Gestor",
-      pendencia_tecnica: true,
+      pendencia_tecnica: false,
       pt_notificado: false,
       status_envio_notificacao: empresa.status_envio_notificacao,
       vencimento_contrato: empresa.vencimento_contrato,

@@ -22,37 +22,24 @@ import { cnpjSearchTerm } from "@/lib/cnpj";
 
 const statuses = [
   "Aguardando assinatura Gestor",
-  "Notifica\u00e7\u00e3o Encaminhada por E-mail.",
+  "Notificação Encaminhada por E-mail.",
   "Resposta do Cliente - Anexo do E-mail.",
   "Entrega do Projeto ou Projeto Pendente. (10 dias)",
-  "N\u00e3o houve resposta do Cliente - Valores Informar o Faturamento.",
-  "Finalizar Notifica\u00e7\u00e3o."
+  "Não houve resposta do Cliente - Valores Informar o Faturamento.",
+  "Finalizar Notificação."
 ];
 
-const pendenciaTecnicaWhere: Prisma.NotificaFacilNotificationWhereInput = {
-  OR: [
-    { pendencia_tecnica: true },
-    { pt_notificado: true },
-    { pt_data_notificado: { not: null } }
-  ]
-};
-
-const censoRegularizadoWhere: Prisma.NotificaFacilNotificationWhereInput = {
-  numero_registro_censo: { not: null },
-  status: "Finalizado"
-};
-
-const censoNaoRegularizadoWhere: Prisma.NotificaFacilNotificationWhereInput = {
-  numero_registro_censo: { not: null },
-  OR: [
-    { status: "Excluído" },
-    { status: "Excluido" },
-    { censo_finalizado: false }
-  ]
+const generatedNotificationWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  numero_notificacao: { not: null },
+  NOT: [{ tipo_servico: "CENSO" }]
 };
 
 function money(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+}
+
+function combineWhere(filters: Prisma.NotificaFacilNotificationWhereInput[]) {
+  return { AND: filters } satisfies Prisma.NotificaFacilNotificationWhereInput;
 }
 
 export default async function NotificaFacilPage({
@@ -63,39 +50,42 @@ export default async function NotificaFacilPage({
   const [params, user] = await Promise.all([searchParams, requireUser()]);
   const values = params || {};
   const canEdit = canEditUser(user);
-  const where: Prisma.NotificaFacilNotificationWhereInput = {};
+  const filters: Prisma.NotificaFacilNotificationWhereInput[] = [generatedNotificationWhere];
 
-  if (values.status) where.status = values.status;
-  if (values.empresa) where.empresa = { contains: values.empresa, mode: "insensitive" };
-  if (values.cidade) where.empresa_cidade = { contains: values.cidade, mode: "insensitive" };
+  if (values.status) filters.push({ status: values.status });
+  if (values.empresa) filters.push({ empresa: { contains: values.empresa, mode: "insensitive" } });
+  if (values.cidade) filters.push({ empresa_cidade: { contains: values.cidade, mode: "insensitive" } });
   if (values.q) {
     const q = { contains: values.q, mode: "insensitive" as const };
     const cnpj = { contains: cnpjSearchTerm(values.q), mode: "insensitive" as const };
-    where.OR = [
-      { empresa: q },
-      { cnpj: q },
-      { cnpj },
-      { contrato_numero: q },
-      { numero_notificacao: q },
-      { numero_registro_censo: q },
-      { numero_protocolo: q },
-      { destinatario_nome: q },
-      { empresa_cidade: q }
-    ];
+    filters.push({
+      OR: [
+        { empresa: q },
+        { cnpj: q },
+        { cnpj },
+        { contrato_numero: q },
+        { numero_notificacao: q },
+        { numero_registro_censo: q },
+        { numero_protocolo: q },
+        { destinatario_nome: q },
+        { empresa_cidade: q }
+      ]
+    });
   }
+
+  const where = combineWhere(filters);
 
   const [
     items,
     total,
     concluidas,
     standby,
-    pendencias,
     empresas,
     emailEnviados,
     valorAgg,
     multaAgg,
-    pontosRegularizados,
-    pontosNaoRegularizados
+    totalIdsAgg,
+    pontosRegularizadosAgg
   ] = await Promise.all([
     prisma.notificaFacilNotification.findMany({
       where,
@@ -103,20 +93,29 @@ export default async function NotificaFacilPage({
       take: 100
     }),
     prisma.notificaFacilNotification.count({ where }),
-    prisma.notificaFacilNotification.count({ where: { ...where, status: "Finalizar Notifica\u00e7\u00e3o." } }),
-    prisma.notificaFacilNotification.count({ where: { ...where, is_standby: true } }),
-    prisma.notificaFacilNotification.count({ where: { AND: [where, pendenciaTecnicaWhere] } }),
-    prisma.notificaFacilNotification.groupBy({ by: ["empresa"], where, _count: { empresa: true }, orderBy: { _count: { empresa: "desc" } } }),
-    prisma.notificaFacilNotification.count({ where: { ...where, data_email_encaminhado: { not: null } } }),
-    prisma.notificaFacilNotification.aggregate({ where, _sum: { valor_cobrado: true, valor_atualizado: true } }),
+    prisma.notificaFacilNotification.count({ where: combineWhere([where, { status: "Finalizar Notificação." }]) }),
+    prisma.notificaFacilNotification.count({ where: combineWhere([where, { is_standby: true }]) }),
+    prisma.notificaFacilNotification.groupBy({
+      by: ["empresa"],
+      where,
+      _count: { empresa: true },
+      orderBy: { _count: { empresa: "desc" } }
+    }),
+    prisma.notificaFacilNotification.count({ where: combineWhere([where, { data_email_encaminhado: { not: null } }]) }),
+    prisma.notificaFacilNotification.aggregate({ where, _sum: { valor_atualizado: true } }),
     prisma.notificaFacilNotification.aggregate({ where, _sum: { multa: true } }),
-    prisma.notificaFacilNotification.count({ where: { AND: [where, censoRegularizadoWhere] } }),
-    prisma.notificaFacilNotification.count({ where: { AND: [where, censoNaoRegularizadoWhere] } })
+    prisma.notificaFacilNotification.aggregate({ where, _sum: { total_ids_identificados: true } }),
+    prisma.notificaFacilNotification.aggregate({
+      where: combineWhere([where, { status: "Finalizar Notificação." }]),
+      _sum: { total_ids_identificados: true }
+    })
   ]);
 
-  const totalRetroativo = valorAgg._sum.valor_cobrado || valorAgg._sum.valor_atualizado || 0;
+  const totalRetroativo = valorAgg._sum.valor_atualizado || 0;
   const totalMultas = multaAgg._sum.multa || 0;
   const multaMaisRetroativo = totalRetroativo + totalMultas;
+  const pontosRegularizados = pontosRegularizadosAgg._sum.total_ids_identificados || 0;
+  const pontosNaoRegularizados = Math.max((totalIdsAgg._sum.total_ids_identificados || 0) - pontosRegularizados, 0);
 
   return (
     <div className="mx-auto max-w-[1500px] space-y-8">
@@ -131,8 +130,8 @@ export default async function NotificaFacilPage({
               </div>
               <h1 className="mt-5 text-4xl font-bold tracking-tight text-white md:text-5xl">Notifica Fácil</h1>
               <p className="mt-4 max-w-3xl text-base leading-7 text-edp-muted">
-                Backend, dados e fluxo do Base44 com identidade visual EDP: notificações do censo, pendências técnicas,
-                respostas de clientes, anexos, assinaturas e acompanhamento documental.
+                Dashboard exclusivo das notificações geradas no Notifica Fácil. Registros do CENSO e pendências técnicas
+                ficam nas abas próprias, sem entrar nos indicadores principais.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -149,14 +148,12 @@ export default async function NotificaFacilPage({
       </section>
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Pontos regularizados" value={pontosRegularizados} hint="Registros CENSO finalizados" icon={<ClipboardCheck size={24} />} tone="green" />
-        <Metric label="Pontos não regularizados" value={pontosNaoRegularizados} hint="CENSO excluído ou em tratativa" icon={<ShieldAlert size={24} />} tone="yellow" />
+        <Metric label="Pontos regularizados" value={pontosRegularizados} hint="IDs concluídos" icon={<ClipboardCheck size={24} />} tone="green" />
+        <Metric label="Pontos não regularizados" value={pontosNaoRegularizados} hint="IDs ainda não finalizados" icon={<ShieldAlert size={24} />} tone="yellow" />
         <Metric label="Valor total retroativo" value={money(totalRetroativo)} hint="Soma no filtro atual" icon={<TrendingUp size={24} />} tone="purple" />
         <Metric label="Total multas" value={money(totalMultas)} hint="Soma no filtro atual" icon={<DollarSign size={24} />} tone="red" />
         <Metric label="Multa + Retroativo" value={money(multaMaisRetroativo)} hint="Valor operacional total" icon={<DollarSign size={24} />} tone="green" />
-        <Metric label="Total de notificações" value={total} hint="Base documental ativa" icon={<FileText size={24} />} tone="blue" />
-        <Metric label="Pendência técnica" value={pendencias} hint="Requer análise operacional" icon={<Bell size={24} />} tone="green" />
-        <Metric label="Stand-by" value={standby} hint="Fluxo pausado" icon={<ClipboardCheck size={24} />} tone="purple" />
+        <Metric label="Total de notificações" value={total} hint="Notificações geradas" icon={<FileText size={24} />} tone="blue" />
         <Metric label="Empresas notificadas" value={empresas.length} hint="Empresas únicas" icon={<Building2 size={24} />} tone="blue" />
         <Metric label="E-mails enviados" value={emailEnviados} hint="Com data de envio" icon={<Users size={24} />} tone="purple" />
       </section>
@@ -167,7 +164,7 @@ export default async function NotificaFacilPage({
             <span className="label">Busca</span>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-edp-muted" size={16} />
-              <input className="field pl-9" name="q" defaultValue={values.q || ""} placeholder="Empresa, censo, contrato, protocolo..." />
+              <input className="field pl-9" name="q" defaultValue={values.q || ""} placeholder="Empresa, contrato, protocolo ou número da notificação..." />
             </div>
           </label>
           <label className="space-y-2">
@@ -201,7 +198,7 @@ export default async function NotificaFacilPage({
                   <FileText className="text-edp" size={23} />
                   <h2 className="text-2xl font-bold text-white">Notificações</h2>
                 </div>
-                <p className="mt-1 text-sm text-edp-muted">Últimos 100 registros do módulo Notifica Fácil.</p>
+                <p className="mt-1 text-sm text-edp-muted">Últimas 100 notificações geradas no módulo Notifica Fácil.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button className="btn-secondary">
@@ -228,10 +225,10 @@ export default async function NotificaFacilPage({
                 <tr>
                   <th className="px-5 py-4 font-semibold">Notificação</th>
                   <th className="px-5 py-4 font-semibold">Empresa</th>
-                  <th className="px-5 py-4 font-semibold">Registro censo</th>
+                  <th className="px-5 py-4 font-semibold">Contrato</th>
                   <th className="px-5 py-4 font-semibold">Cidade</th>
                   <th className="px-5 py-4 font-semibold">Status</th>
-                  <th className="px-5 py-4 font-semibold">Flags</th>
+                  <th className="px-5 py-4 font-semibold">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -249,15 +246,15 @@ export default async function NotificaFacilPage({
                         <div className="mt-1 text-xs text-edp-muted">{formatDate(item.created_date)}</div>
                       </td>
                       <td className="px-5 py-4 text-white">{item.empresa}</td>
-                      <td className="px-5 py-4 text-edp-muted">{item.numero_registro_censo || "-"}</td>
+                      <td className="px-5 py-4 text-edp-muted">{item.contrato_numero || "-"}</td>
                       <td className="px-5 py-4 text-edp-muted">{formatPtBrDisplay(item.empresa_cidade)}</td>
                       <td className="px-5 py-4"><StatusBadge status={item.status} /></td>
                       <td className="px-5 py-4">
                         <div className="flex flex-wrap gap-2">
+                          <Link href={`/notifica-facil/${item.id}`} className="btn-secondary h-9 px-3 text-xs">Abrir/Editar</Link>
+                          <a href={`/api/notifica-facil/notifications/${item.id}/pdf`} className="btn-primary h-9 px-3 text-xs">PDF</a>
                           {item.is_standby ? <SmallBadge label="Stand-by" /> : null}
-                          {item.pendencia_tecnica || item.pt_notificado || item.pt_data_notificado ? <SmallBadge label="Pendência técnica" /> : null}
                           {item.is_draft ? <SmallBadge label="Rascunho" /> : null}
-                          {!item.is_standby && !item.pendencia_tecnica && !item.pt_notificado && !item.pt_data_notificado && !item.is_draft ? <span className="text-edp-muted">-</span> : null}
                         </div>
                       </td>
                     </tr>
@@ -277,7 +274,6 @@ export default async function NotificaFacilPage({
             <div className="mt-6 space-y-3">
               <Progress label="Concluídas" value={concluidas} total={Math.max(total, 1)} />
               <Progress label="Stand-by" value={standby} total={Math.max(total, 1)} />
-              <Progress label="Pendência técnica" value={pendencias} total={Math.max(total, 1)} />
             </div>
           </section>
 
