@@ -37,6 +37,20 @@ const pendenciaTecnicaWhere: Prisma.NotificaFacilNotificationWhereInput = {
   ]
 };
 
+const censoRegularizadoWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  numero_registro_censo: { not: null },
+  status: "Finalizado"
+};
+
+const censoNaoRegularizadoWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  numero_registro_censo: { not: null },
+  OR: [
+    { status: "Excluído" },
+    { status: "Excluido" },
+    { censo_finalizado: false }
+  ]
+};
+
 function money(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
@@ -70,7 +84,19 @@ export default async function NotificaFacilPage({
     ];
   }
 
-  const [items, total, concluidas, standby, pendencias, empresas, emailEnviados, retroativoAgg, multaAgg] = await Promise.all([
+  const [
+    items,
+    total,
+    concluidas,
+    standby,
+    pendencias,
+    empresas,
+    emailEnviados,
+    valorAgg,
+    multaAgg,
+    pontosRegularizados,
+    pontosNaoRegularizados
+  ] = await Promise.all([
     prisma.notificaFacilNotification.findMany({
       where,
       orderBy: [{ created_date: "desc" }, { id: "desc" }],
@@ -82,13 +108,15 @@ export default async function NotificaFacilPage({
     prisma.notificaFacilNotification.count({ where: { AND: [where, pendenciaTecnicaWhere] } }),
     prisma.notificaFacilNotification.groupBy({ by: ["empresa"], where, _count: { empresa: true }, orderBy: { _count: { empresa: "desc" } } }),
     prisma.notificaFacilNotification.count({ where: { ...where, data_email_encaminhado: { not: null } } }),
-    prisma.notificaFacilNotification.aggregate({ where, _sum: { valor_atualizado: true } }),
-    prisma.notificaFacilNotification.aggregate({ where, _sum: { multa: true } })
+    prisma.notificaFacilNotification.aggregate({ where, _sum: { valor_cobrado: true, valor_atualizado: true } }),
+    prisma.notificaFacilNotification.aggregate({ where, _sum: { multa: true } }),
+    prisma.notificaFacilNotification.count({ where: { AND: [where, censoRegularizadoWhere] } }),
+    prisma.notificaFacilNotification.count({ where: { AND: [where, censoNaoRegularizadoWhere] } })
   ]);
 
-  const totalRetroativo = retroativoAgg._sum.valor_atualizado || 0;
+  const totalRetroativo = valorAgg._sum.valor_cobrado || valorAgg._sum.valor_atualizado || 0;
   const totalMultas = multaAgg._sum.multa || 0;
-  const naoRegularizados = Math.max(total - concluidas, 0);
+  const multaMaisRetroativo = totalRetroativo + totalMultas;
 
   return (
     <div className="mx-auto max-w-[1500px] space-y-8">
@@ -121,12 +149,14 @@ export default async function NotificaFacilPage({
       </section>
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Total filtrado" value={total} hint="Base documental ativa" icon={<FileText size={24} />} tone="blue" />
-        <Metric label="Não regularizados" value={naoRegularizados} hint="Aguardando tratativa" icon={<ShieldAlert size={24} />} tone="yellow" />
-        <Metric label="Stand-by" value={standby} hint="Fluxo pausado" icon={<ClipboardCheck size={24} />} tone="purple" />
-        <Metric label="Pendência técnica" value={pendencias} hint="Requer análise operacional" icon={<Bell size={24} />} tone="green" />
-        <Metric label="Valor retroativo" value={money(totalRetroativo)} hint="Soma no filtro atual" icon={<TrendingUp size={24} />} tone="green" />
+        <Metric label="Pontos regularizados" value={pontosRegularizados} hint="Registros CENSO finalizados" icon={<ClipboardCheck size={24} />} tone="green" />
+        <Metric label="Pontos não regularizados" value={pontosNaoRegularizados} hint="CENSO excluído ou em tratativa" icon={<ShieldAlert size={24} />} tone="yellow" />
+        <Metric label="Valor total retroativo" value={money(totalRetroativo)} hint="Soma no filtro atual" icon={<TrendingUp size={24} />} tone="purple" />
         <Metric label="Total multas" value={money(totalMultas)} hint="Soma no filtro atual" icon={<DollarSign size={24} />} tone="red" />
+        <Metric label="Multa + Retroativo" value={money(multaMaisRetroativo)} hint="Valor operacional total" icon={<DollarSign size={24} />} tone="green" />
+        <Metric label="Total de notificações" value={total} hint="Base documental ativa" icon={<FileText size={24} />} tone="blue" />
+        <Metric label="Pendência técnica" value={pendencias} hint="Requer análise operacional" icon={<Bell size={24} />} tone="green" />
+        <Metric label="Stand-by" value={standby} hint="Fluxo pausado" icon={<ClipboardCheck size={24} />} tone="purple" />
         <Metric label="Empresas notificadas" value={empresas.length} hint="Empresas únicas" icon={<Building2 size={24} />} tone="blue" />
         <Metric label="E-mails enviados" value={emailEnviados} hint="Com data de envio" icon={<Users size={24} />} tone="purple" />
       </section>
