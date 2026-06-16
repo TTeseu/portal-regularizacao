@@ -94,8 +94,14 @@ function parseEnderecos(value: string | null): Prisma.JsonArray | undefined {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const [endereco = "", bairro = "", cidade = ""] = line.split(";").map((part) => part.trim());
-      return { endereco, bairro, cidade };
+      const [endereco = "", bairro = "", cidade = "", quantidadePostes = ""] = line.split(";").map((part) => part.trim());
+      const quantidade = Number.parseInt(quantidadePostes.replace(/\D/g, ""), 10);
+      return {
+        endereco,
+        bairro,
+        cidade,
+        quantidade_postes: Number.isFinite(quantidade) && quantidade > 0 ? quantidade : null
+      };
     });
   return rows.length ? rows : undefined;
 }
@@ -272,6 +278,8 @@ function formToData(formData: FormData): Prisma.NotificaFacilNotificationUncheck
     retroativo: text(formData, "retroativo"),
     enderecos_revelia: parseEnderecos(text(formData, "enderecos_revelia")),
     total_ids_identificados: intValue(formData, "total_ids_identificados"),
+    quantidade_postes: intValue(formData, "quantidade_postes"),
+    quantidade_postes_regularizados: intValue(formData, "quantidade_postes_regularizados"),
     anexos_resposta_email: parseAnexos(text(formData, "anexos_resposta_email")),
     observacoes: text(formData, "observacoes")
   };
@@ -475,9 +483,9 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
     throw new Error("Selecione ao menos uma empresa.");
   }
 
-  const empresas = await prisma.notificaFacilBaseNotificacao.findMany({
+  const empresas = await prisma.empresa.findMany({
     where: { id: { in: empresaIds } },
-    orderBy: { empresa: "asc" }
+    orderBy: { nome: "asc" }
   });
 
   if (empresas.length === 0) {
@@ -506,7 +514,7 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       updated_date: now,
       created_by_id: user.id,
       created_by: user.email,
-      empresa: empresa.empresa,
+      empresa: empresa.nome,
       tipo_servico: tipo,
       numero_notificacao: notificationNumber,
       data_notificacao: dataNotificacao,
@@ -523,10 +531,11 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       ac: empresa.ac,
       numero_nome_empresa: empresa.numero_nome_empresa,
       numero_parceiro: empresa.numero_parceiro,
-      empresa_endereco: empresa.empresa_endereco,
-      empresa_bairro: empresa.empresa_bairro,
-      empresa_cidade: empresa.empresa_cidade,
-      empresa_estado: empresa.empresa_estado,
+      empresa_endereco: empresa.endereco,
+      empresa_bairro: empresa.bairro,
+      empresa_cidade: empresa.cidade,
+      empresa_estado: empresa.estado,
+      empresa_incorporada: empresa.empresa_incorporada,
       texto_contrato_7_14: empresa.texto_contrato_7_14,
       texto_ocupacao_revelia: empresa.texto_ocupacao_revelia,
       texto_23_3: empresa.texto_23_3,
@@ -552,14 +561,14 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       numero_oficio: notificationNumber,
       data_notificacao: dataNotificacao,
       nota_atendimento: null,
-      empresa: empresa.empresa,
+      empresa: empresa.nome,
       status_envio: null,
       vencimento: empresa.vencimento_contrato,
       ano_vencimento: empresa.ano_vencimento_contrato,
-      endereco: empresa.empresa_endereco,
-      bairro: empresa.empresa_bairro,
-      cidade: empresa.empresa_cidade,
-      estado: empresa.empresa_estado,
+      endereco: empresa.endereco,
+      bairro: empresa.bairro,
+      cidade: empresa.cidade,
+      estado: empresa.estado,
       contrato_numero: empresa.contrato_numero,
       ac: empresa.ac,
       numero_nome: empresa.numero_nome_empresa,
@@ -571,7 +580,7 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       bairro_rep: null,
       cidade_rep: null,
       estado_rep: null,
-      campo_11_6_3: null,
+      campo_11_6_3: empresa.tem_clausula_11_6_3 ? empresa.campo_11_6_3 : null,
       empresa_1: null,
       rua_empresa_1: null,
       cidade_empresa_1: null,

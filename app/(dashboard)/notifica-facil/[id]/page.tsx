@@ -35,6 +35,10 @@ export default async function NotificaFacilDetailPage({
   const backHref = getSafeBackHref(query?.from, notification);
   const evidences = collectEvidences(notification.fotos_censo, notification.ocr_legendas);
   const attachments = collectAttachments(notification.notificacao_assinada_anexos, notification.anexos_resposta_email);
+  const postesNotificados = notification.quantidade_postes || notification.total_ids_identificados || 0;
+  const postesRegularizados = notification.quantidade_postes_regularizados || 0;
+  const postesPendentes = Math.max(postesNotificados - postesRegularizados, 0);
+  const percentualRegularizado = postesNotificados > 0 ? Math.round((postesRegularizados / postesNotificados) * 100) : 0;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -92,6 +96,16 @@ export default async function NotificaFacilDetailPage({
               <Row label="Ordem venda" value={notification.ordem_venda} />
               <Row label="Pendência técnica" value={notification.pendencia_tecnica ? "Sim" : "Não"} />
               <Row label="Poste" value={notification.numero_poste} />
+            </dl>
+          </div>
+
+          <div className="panel p-5">
+            <h2 className="mb-3 font-bold text-white">Comparativo interno de postes</h2>
+            <dl className="space-y-3 text-sm">
+              <Row label="Postes notificados" value={String(postesNotificados)} />
+              <Row label="Postes regularizados" value={String(postesRegularizados)} />
+              <Row label="Pendentes" value={String(postesPendentes)} />
+              <Row label="Regularizacao" value={`${percentualRegularizado}%`} />
             </dl>
           </div>
 

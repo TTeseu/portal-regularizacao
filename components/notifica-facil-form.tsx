@@ -78,6 +78,8 @@ type FormValues = {
   multa: string;
   retroativo: string;
   enderecos_revelia: string;
+  quantidade_postes: string;
+  quantidade_postes_regularizados: string;
   anexos_resposta_email: string;
   observacoes: string;
   pt_data_notificado: string;
@@ -88,6 +90,7 @@ type AddressRow = {
   endereco: string;
   bairro: string;
   cidade: string;
+  quantidadePostes: string;
 };
 
 function todayIso() {
@@ -153,7 +156,8 @@ function addressJsonLines(value: unknown) {
       return [
         String(record.endereco ?? ""),
         String(record.bairro ?? ""),
-        String(record.cidade ?? record.municipio ?? "")
+        String(record.cidade ?? record.municipio ?? ""),
+        String(record.quantidade_postes ?? record.quantidadePostes ?? "")
       ].join("; ");
     })
     .filter((line) => line.replace(/[;\s]/g, ""))
@@ -165,7 +169,8 @@ function makeAddressRow(partial: Partial<AddressRow> = {}): AddressRow {
     id: crypto.randomUUID(),
     endereco: partial.endereco || "",
     bairro: partial.bairro || "",
-    cidade: partial.cidade || ""
+    cidade: partial.cidade || "",
+    quantidadePostes: partial.quantidadePostes || ""
   };
 }
 
@@ -175,15 +180,15 @@ function parseAddressInput(value: string) {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const [endereco = "", bairro = "", cidade = ""] = line.split(";").map((part) => part.trim());
-      return makeAddressRow({ endereco, bairro, cidade });
+      const [endereco = "", bairro = "", cidade = "", quantidadePostes = ""] = line.split(";").map((part) => part.trim());
+      return makeAddressRow({ endereco, bairro, cidade, quantidadePostes });
     });
   return rows.length ? rows : [makeAddressRow()];
 }
 
 function serializeAddressRows(rows: AddressRow[]) {
   return rows
-    .map((row) => [row.endereco, row.bairro, row.cidade].map((part) => part.trim()).join("; "))
+    .map((row) => [row.endereco, row.bairro, row.cidade, row.quantidadePostes].map((part) => part.trim()).join("; "))
     .filter((line) => line.replace(/[;\s]/g, ""))
     .join("\n");
 }
@@ -338,6 +343,8 @@ function initialValues(notification?: NotificaFacilNotification | null, nextNume
     multa: notification?.multa?.toString() || "",
     retroativo: notification?.retroativo || "",
     enderecos_revelia: addressJsonLines(notification?.enderecos_revelia),
+    quantidade_postes: notification?.quantidade_postes?.toString() || "",
+    quantidade_postes_regularizados: notification?.quantidade_postes_regularizados?.toString() || "",
     anexos_resposta_email: jsonLines(notification?.anexos_resposta_email, ["nome", "url"]),
     observacoes: notification?.observacoes || "",
     pt_data_notificado: normalizeDateForInput(notification?.pt_data_notificado)
@@ -396,6 +403,14 @@ export function NotificaFacilForm({
   }, [companyOptions, companyQuery]);
 
   const totalIds = values.enderecos_revelia.split(/\r?\n/).filter((line) => line.trim()).length;
+  const totalPostes = addressRows.reduce((sum, row) => {
+    const parsed = Number.parseInt(String(row.quantidadePostes || "").replace(/\D/g, ""), 10);
+    if (Number.isFinite(parsed) && parsed > 0) return sum + parsed;
+    return sum + (row.endereco || row.bairro || row.cidade ? 1 : 0);
+  }, 0);
+  const postesRegularizados = Number.parseInt(values.quantidade_postes_regularizados || "0", 10) || 0;
+  const postesPendentes = Math.max(totalPostes - postesRegularizados, 0);
+  const percentualRegularizado = totalPostes > 0 ? Math.round((postesRegularizados / totalPostes) * 100) : 0;
   const valorPonto = parseMoney(values.valor_atualizado);
   const multa = parseMoney(values.multa);
   const retroativo = parseMoney(values.retroativo);
@@ -474,6 +489,7 @@ export function NotificaFacilForm({
       <input type="hidden" name="numero_notificacao" value={previewNumber} />
       <input type="hidden" name="valor_cobrado" value={valorMulta ? valorMulta.toFixed(2) : ""} />
       <input type="hidden" name="total_ids_identificados" value={totalIds} />
+      <input type="hidden" name="quantidade_postes" value={totalPostes || ""} />
 
       <div className="border-b border-line bg-surface px-6 py-5">
         <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
@@ -642,7 +658,7 @@ export function NotificaFacilForm({
           <input type="hidden" name="enderecos_revelia" value={values.enderecos_revelia} />
           <div className="space-y-3">
             {addressRows.map((row, index) => (
-              <div key={row.id} className="grid gap-3 rounded-2xl border border-line bg-surface/70 p-4 md:grid-cols-[1.35fr_1fr_1fr_auto] md:items-end">
+              <div key={row.id} className="grid gap-3 rounded-2xl border border-line bg-surface/70 p-4 md:grid-cols-[1.25fr_0.8fr_0.8fr_0.45fr_auto] md:items-end">
                 <Field label={index === 0 ? "Endereço à Revelia" : `Endereço à Revelia ${index + 1}`}>
                   <input
                     className="field mt-2"
@@ -667,6 +683,15 @@ export function NotificaFacilForm({
                     placeholder="Ex: São Paulo"
                   />
                 </Field>
+                <Field label="Qtd. postes">
+                  <input
+                    className="field mt-2"
+                    value={row.quantidadePostes}
+                    onChange={(event) => updateAddressRow(row.id, "quantidadePostes", event.target.value.replace(/\D/g, ""))}
+                    inputMode="numeric"
+                    placeholder="1"
+                  />
+                </Field>
                 <button
                   type="button"
                   className="btn-secondary h-11 px-3 text-red-200 hover:border-red-400/40 hover:bg-red-500/10"
@@ -683,6 +708,23 @@ export function NotificaFacilForm({
             <Plus size={16} />
             Adicionar endereço
           </button>
+          <div className="mt-4 grid gap-3 md:grid-cols-4">
+            <CalcCard label="Postes notificados" value={String(totalPostes)} />
+            <CalcCard label="Postes regularizados" value={String(postesRegularizados)} />
+            <CalcCard label="Pendentes" value={String(postesPendentes)} />
+            <CalcCard label="Regularização" value={`${percentualRegularizado}%`} accent />
+          </div>
+          {isEditing ? (
+            <div className="mt-4 max-w-sm">
+              <Input
+                label="Quantidade de postes regularizados"
+                name="quantidade_postes_regularizados"
+                value={values.quantidade_postes_regularizados}
+                onChange={(value) => setField("quantidade_postes_regularizados", value.replace(/\D/g, ""))}
+                inputMode="numeric"
+              />
+            </div>
+          ) : null}
         </Section>
 
         <Section title="Valores e cálculo" description="Campos financeiros do fluxo documental do Notifica Fácil.">

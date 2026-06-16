@@ -40,6 +40,10 @@ export default async function ImportarCensoPage({
   const values = params || {};
   const canEdit = canEditUser(user);
   const where = buildWhere(values);
+  const query = new URLSearchParams();
+  if (values.q) query.set("q", values.q);
+  if (values.empresa) query.set("empresa", values.empresa);
+  query.set("tipo", "importar-censo");
   const [items, total, empresasIdentificadas] = await Promise.all([
     prisma.notificaFacilNotification.findMany({
       where,
@@ -73,7 +77,7 @@ export default async function ImportarCensoPage({
             </div>
             <div className="flex flex-wrap gap-2">
               <Link href="/notifica-facil/importar-censo" className="btn-secondary"><RefreshCw size={16} />Atualizar</Link>
-              <a href="/api/notifica-facil/censo/export" className="btn-secondary"><Download size={16} />Exportar Excel</a>
+              <a href={`/api/notifica-facil/export?${query.toString()}`} className="btn-secondary"><Download size={16} />Exportar CSV</a>
               <button className="btn-secondary" type="button"><Bot size={16} />Ler Legendas (IA)</button>
               {canEdit ? (
                 <form action={clearNotificaFacilCensoObservacoes}>
@@ -118,7 +122,7 @@ export default async function ImportarCensoPage({
           <h2 className="font-bold text-white">Registros Recebidos do COLETA DE DADOS</h2>
           <p className="mt-1 text-sm text-edp-muted">Mostrando {items.length} de {total} registros.</p>
         </div>
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="w-full min-w-[1600px] text-left text-sm">
             <thead>
               <tr>

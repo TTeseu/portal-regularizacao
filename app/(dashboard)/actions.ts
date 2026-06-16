@@ -26,6 +26,12 @@ function boolValue(formData: FormData, key: string) {
   return formData.get(key) === "on" || formData.get(key) === "true";
 }
 
+function safeRedirectPath(formData: FormData, fallback: string) {
+  const value = stringValue(formData, "redirect_to");
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return fallback;
+  return value;
+}
+
 function parseAnexos(formData: FormData) {
   const nome = stringValue(formData, "anexo_nome");
   const url = stringValue(formData, "anexo_url");
@@ -283,15 +289,32 @@ export async function createEmpresa(formData: FormData) {
       cnpj: cnpjValue(formData),
       contrato_numero: stringValue(formData, "contrato_numero"),
       endereco: stringValue(formData, "endereco"),
+      bairro: stringValue(formData, "bairro"),
       cidade: stringValue(formData, "cidade"),
       estado: stringValue(formData, "estado"),
       celebrado_em: stringValue(formData, "celebrado_em"),
+      numero_parceiro: stringValue(formData, "numero_parceiro"),
+      status_envio_notificacao: stringValue(formData, "status_envio_notificacao"),
+      vencimento_contrato: stringValue(formData, "vencimento_contrato"),
+      ano_vencimento_contrato: stringValue(formData, "ano_vencimento_contrato"),
+      ac: stringValue(formData, "ac"),
+      numero_nome_empresa: stringValue(formData, "numero_nome_empresa"),
+      empresa_incorporada: stringValue(formData, "empresa_incorporada"),
+      texto_contrato_7_14: stringValue(formData, "texto_contrato_7_14"),
+      texto_ocupacao_revelia: stringValue(formData, "texto_ocupacao_revelia"),
+      texto_23_3: stringValue(formData, "texto_23_3"),
+      texto_24_1: stringValue(formData, "texto_24_1"),
+      texto_24_3: stringValue(formData, "texto_24_3"),
+      valor_atualizado: stringValue(formData, "valor_atualizado"),
+      multa: stringValue(formData, "multa"),
+      retroativo: stringValue(formData, "retroativo"),
       tem_clausula_11_6_3: boolValue(formData, "tem_clausula_11_6_3"),
       campo_11_6_3: stringValue(formData, "campo_11_6_3")
     }
   });
   revalidatePath("/empresas");
-  redirect(`/empresas/${id}`);
+  revalidatePath("/notifica-facil/empresas");
+  redirect(safeRedirectPath(formData, `/empresas/${id}`).replace(":id", id));
 }
 
 export async function updateEmpresa(id: string, formData: FormData) {
@@ -304,16 +327,42 @@ export async function updateEmpresa(id: string, formData: FormData) {
       cnpj: cnpjValue(formData),
       contrato_numero: stringValue(formData, "contrato_numero"),
       endereco: stringValue(formData, "endereco"),
+      bairro: stringValue(formData, "bairro"),
       cidade: stringValue(formData, "cidade"),
       estado: stringValue(formData, "estado"),
       celebrado_em: stringValue(formData, "celebrado_em"),
+      numero_parceiro: stringValue(formData, "numero_parceiro"),
+      status_envio_notificacao: stringValue(formData, "status_envio_notificacao"),
+      vencimento_contrato: stringValue(formData, "vencimento_contrato"),
+      ano_vencimento_contrato: stringValue(formData, "ano_vencimento_contrato"),
+      ac: stringValue(formData, "ac"),
+      numero_nome_empresa: stringValue(formData, "numero_nome_empresa"),
+      empresa_incorporada: stringValue(formData, "empresa_incorporada"),
+      texto_contrato_7_14: stringValue(formData, "texto_contrato_7_14"),
+      texto_ocupacao_revelia: stringValue(formData, "texto_ocupacao_revelia"),
+      texto_23_3: stringValue(formData, "texto_23_3"),
+      texto_24_1: stringValue(formData, "texto_24_1"),
+      texto_24_3: stringValue(formData, "texto_24_3"),
+      valor_atualizado: stringValue(formData, "valor_atualizado"),
+      multa: stringValue(formData, "multa"),
+      retroativo: stringValue(formData, "retroativo"),
       tem_clausula_11_6_3: boolValue(formData, "tem_clausula_11_6_3"),
       campo_11_6_3: stringValue(formData, "campo_11_6_3")
     }
   });
   revalidatePath("/empresas");
   revalidatePath(`/empresas/${id}`);
-  redirect(`/empresas/${id}`);
+  revalidatePath("/notifica-facil/empresas");
+  revalidatePath(`/notifica-facil/empresas/${id}`);
+  redirect(safeRedirectPath(formData, `/empresas/${id}`).replace(":id", id));
+}
+
+export async function deleteEmpresa(id: string, formData?: FormData) {
+  await assertCanEdit();
+  await prisma.empresa.delete({ where: { id } });
+  revalidatePath("/empresas");
+  revalidatePath("/notifica-facil/empresas");
+  redirect(formData ? safeRedirectPath(formData, "/empresas") : "/empresas");
 }
 
 export async function updateUserPermission(id: string, formData: FormData) {

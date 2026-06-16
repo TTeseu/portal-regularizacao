@@ -103,9 +103,25 @@ model Empresa {
   cnpj                  String?
   contrato_numero       String?
   endereco              String?
+  bairro                String?
   cidade                String?
   estado                String?
   celebrado_em          String?
+  numero_parceiro       String?
+  status_envio_notificacao String?
+  vencimento_contrato   String?
+  ano_vencimento_contrato String?
+  ac                    String?
+  numero_nome_empresa   String?
+  empresa_incorporada   String?
+  texto_contrato_7_14   String?
+  texto_ocupacao_revelia String?
+  texto_23_3            String?
+  texto_24_1            String?
+  texto_24_3            String?
+  valor_atualizado      String?
+  multa                 String?
+  retroativo            String?
   tem_clausula_11_6_3   Boolean   @default(false)
   campo_11_6_3          String?
 
@@ -113,6 +129,7 @@ model Empresa {
   @@index([cnpj])
   @@index([contrato_numero])
   @@index([cidade])
+  @@index([numero_parceiro])
 }
 
 model HistoricoDownload {
@@ -280,6 +297,8 @@ model NotificaFacilNotification {
   retroativo                    String?
   enderecos_revelia             Json?
   total_ids_identificados       Int?
+  quantidade_postes             Int?
+  quantidade_postes_regularizados Int?
   ordem_venda                   String?
   censo_registro_id             String?
   censo_draft_id                String?

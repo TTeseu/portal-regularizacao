@@ -17,18 +17,18 @@ export default async function NovaNotificaFacilPage() {
   const user = await requireUser();
   const mayEdit = canEdit(user);
   const [baseCompanies, existingNumbers, counters, templateHtml] = await Promise.all([
-    prisma.notificaFacilBaseNotificacao.findMany({
-      orderBy: { empresa: "asc" },
+    prisma.empresa.findMany({
+      orderBy: { nome: "asc" },
       select: {
         id: true,
-        empresa: true,
+        nome: true,
         status_envio_notificacao: true,
         vencimento_contrato: true,
         ano_vencimento_contrato: true,
-        empresa_endereco: true,
-        empresa_bairro: true,
-        empresa_cidade: true,
-        empresa_estado: true,
+        endereco: true,
+        bairro: true,
+        cidade: true,
+        estado: true,
         contrato_numero: true,
         ac: true,
         numero_nome_empresa: true,
@@ -66,6 +66,31 @@ export default async function NovaNotificaFacilPage() {
   const nextByYearObject = Object.fromEntries(nextByYear);
   const nextSequence = nextByYearObject[currentYear] || 1;
   const nextNumero = `REG${String(nextSequence).padStart(4, "0")}/${currentYear}`;
+  const companyOptions = baseCompanies.map((empresa) => ({
+    id: empresa.id,
+    empresa: empresa.nome,
+    status_envio_notificacao: empresa.status_envio_notificacao,
+    vencimento_contrato: empresa.vencimento_contrato,
+    ano_vencimento_contrato: empresa.ano_vencimento_contrato,
+    empresa_endereco: empresa.endereco,
+    empresa_bairro: empresa.bairro,
+    empresa_cidade: empresa.cidade,
+    empresa_estado: empresa.estado,
+    contrato_numero: empresa.contrato_numero,
+    ac: empresa.ac,
+    numero_nome_empresa: empresa.numero_nome_empresa,
+    celebrado_em: empresa.celebrado_em,
+    numero_parceiro: empresa.numero_parceiro,
+    cnpj: empresa.cnpj,
+    texto_contrato_7_14: empresa.texto_contrato_7_14,
+    texto_ocupacao_revelia: empresa.texto_ocupacao_revelia,
+    texto_23_3: empresa.texto_23_3,
+    texto_24_1: empresa.texto_24_1,
+    texto_24_3: empresa.texto_24_3,
+    valor_atualizado: empresa.valor_atualizado,
+    multa: empresa.multa,
+    retroativo: empresa.retroativo
+  }));
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -82,7 +107,7 @@ export default async function NovaNotificaFacilPage() {
       <NotificaFacilForm
         action={createNotificaFacilNotification}
         canEdit={mayEdit}
-        companyOptions={baseCompanies}
+        companyOptions={companyOptions}
         nextNumero={nextNumero}
         nextByYear={nextByYearObject}
         templateHtml={templateHtml}

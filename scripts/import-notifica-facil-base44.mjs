@@ -109,7 +109,7 @@ function formatCNPJ(value, label = "CNPJ") {
 
 function normalizeCNPJFields(data, fields, rowId) {
   for (const field of fields) {
-    if (field in data) data[field] = formatCNPJ(data[field], `${field} do registro ${rowId || "sem id"}`);
+    if (field in data) data[field] = formatCNPJ(data[field], `${field} do registro ${rowId || "sem id"}`) || formatCNPJ(data.numero_parceiro, `numero_parceiro do registro ${rowId || "sem id"}`);
   }
   return data;
 }
@@ -279,7 +279,7 @@ await createManyInBatches(prisma.notificaFacilEmpresa, (await readJson("Empresa"
     id: row.id,
     ...baseFields(row),
     nome: row.nome || row.empresa || "Sem nome",
-    cnpj: formatCNPJ(row.cnpj, `cnpj da empresa ${row.id || row.nome || "sem id"}`),
+    cnpj: formatCNPJ(row.cnpj, `cnpj da empresa ${row.id || row.nome || "sem id"}`) || formatCNPJ(row.numero_parceiro, `numero_parceiro da empresa ${row.id || row.nome || "sem id"}`),
     contrato_numero: row.contrato_numero ?? null,
     endereco: row.endereco ?? null,
     cidade: row.cidade ?? null,

@@ -53,7 +53,7 @@ export default async function EmpresasPage({
         </div>
       </form>
       <div className="panel overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase text-slate-500">
               <tr>

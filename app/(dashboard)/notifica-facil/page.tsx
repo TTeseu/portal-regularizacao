@@ -242,7 +242,7 @@ export default async function NotificaFacilPage({
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="table-scroll">
             <table className="w-full min-w-[900px] text-left text-sm">
               <thead>
                 <tr>

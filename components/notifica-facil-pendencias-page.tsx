@@ -64,6 +64,9 @@ export async function NotificaFacilPendenciasPage({
   const q = (params?.q || "").trim();
   const canEdit = canEditUser(user);
   const where = currentWhere(mode, q);
+  const exportQuery = new URLSearchParams();
+  exportQuery.set("tipo", mode === "historico" ? "historico-pendencia-tecnica" : "pendencia-tecnica");
+  if (q) exportQuery.set("q", q);
 
   const [items, total, aguardando, notificados, comData, logs] = await Promise.all([
     prisma.notificaFacilNotification.findMany({
@@ -118,6 +121,10 @@ export async function NotificaFacilPendenciasPage({
               <ProcessLink href="/notifica-facil/pendencia-tecnica" active={mode === "ativas"} label="Pendências" />
               <ProcessLink href="/notifica-facil/notificacao-pendencias" active={mode === "notificar"} label="Notificar" />
               <ProcessLink href="/notifica-facil/historico-pendencia-tecnica" active={mode === "historico"} label="Histórico" />
+              <a className="btn-secondary" href={`/api/notifica-facil/export?${exportQuery.toString()}`}>
+                <Download size={16} />
+                Exportar CSV
+              </a>
               {mode === "notificar" && canEdit ? (
                 <Link className="btn-primary" href="/notifica-facil/notificacao-pendencias/nova">
                   <Plus size={16} />
@@ -157,7 +164,7 @@ export async function NotificaFacilPendenciasPage({
             {mode === "notificar" ? "Registros pendentes de marcação PT notificado." : "Registros normalizados da base Base44 do Notifica Fácil."}
           </p>
         </div>
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="w-full min-w-[1080px] text-left text-sm">
             <thead>
               <tr>

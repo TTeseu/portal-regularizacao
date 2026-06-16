@@ -17,7 +17,8 @@
     "import:base44": "node scripts/import-base44.mjs",
     "export:notifica-facil": "node scripts/export-notifica-facil-base44.mjs",
     "import:notifica-facil": "node scripts/import-notifica-facil-base44.mjs",
-    "sync:notifica-facil-attachments": "node scripts/sync-notifica-facil-attachments.mjs"
+    "sync:notifica-facil-attachments": "node scripts/sync-notifica-facil-attachments.mjs",
+    "sync:notifica-facil-empresas": "node scripts/sync-notifica-facil-empresas.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

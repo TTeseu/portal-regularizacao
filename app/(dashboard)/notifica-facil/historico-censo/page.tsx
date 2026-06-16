@@ -46,7 +46,7 @@ export default async function HistoricoCensoPage({
   if (params.q) query.set("q", params.q);
   if (params.status) query.set("status", params.status);
   if (params.empresa) query.set("empresa", params.empresa);
-  query.set("historico", "true");
+  query.set("tipo", "historico-censo");
 
   return (
     <div className="mx-auto max-w-[1600px] space-y-6">
@@ -60,9 +60,9 @@ export default async function HistoricoCensoPage({
           <h1 className="text-3xl font-bold tracking-tight text-white">Histórico do CENSO</h1>
           <p className="mt-2 text-sm text-edp-muted">Registros validados ou reportados, incluindo finalizados e excluídos.</p>
         </div>
-        <a href={`/api/notifica-facil/censo/export?${query.toString()}`} className="btn-primary">
+        <a href={`/api/notifica-facil/export?${query.toString()}`} className="btn-primary">
           <Download size={16} />
-          Exportar Excel
+          Exportar CSV
         </a>
       </div>
 
@@ -99,7 +99,7 @@ export default async function HistoricoCensoPage({
         <div className="border-b border-line px-5 py-4">
           <h2 className="font-bold text-white">Registros Finalizados</h2>
         </div>
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="w-full min-w-[1100px] text-left text-sm">
             <thead>
               <tr>

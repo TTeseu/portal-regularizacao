@@ -31,6 +31,10 @@ export default async function StandByPage({
 }) {
   const params = (await searchParams) || {};
   const where = buildWhere(params);
+  const exportQuery = new URLSearchParams();
+  exportQuery.set("tipo", "stand-by");
+  if (params.q) exportQuery.set("q", params.q);
+  if (params.status) exportQuery.set("status", params.status);
   const [items, total, statusRows] = await Promise.all([
     prisma.notificaFacilNotification.findMany({
       where,
@@ -71,9 +75,14 @@ export default async function StandByPage({
                 </p>
               </div>
             </div>
-            <div className="rounded-2xl border border-line bg-surface px-5 py-4 text-right">
-              <div className="text-xs font-bold uppercase tracking-wide text-edp-muted">Total filtrado</div>
-              <div className="mt-1 text-3xl font-bold text-white">{total}</div>
+            <div className="flex flex-wrap items-center gap-3">
+              <a className="btn-secondary" href={`/api/notifica-facil/export?${exportQuery.toString()}`}>
+                Exportar CSV
+              </a>
+              <div className="rounded-2xl border border-line bg-surface px-5 py-4 text-right">
+                <div className="text-xs font-bold uppercase tracking-wide text-edp-muted">Total filtrado</div>
+                <div className="mt-1 text-3xl font-bold text-white">{total}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -118,7 +127,7 @@ export default async function StandByPage({
             <p className="mt-1 text-sm text-edp-muted">Mostrando {items.length} de {total} registros.</p>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="table-scroll">
           <table className="w-full min-w-[1100px] text-left text-sm">
             <thead>
               <tr>

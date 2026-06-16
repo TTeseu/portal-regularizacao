@@ -6,16 +6,18 @@ import { createNotificaFacilPendenciaWizard } from "../../actions";
 export default async function NovaNotificacaoPendenciaPage() {
   const user = await requireUser();
   const [baseEmpresas, tiposRows] = await Promise.all([
-    prisma.notificaFacilBaseNotificacao.findMany({
-      orderBy: { empresa: "asc" },
+    prisma.empresa.findMany({
+      orderBy: { nome: "asc" },
       select: {
         id: true,
-        empresa: true,
+        nome: true,
         cnpj: true,
         contrato_numero: true,
-        empresa_endereco: true,
-        empresa_cidade: true,
-        empresa_estado: true
+        endereco: true,
+        cidade: true,
+        estado: true,
+        tem_clausula_11_6_3: true,
+        campo_11_6_3: true
       }
     }),
     prisma.notificaFacilNotification.findMany({
@@ -28,14 +30,14 @@ export default async function NovaNotificacaoPendenciaPage() {
 
   const empresas = baseEmpresas.map((empresa) => ({
     id: empresa.id,
-    nome: empresa.empresa,
+    nome: empresa.nome,
     cnpj: empresa.cnpj,
     contrato_numero: empresa.contrato_numero,
-    endereco: empresa.empresa_endereco,
-    cidade: empresa.empresa_cidade,
-    estado: empresa.empresa_estado,
-    tem_clausula_11_6_3: false,
-    campo_11_6_3: null
+    endereco: empresa.endereco,
+    cidade: empresa.cidade,
+    estado: empresa.estado,
+    tem_clausula_11_6_3: empresa.tem_clausula_11_6_3,
+    campo_11_6_3: empresa.campo_11_6_3
   }));
 
   const tipos = Array.from(new Set([

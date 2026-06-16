@@ -69,6 +69,18 @@ textarea {
   @apply rounded-xl border border-line bg-card shadow-none;
 }
 
+.table-scroll {
+  @apply overflow-x-auto;
+  max-height: min(72vh, 760px);
+  scrollbar-gutter: stable both-edges;
+}
+
+.table-scroll table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 .wizard-panel {
   @apply rounded-xl border border-line bg-card shadow-2xl shadow-black/10;
 }
