@@ -21,7 +21,6 @@ function buildWhere(params: Record<string, string | undefined>) {
       ]
     });
   }
-  if (params.status) filters.push({ status: params.status });
   return { AND: filters } satisfies Prisma.NotificaFacilNotificationWhereInput;
 }
 
@@ -35,20 +34,13 @@ export default async function StandByPage({
   const exportQuery = new URLSearchParams();
   exportQuery.set("tipo", "stand-by");
   if (params.q) exportQuery.set("q", params.q);
-  if (params.status) exportQuery.set("status", params.status);
-  const [items, total, statusRows] = await Promise.all([
+  const [items, total] = await Promise.all([
     prisma.notificaFacilNotification.findMany({
       where,
       orderBy: [{ updated_date: "desc" }, { created_date: "desc" }],
       take: 250
     }),
-    prisma.notificaFacilNotification.count({ where }),
-    prisma.notificaFacilNotification.groupBy({
-      by: ["status"],
-      where: { is_standby: true },
-      _count: { status: true },
-      orderBy: { _count: { status: "desc" } }
-    })
+    prisma.notificaFacilNotification.count({ where })
   ]);
 
   return (
@@ -89,29 +81,11 @@ export default async function StandByPage({
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        {statusRows.slice(0, 3).map((row) => (
-          <div key={row.status} className="panel p-5">
-            <div className="text-xs font-bold uppercase tracking-wide text-edp-muted">{row.status || "Sem status"}</div>
-            <div className="mt-2 text-3xl font-bold text-white">{row._count.status}</div>
-          </div>
-        ))}
-      </section>
-
       <section className="panel p-5">
-        <form className="grid gap-4 lg:grid-cols-[1fr_280px_auto] lg:items-end">
+        <form className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
           <label>
             <span className="label">Buscar</span>
             <AutoSearchInput defaultValue={params.q || ""} placeholder="Empresa, censo, protocolo, contrato ou cidade..." />
-          </label>
-          <label>
-            <span className="label">Status</span>
-            <select className="field mt-1" name="status" defaultValue={params.status || ""}>
-              <option value="">Todos</option>
-              {statusRows.map((row) => (
-                <option key={row.status} value={row.status}>{row.status || "Sem status"}</option>
-              ))}
-            </select>
           </label>
           <button className="btn-primary h-11" type="submit">Filtrar</button>
         </form>
@@ -133,7 +107,6 @@ export default async function StandByPage({
                 <th className="px-5 py-4">Empresa</th>
                 <th className="px-5 py-4">Registro CENSO</th>
                 <th className="px-5 py-4">Cidade</th>
-                <th className="px-5 py-4">Status</th>
                 <th className="px-5 py-4">Atualização</th>
                 <th className="px-5 py-4">Ações</th>
               </tr>
@@ -150,7 +123,6 @@ export default async function StandByPage({
                   <td className="px-5 py-4 text-white">{item.empresa}</td>
                   <td className="px-5 py-4 text-edp-muted">{item.numero_registro_censo || "-"}</td>
                   <td className="px-5 py-4 text-edp-muted">{formatPtBrDisplay(item.empresa_cidade)}</td>
-                  <td className="px-5 py-4"><StatusBadge status={item.status} /></td>
                   <td className="px-5 py-4 text-edp-muted">{formatDate(item.updated_date || item.created_date)}</td>
                   <td className="px-5 py-4">
                     <div className="flex flex-wrap gap-2">
@@ -162,7 +134,7 @@ export default async function StandByPage({
               ))}
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center text-edp-muted">Nenhum registro em stand-by encontrado.</td>
+                  <td colSpan={6} className="px-5 py-12 text-center text-edp-muted">Nenhum registro em stand-by encontrado.</td>
                 </tr>
               ) : null}
             </tbody>
@@ -171,8 +143,4 @@ export default async function StandByPage({
       </section>
     </div>
   );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  return <span className="inline-flex rounded-full border border-yellow-300/30 bg-yellow-300/15 px-3 py-1 text-xs font-bold text-yellow-100">{status || "Stand-by"}</span>;
 }

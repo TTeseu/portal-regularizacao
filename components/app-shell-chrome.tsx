@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   Bell,
@@ -58,9 +58,22 @@ const notificaFacilNav: NavItem[] = [
   { href: "/notifica-facil/pdfs", label: "Todos os PDFs", icon: FileArchive }
 ];
 
-function isActive(pathname: string, href: string) {
-  const cleanHref = href.split("?")[0];
+type CurrentSearchParams = {
+  get(name: string): string | null;
+};
+
+function isActive(pathname: string, href: string, currentSearchParams: CurrentSearchParams) {
+  const [cleanHref, queryString] = href.split("?");
+  if (queryString) {
+    if (pathname !== cleanHref) return false;
+    const hrefParams = new URLSearchParams(queryString);
+    for (const [key, value] of hrefParams.entries()) {
+      if (currentSearchParams.get(key) !== value) return false;
+    }
+    return true;
+  }
   if (cleanHref === "/notifica-facil" || cleanHref === "/regularizacao") return pathname === cleanHref;
+  if (cleanHref === "/notificacoes") return pathname === cleanHref && currentSearchParams.get("origem") !== "importacao";
   return pathname === cleanHref || pathname.startsWith(`${cleanHref}/`);
 }
 
@@ -78,12 +91,12 @@ function SidebarLogo({ moduleName, subtitle }: { moduleName: string; subtitle: s
   );
 }
 
-function ShellNav({ items, pathname }: { items: NavItem[]; pathname: string }) {
+function ShellNav({ items, pathname, searchParams }: { items: NavItem[]; pathname: string; searchParams: CurrentSearchParams }) {
   return (
     <nav className="flex-1 space-y-2 px-4 py-6">
       {items.map((item) => {
         const Icon = item.icon;
-        const active = isActive(pathname, item.href);
+        const active = isActive(pathname, item.href, searchParams);
         return (
           <Link
             key={item.href}
@@ -103,6 +116,7 @@ function ShellNav({ items, pathname }: { items: NavItem[]; pathname: string }) {
 
 export function AppShellChrome({ children, user }: { children: React.ReactNode; user: ShellUser }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const isNotificaFacil = pathname.startsWith("/notifica-facil");
   const visibleNav = (isNotificaFacil ? notificaFacilNav : regularizacaoNav).filter((item) => !item.adminOnly || user.role === "admin");
   const moduleName = isNotificaFacil ? "Notifica Fácil" : "Portal";
@@ -113,7 +127,7 @@ export function AppShellChrome({ children, user }: { children: React.ReactNode; 
       <FlashToast />
       <aside className="fixed inset-y-0 left-0 hidden w-72 flex-col border-r border-line bg-gradient-to-b from-edp-navy via-[#1b2a40] to-[#142238] shadow-2xl shadow-black/20 lg:flex">
         <SidebarLogo moduleName={moduleName} subtitle={moduleSubtitle} />
-        <ShellNav items={visibleNav} pathname={pathname} />
+        <ShellNav items={visibleNav} pathname={pathname} searchParams={searchParams} />
         <div className="px-4 pb-5">
           <SidebarWeather />
         </div>

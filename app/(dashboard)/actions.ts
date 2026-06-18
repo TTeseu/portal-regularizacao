@@ -167,9 +167,9 @@ export async function createNotificacoesWizard(formData: FormData) {
   const createdIds: string[] = [];
   const now = new Date();
   const loteId = randomUUID();
-  const loteNome = stringValue(formData, "lote_nome") || `Geracao ${now.toLocaleDateString("pt-BR", { timeZone: BR_TIME_ZONE })} - ${empresas.length} ${pluralLabel(empresas.length)}`;
   const tipo = stringValue(formData, "tipo_notificacao");
   const numeroOficio = stringValue(formData, "numero_oficio");
+  const loteNome = numeroOficio || stringValue(formData, "lote_nome") || `Geracao ${now.toLocaleDateString("pt-BR", { timeZone: BR_TIME_ZONE })} - ${empresas.length} ${pluralLabel(empresas.length)}`;
   const dataNotificacao = dateFromInput(stringValue(formData, "data_notificacao"));
   const prazoDias = stringValue(formData, "prazo_dias");
   const enderecoNotificacao = parseEnderecosJson(formData) || stringValue(formData, "endereco_notificacao");

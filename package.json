@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate deploy",
+    "prisma:migrate": "node scripts/prisma-migrate-deploy.mjs",
     "prisma:dev": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "seed": "node prisma/seed.mjs",
