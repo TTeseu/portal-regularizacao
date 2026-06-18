@@ -10,13 +10,22 @@ import { markNotificaFacilPtNotificado } from "@/app/(dashboard)/notifica-facil/
 
 type Mode = "ativas" | "historico" | "notificar";
 
-const pendenciaWhere: Prisma.NotificaFacilNotificationWhereInput = {
+const pendenciaImportadaWhere: Prisma.NotificaFacilNotificationWhereInput = {
   numero_notificacao: null,
   OR: [
     { pendencia_tecnica: true },
     { pt_notificado: true },
     { pt_data_notificado: { not: null } }
   ]
+};
+
+const notificacaoPendenciaGeradaWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  numero_notificacao: { not: null },
+  pendencia_tecnica: true
+};
+
+const pendenciaWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  OR: [pendenciaImportadaWhere, notificacaoPendenciaGeradaWhere]
 };
 
 function mergeWhere(base: Prisma.NotificaFacilNotificationWhereInput, extra: Prisma.NotificaFacilNotificationWhereInput) {

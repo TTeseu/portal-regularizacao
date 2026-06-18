@@ -31,6 +31,7 @@ const statuses = [
 
 const generatedNotificationWhere: Prisma.NotificaFacilNotificationWhereInput = {
   numero_notificacao: { not: null },
+  pendencia_tecnica: false,
   NOT: [{ tipo_servico: "CENSO" }]
 };
 

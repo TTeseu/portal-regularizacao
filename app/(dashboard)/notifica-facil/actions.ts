@@ -536,7 +536,7 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       data_notificacao: dataNotificacao,
       prazo_resposta: prazoDias,
       status: "Aguardando assinatura Gestor",
-      pendencia_tecnica: false,
+      pendencia_tecnica: true,
       pt_notificado: false,
       status_envio_notificacao: empresa.status_envio_notificacao,
       vencimento_contrato: empresa.vencimento_contrato,
@@ -644,7 +644,7 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
 
   revalidatePath("/notifica-facil");
   revalidatePath("/notifica-facil/notificacao-pendencias");
-  redirect(withFlash("/notifica-facil", { success: "notificacoes-geradas", count: createdIds.length }));
+  redirect(withFlash("/notifica-facil/notificacao-pendencias", { success: "notificacoes-geradas", count: createdIds.length }));
 }
 
 export async function updateNotificaFacilNotification(id: string, formData: FormData) {
