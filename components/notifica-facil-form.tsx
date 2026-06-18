@@ -510,9 +510,9 @@ export function NotificaFacilForm({
             <div className="relative">
               <span className="label">Selecionar Empresa (Banco de Dados CSV)</span>
               <div className="relative mt-2">
-                <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-edp-muted" size={18} />
+                {!companyQuery.trim() ? <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-edp-muted" size={18} /> : null}
                 <input
-                  className="field h-12 pl-11"
+                  className={`field h-12 ${companyQuery.trim() ? "" : "pl-11"}`}
                   value={companyQuery}
                   onChange={(event) => {
                     setCompanyQuery(event.target.value);

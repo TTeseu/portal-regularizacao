@@ -372,8 +372,8 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action, backH
           <WizardSection title="2. Selecione as Empresas" subtitle="Escolha quais empresas receberão a notificação">
             <div className="flex flex-col gap-3 md:flex-row">
               <label className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input className="field h-12 pl-12" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por empresa, CNPJ, contrato ou cidade..." />
+                {!query.trim() ? <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} /> : null}
+                <input className={`field h-12 ${query.trim() ? "" : "pl-12"}`} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por empresa, CNPJ, contrato ou cidade..." />
               </label>
               <button type="button" className="btn-secondary h-12 px-5" onClick={selectAllFiltered}>
                 Selecionar Todas

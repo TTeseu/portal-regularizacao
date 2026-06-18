@@ -8,7 +8,6 @@ import {
   Download,
   FileText,
   Filter,
-  Search,
   Send,
   Shield,
   Trash2,
@@ -17,6 +16,7 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/format";
+import { AutoSearchInput } from "@/components/auto-search-input";
 import { updateUserPermission } from "../actions";
 
 type DashboardTab = "notificacoes" | "relatorios" | "permissoes";
@@ -159,10 +159,12 @@ function NotificationsPanel({ total, lotes }: { total: number; lotes: ReturnType
       </div>
 
       <form action="/notificacoes" className="space-y-4 border-b border-line px-6 py-5">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-edp-muted" size={18} />
-          <input className="field h-11 pl-11" name="q" placeholder="Buscar por empresa, CNPJ, contrato, nº ofício, endereço, observações..." />
-        </div>
+        <AutoSearchInput
+          targetPath="/notificacoes"
+          className="relative"
+          inputClassName="field h-11 pl-11"
+          placeholder="Buscar por empresa, CNPJ, contrato, nº ofício, endereço, observações..."
+        />
         <div className="rounded-2xl border border-line bg-edp-navy/25 p-4">
           <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-edp-muted">
             <Filter size={14} className="text-edp" />

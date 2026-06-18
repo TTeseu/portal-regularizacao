@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Prisma } from "@prisma/client";
-import { Download, Eye, Plus, Search } from "lucide-react";
+import { Download, Eye, Plus } from "lucide-react";
+import { AutoSearchInput } from "@/components/auto-search-input";
 import { prisma } from "@/lib/prisma";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { STATUS_OPTIONS, ORIGEM_OPTIONS } from "@/lib/constants";
@@ -73,10 +74,7 @@ export default async function NotificacoesPage({
       <form className="panel mb-4 grid gap-3 p-4 md:grid-cols-3 xl:grid-cols-7">
         <label className="md:col-span-2">
           <span className="label">Busca</span>
-          <div className="relative mt-1">
-            <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
-            <input className="field pl-9" name="q" defaultValue={params.q || ""} />
-          </div>
+          <AutoSearchInput defaultValue={params.q || ""} placeholder="Buscar..." iconClassName="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         </label>
         <label>
           <span className="label">Status</span>
@@ -94,19 +92,19 @@ export default async function NotificacoesPage({
         </label>
         <label>
           <span className="label">Empresa</span>
-          <input className="field mt-1" name="empresa" defaultValue={params.empresa || ""} />
+          <AutoSearchInput name="empresa" defaultValue={params.empresa || ""} placeholder="Empresa" className="mt-1" inputClassName="field" showIcon={false} />
         </label>
         <label>
           <span className="label">Cidade</span>
-          <input className="field mt-1" name="cidade" defaultValue={params.cidade || ""} />
+          <AutoSearchInput name="cidade" defaultValue={params.cidade || ""} placeholder="Cidade" className="mt-1" inputClassName="field" showIcon={false} />
         </label>
         <label>
           <span className="label">Lote</span>
-          <input className="field mt-1" name="lote" defaultValue={params.lote || ""} />
+          <AutoSearchInput name="lote" defaultValue={params.lote || ""} placeholder="Lote" className="mt-1" inputClassName="field" showIcon={false} />
         </label>
         <label>
           <span className="label">Vencimento</span>
-          <input className="field mt-1" name="vencimento" defaultValue={params.vencimento || ""} />
+          <AutoSearchInput name="vencimento" defaultValue={params.vencimento || ""} placeholder="Vencimento" className="mt-1" inputClassName="field" showIcon={false} />
         </label>
         <label className="flex items-center gap-2 text-sm font-medium">
           <input type="checkbox" name="arquivada" value="true" defaultChecked={params.arquivada === "true"} />

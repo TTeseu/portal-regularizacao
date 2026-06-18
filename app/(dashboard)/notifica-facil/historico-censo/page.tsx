@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft, Download, Filter, Search } from "lucide-react";
+import { ArrowLeft, Download, Filter } from "lucide-react";
 import { Prisma } from "@prisma/client";
+import { AutoSearchInput } from "@/components/auto-search-input";
 import { formatDate, formatPtBrDisplay } from "@/lib/format";
 import { historyCensoWhere } from "@/lib/notifica-facil-censo";
 import { prisma } from "@/lib/prisma";
@@ -74,10 +75,7 @@ export default async function HistoricoCensoPage({
         <form className="grid gap-4 p-5 lg:grid-cols-3">
           <label>
             <span className="label">Buscar</span>
-            <div className="relative mt-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-edp-muted" size={16} />
-              <input className="field pl-9" name="q" defaultValue={params.q || ""} placeholder="Buscar por registro, empresa, endereço..." />
-            </div>
+            <AutoSearchInput defaultValue={params.q || ""} placeholder="Buscar por registro, empresa, endereço..." />
           </label>
           <label>
             <span className="label">Status</span>

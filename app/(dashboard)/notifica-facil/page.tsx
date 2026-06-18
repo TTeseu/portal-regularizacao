@@ -10,12 +10,12 @@ import {
   FileText,
   Plus,
   RefreshCw,
-  Search,
   ShieldAlert,
   TrendingUp,
   Users
 } from "lucide-react";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
+import { AutoSearchInput } from "@/components/auto-search-input";
 import { formatDate, formatPtBrDisplay } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { cnpjSearchTerm } from "@/lib/cnpj";
@@ -185,10 +185,7 @@ export default async function NotificaFacilPage({
         <form className="grid gap-4 xl:grid-cols-[1.4fr_1fr_1fr_1fr_auto] xl:items-end">
           <label className="space-y-2">
             <span className="label">Busca</span>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-edp-muted" size={16} />
-              <input className="field pl-9" name="q" defaultValue={values.q || ""} placeholder="Empresa, contrato, protocolo ou número da notificação..." />
-            </div>
+            <AutoSearchInput className="relative" defaultValue={values.q || ""} placeholder="Empresa, contrato, protocolo ou número da notificação..." />
           </label>
           <label className="space-y-2">
             <span className="label">Status</span>

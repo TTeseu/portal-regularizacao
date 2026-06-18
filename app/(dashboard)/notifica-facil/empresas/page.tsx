@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Prisma } from "@prisma/client";
-import { Database, Download, Eye, Plus, Search, Trash2 } from "lucide-react";
+import { Database, Download, Eye, Plus, Trash2 } from "lucide-react";
 import { deleteEmpresa } from "@/app/(dashboard)/actions";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
+import { AutoSearchInput } from "@/components/auto-search-input";
 import { cnpjSearchTerm, formatCNPJDisplay } from "@/lib/cnpj";
 import { formatPtBrDisplay } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
@@ -79,10 +80,7 @@ export default async function NotificaFacilEmpresasPage({
       <form className="panel p-4">
         <label>
           <span className="label">Buscar por nome, CNPJ, contrato ou cidade</span>
-          <div className="relative mt-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-edp-muted" size={16} />
-            <input className="field pl-9" name="q" defaultValue={values.q || ""} placeholder="Digite para pesquisar..." />
-          </div>
+          <AutoSearchInput defaultValue={values.q || ""} placeholder="Digite para pesquisar..." />
         </label>
       </form>
 

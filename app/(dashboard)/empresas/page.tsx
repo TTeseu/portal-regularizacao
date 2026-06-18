@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Prisma } from "@prisma/client";
-import { Eye, Plus, Search } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { PageTitle } from "@/components/page-title";
+import { AutoSearchInput } from "@/components/auto-search-input";
 import { formatPtBrDisplay } from "@/lib/format";
 import { cnpjSearchTerm, formatCNPJDisplay } from "@/lib/cnpj";
 
@@ -40,17 +41,11 @@ export default async function EmpresasPage({
           ) : null
         }
       />
-      <form className="panel mb-4 flex flex-col gap-3 p-4 sm:flex-row">
+      <form className="panel mb-4 p-4">
         <label className="flex-1">
           <span className="label">Busca</span>
-          <div className="relative mt-1">
-            <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
-            <input className="field pl-9" name="q" defaultValue={params.q || ""} />
-          </div>
+          <AutoSearchInput defaultValue={params.q || ""} placeholder="Digite nome, CNPJ, contrato ou cidade..." />
         </label>
-        <div className="flex items-end">
-          <button className="btn-secondary">Filtrar</button>
-        </div>
       </form>
       <div className="panel overflow-hidden">
         <div className="table-scroll">

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft, Bot, Download, FileSpreadsheet, RefreshCw, Save, Search, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, Bot, Download, FileSpreadsheet, RefreshCw, Save, Trash2, Upload } from "lucide-react";
 import { Prisma } from "@prisma/client";
+import { AutoSearchInput } from "@/components/auto-search-input";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { formatDate, formatPtBrDisplay } from "@/lib/format";
 import { activeCensoWhere } from "@/lib/notifica-facil-censo";
@@ -110,10 +111,7 @@ export default async function ImportarCensoPage({
       <form className="panel p-4">
         <label>
           <span className="label">Buscar</span>
-          <div className="relative mt-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-edp-muted" size={16} />
-            <input className="field pl-9" name="q" defaultValue={values.q || ""} placeholder="Buscar por endereço, bairro, cidade ou empresa..." />
-          </div>
+          <AutoSearchInput defaultValue={values.q || ""} placeholder="Buscar por endereço, bairro, cidade ou empresa..." />
         </label>
       </form>
 

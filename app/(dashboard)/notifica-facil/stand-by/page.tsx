@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft, Clock3, FileText, Search } from "lucide-react";
+import { ArrowLeft, Clock3, FileText } from "lucide-react";
 import { Prisma } from "@prisma/client";
+import { AutoSearchInput } from "@/components/auto-search-input";
 import { formatDate, formatPtBrDisplay } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
@@ -101,10 +102,7 @@ export default async function StandByPage({
         <form className="grid gap-4 lg:grid-cols-[1fr_280px_auto] lg:items-end">
           <label>
             <span className="label">Buscar</span>
-            <div className="relative mt-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-edp-muted" size={16} />
-              <input className="field pl-9" name="q" defaultValue={params.q || ""} placeholder="Empresa, censo, protocolo, contrato ou cidade..." />
-            </div>
+            <AutoSearchInput defaultValue={params.q || ""} placeholder="Empresa, censo, protocolo, contrato ou cidade..." />
           </label>
           <label>
             <span className="label">Status</span>
