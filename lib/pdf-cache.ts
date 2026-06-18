@@ -6,7 +6,7 @@ import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 
-export const PDF_RENDERER_VERSION = "html-render-v2";
+export const PDF_RENDERER_VERSION = "html-render-v3";
 
 type PdfCacheResult = {
   bytes: Uint8Array;

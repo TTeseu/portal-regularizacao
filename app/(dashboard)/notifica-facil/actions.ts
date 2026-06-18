@@ -637,7 +637,25 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       last_downloaded_at: null,
       last_downloaded_by: null
     });
-    await storePdfForNotificaFacil(created, portalTemplateHtml);
+    try {
+      await storePdfForNotificaFacil(created, portalTemplateHtml);
+    } catch (error) {
+      console.error("[notifica-facil:notificacao-pendencias] Falha ao gerar PDF inicial", {
+        notificationId: created.id,
+        empresa: created.empresa,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      await prisma.notificaFacilNotification.update({
+        where: { id: created.id },
+        data: {
+          html_content: portalTemplateHtml,
+          pdf_url: null,
+          pdf_base64: null,
+          updated_date: new Date()
+        }
+      });
+    }
     await logAction(created.id, "criacao_pendencia", "Notificação das Pendências criada com o template do Portal de Regularização");
     createdIds.push(id);
   }

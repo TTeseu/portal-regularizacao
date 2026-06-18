@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { NotificaFacilNotification } from "@prisma/client";
 import { formatCNPJDisplay } from "@/lib/cnpj";
+import { EDP_LOGO_DATA_URI } from "@/lib/edp-logo";
 
 let cachedTemplate: string | null = null;
 
@@ -108,11 +109,14 @@ function replaceAddressTable(template: string, rows: string) {
 }
 
 export function sanitizeNotificaFacilHtml(html: string) {
-  return html.replace(/<div class="assinatura-label">Assinatura<\/div>/gi, "");
+  return html
+    .replaceAll("https://captadores.org.br/wp-content/uploads/2024/08/edp.png", EDP_LOGO_DATA_URI)
+    .replace(/<div class="assinatura-label">Assinatura<\/div>/gi, "");
 }
 
 export function buildNotificaFacilHtml(notification: NotificaFacilNotification) {
   let html = loadTemplate();
+  html = html.replaceAll("https://captadores.org.br/wp-content/uploads/2024/08/edp.png", EDP_LOGO_DATA_URI);
 
   if (!notification.mostrar_celebrado_em) {
     html = html.replace(/, celebrado em \{\{CELEBRADO_EM\}\},/g, ",");
