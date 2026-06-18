@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Prisma } from "@prisma/client";
-import { Database, Download, Eye, Plus, Search } from "lucide-react";
+import { Database, Download, Eye, Plus, Search, Trash2 } from "lucide-react";
+import { deleteEmpresa } from "@/app/(dashboard)/actions";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { cnpjSearchTerm, formatCNPJDisplay } from "@/lib/cnpj";
 import { formatPtBrDisplay } from "@/lib/format";
@@ -118,10 +119,20 @@ export default async function NotificaFacilEmpresasPage({
                   <td className="px-4 py-3 text-edp-muted">{empresa.estado || "-"}</td>
                   <td className="px-4 py-3 text-edp-muted">{empresa.vencimento_contrato || "-"}</td>
                   <td className="px-4 py-3 text-edp-muted">{empresa.status_envio_notificacao || "-"}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Link className="btn-secondary h-9 px-3" href={`/notifica-facil/empresas/${empresa.id}`}>
-                      <Eye size={15} />
-                    </Link>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-2">
+                      <Link className="btn-secondary h-9 px-3" href={`/notifica-facil/empresas/${empresa.id}`} title="Visualizar e editar">
+                        <Eye size={15} />
+                      </Link>
+                      {canEdit ? (
+                        <form action={deleteEmpresa.bind(null, empresa.id)}>
+                          <input type="hidden" name="redirect_to" value="/notifica-facil/empresas" />
+                          <button className="btn-danger h-9 px-3" type="submit" title="Excluir empresa">
+                            <Trash2 size={15} />
+                          </button>
+                        </form>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ))}

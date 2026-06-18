@@ -3,6 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { Prisma } from "@prisma/client";
 import { canEdit, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
@@ -30,6 +31,16 @@ function safeRedirectPath(formData: FormData, fallback: string) {
   const value = stringValue(formData, "redirect_to");
   if (!value || !value.startsWith("/") || value.startsWith("//")) return fallback;
   return value;
+}
+
+function withFlash(path: string, params: Record<string, string | number | null | undefined>) {
+  const [pathname, query = ""] = path.split("?");
+  const search = new URLSearchParams(query);
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== null && value !== undefined && value !== "") search.set(key, String(value));
+  }
+  const nextQuery = search.toString();
+  return nextQuery ? `${pathname}?${nextQuery}` : pathname;
 }
 
 function parseAnexos(formData: FormData) {
@@ -123,7 +134,7 @@ export async function createNotificacao(formData: FormData) {
 
   revalidatePath("/regularizacao");
   revalidatePath("/notificacoes");
-  redirect(`/notificacoes/${id}`);
+  redirect(withFlash("/regularizacao", { success: "notificacao-gerada", count: 1 }));
 }
 
 function dateFromInput(value: string | null) {
@@ -199,10 +210,7 @@ export async function createNotificacoesWizard(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/regularizacao");
   revalidatePath("/notificacoes");
-  if (createdIds.length === 1) {
-    redirect(`/notificacoes?lote=${encodeURIComponent(loteNome)}`);
-  }
-  redirect("/regularizacao");
+  redirect(withFlash("/regularizacao", { success: "notificacoes-geradas", count: createdIds.length }));
 }
 
 export async function updateNotificacao(id: string, formData: FormData) {
@@ -261,7 +269,7 @@ export async function updateNotificacao(id: string, formData: FormData) {
   revalidatePath("/regularizacao");
   revalidatePath("/notificacoes");
   revalidatePath(`/notificacoes/${id}`);
-  redirect(`/notificacoes/${id}`);
+  redirect(withFlash(`/notificacoes/${id}`, { success: "salvo" }));
 }
 
 export async function markNotificacao(id: string, field: "visualizada" | "arquivada" | "sem_projeto" | "encaminhado_prefeitura", value: boolean) {
@@ -314,7 +322,7 @@ export async function createEmpresa(formData: FormData) {
   });
   revalidatePath("/empresas");
   revalidatePath("/notifica-facil/empresas");
-  redirect(safeRedirectPath(formData, `/empresas/${id}`).replace(":id", id));
+  redirect(withFlash(safeRedirectPath(formData, `/empresas/${id}`).replace(":id", id), { success: "salvo" }));
 }
 
 export async function updateEmpresa(id: string, formData: FormData) {
@@ -354,15 +362,23 @@ export async function updateEmpresa(id: string, formData: FormData) {
   revalidatePath(`/empresas/${id}`);
   revalidatePath("/notifica-facil/empresas");
   revalidatePath(`/notifica-facil/empresas/${id}`);
-  redirect(safeRedirectPath(formData, `/empresas/${id}`).replace(":id", id));
+  redirect(withFlash(safeRedirectPath(formData, `/empresas/${id}`).replace(":id", id), { success: "salvo" }));
 }
 
 export async function deleteEmpresa(id: string, formData?: FormData) {
   await assertCanEdit();
-  await prisma.empresa.delete({ where: { id } });
+  const target = formData ? safeRedirectPath(formData, "/empresas") : "/empresas";
+  try {
+    await prisma.empresa.delete({ where: { id } });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      redirect(withFlash(target, { error: "empresa-vinculada" }));
+    }
+    throw error;
+  }
   revalidatePath("/empresas");
   revalidatePath("/notifica-facil/empresas");
-  redirect(formData ? safeRedirectPath(formData, "/empresas") : "/empresas");
+  redirect(withFlash(target, { success: "empresa-excluida" }));
 }
 
 export async function updateUserPermission(id: string, formData: FormData) {

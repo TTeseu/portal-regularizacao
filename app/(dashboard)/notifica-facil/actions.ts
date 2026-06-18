@@ -22,6 +22,20 @@ function cnpjText(formData: FormData, key = "cnpj") {
   return requireFormattedCNPJ(text(formData, key));
 }
 
+function formattedCNPJOrNull(value: string | null | undefined) {
+  return value ? requireFormattedCNPJ(value) : null;
+}
+
+function withFlash(path: string, params: Record<string, string | number | null | undefined>) {
+  const [pathname, query = ""] = path.split("?");
+  const search = new URLSearchParams(query);
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== null && value !== undefined && value !== "") search.set(key, String(value));
+  }
+  const nextQuery = search.toString();
+  return nextQuery ? `${pathname}?${nextQuery}` : pathname;
+}
+
 function numberValue(formData: FormData, key: string) {
   return numberFromText(String(formData.get(key) || ""));
 }
@@ -356,7 +370,7 @@ export async function createNotificaFacilNotification(formData: FormData) {
   await logAction(created.id, "criacao", "Notificação criada no módulo Notifica Fácil");
 
   revalidatePath("/notifica-facil");
-  redirect(`/notifica-facil/${created.id}`);
+  redirect(withFlash("/notifica-facil", { success: "notificacao-gerada", count: 1 }));
 }
 
 export async function importNotificaFacilCensoCsv(formData: FormData) {
@@ -460,6 +474,7 @@ export async function updateNotificaFacilCensoRegistro(id: string, formData: For
   revalidatePath("/notifica-facil");
   revalidatePath("/notifica-facil/importar-censo");
   revalidatePath("/notifica-facil/historico-censo");
+  redirect(withFlash("/notifica-facil/importar-censo", { success: "salvo" }));
 }
 
 export async function clearNotificaFacilCensoObservacoes() {
@@ -472,6 +487,7 @@ export async function clearNotificaFacilCensoObservacoes() {
   });
 
   revalidatePath("/notifica-facil/importar-censo");
+  redirect(withFlash("/notifica-facil/importar-censo", { success: "salvo" }));
 }
 
 export async function createNotificaFacilPendenciaWizard(formData: FormData) {
@@ -526,7 +542,7 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       vencimento_contrato: empresa.vencimento_contrato,
       ano_vencimento_contrato: empresa.ano_vencimento_contrato,
       celebrado_em: empresa.celebrado_em,
-      cnpj: requireFormattedCNPJ(empresa.cnpj),
+      cnpj: formattedCNPJOrNull(empresa.cnpj),
       contrato_numero: empresa.contrato_numero,
       ac: empresa.ac,
       numero_nome_empresa: empresa.numero_nome_empresa,
@@ -574,7 +590,7 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       numero_nome: empresa.numero_nome_empresa,
       celebrado_em: empresa.celebrado_em,
       numero_parceiro: empresa.numero_parceiro,
-      cnpj: requireFormattedCNPJ(empresa.cnpj),
+      cnpj: formattedCNPJOrNull(empresa.cnpj),
       empresa_rep: null,
       endereco_rep: null,
       bairro_rep: null,
@@ -628,10 +644,7 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
 
   revalidatePath("/notifica-facil");
   revalidatePath("/notifica-facil/notificacao-pendencias");
-  if (createdIds.length === 1) {
-    redirect(`/notifica-facil/${createdIds[0]}`);
-  }
-  redirect("/notifica-facil/notificacao-pendencias");
+  redirect(withFlash("/notifica-facil", { success: "notificacoes-geradas", count: createdIds.length }));
 }
 
 export async function updateNotificaFacilNotification(id: string, formData: FormData) {
@@ -660,7 +673,7 @@ export async function updateNotificaFacilNotification(id: string, formData: Form
 
   revalidatePath("/notifica-facil");
   revalidatePath(`/notifica-facil/${id}`);
-  redirect(`/notifica-facil/${id}`);
+  redirect(withFlash(`/notifica-facil/${id}`, { success: "salvo" }));
 }
 
 export async function deleteNotificaFacilNotification(id: string) {
@@ -669,7 +682,7 @@ export async function deleteNotificaFacilNotification(id: string) {
   await prisma.notificaFacilNotification.delete({ where: { id } });
   await logAction(id, "exclusao", "Notificação excluída no módulo Notifica Fácil");
   revalidatePath("/notifica-facil");
-  redirect("/notifica-facil");
+  redirect(withFlash("/notifica-facil", { success: "notificacao-excluida" }));
 }
 
 export async function markNotificaFacilPtNotificado(id: string) {
@@ -692,5 +705,5 @@ export async function markNotificaFacilPtNotificado(id: string) {
   revalidatePath("/notifica-facil/pendencia-tecnica");
   revalidatePath("/notifica-facil/historico-pendencia-tecnica");
   revalidatePath("/notifica-facil/notificacao-pendencias");
-  redirect("/notifica-facil/pendencia-tecnica");
+  redirect(withFlash("/notifica-facil/pendencia-tecnica", { success: "salvo" }));
 }

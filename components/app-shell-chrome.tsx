@@ -19,6 +19,7 @@ import {
   Users
 } from "lucide-react";
 import { SidebarWeather } from "@/components/sidebar-weather";
+import { FlashToast } from "@/components/flash-toast";
 
 type ShellUser = {
   full_name: string | null;
@@ -109,6 +110,7 @@ export function AppShellChrome({ children, user }: { children: React.ReactNode; 
 
   return (
     <div className="min-h-screen bg-edp-navy edp-technical-bg">
+      <FlashToast />
       <aside className="fixed inset-y-0 left-0 hidden w-72 flex-col border-r border-line bg-gradient-to-b from-edp-navy via-[#1b2a40] to-[#142238] shadow-2xl shadow-black/20 lg:flex">
         <SidebarLogo moduleName={moduleName} subtitle={moduleSubtitle} />
         <ShellNav items={visibleNav} pathname={pathname} />

@@ -402,12 +402,12 @@ export function NotificaFacilForm({
     return list.slice(0, 30);
   }, [companyOptions, companyQuery]);
 
-  const totalIds = values.enderecos_revelia.split(/\r?\n/).filter((line) => line.trim()).length;
   const totalPostes = addressRows.reduce((sum, row) => {
     const parsed = Number.parseInt(String(row.quantidadePostes || "").replace(/\D/g, ""), 10);
     if (Number.isFinite(parsed) && parsed > 0) return sum + parsed;
     return sum + (row.endereco || row.bairro || row.cidade ? 1 : 0);
   }, 0);
+  const totalIds = totalPostes;
   const postesRegularizados = Number.parseInt(values.quantidade_postes_regularizados || "0", 10) || 0;
   const postesPendentes = Math.max(totalPostes - postesRegularizados, 0);
   const percentualRegularizado = totalPostes > 0 ? Math.round((postesRegularizados / totalPostes) * 100) : 0;
