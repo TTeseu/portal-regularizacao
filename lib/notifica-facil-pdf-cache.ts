@@ -1,6 +1,7 @@
 import type { NotificaFacilNotification } from "@prisma/client";
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
+import { normalizeEdpLogoSourcesForPdf } from "@/lib/edp-logo-server";
 import { buildNotificaFacilHtml, sanitizeNotificaFacilHtml } from "@/lib/notifica-facil-html";
 import {
   PDF_RENDERER_VERSION,
@@ -45,7 +46,8 @@ async function readExternalPdf(url: string) {
 }
 
 export async function storePdfForNotificaFacil(notification: NotificaFacilNotification, html = buildNotificaFacilHtml(notification)) {
-  const pdf = new Uint8Array(await renderPdfFromHtml(html));
+  const pdfHtml = normalizeEdpLogoSourcesForPdf(html);
+  const pdf = new Uint8Array(await renderPdfFromHtml(pdfHtml));
   let pdfUrl = markPdfRoute(`/api/notifica-facil/notifications/${notification.id}/pdf`);
   let pdfBase64: string | null = Buffer.from(pdf).toString("base64");
 

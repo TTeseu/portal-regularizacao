@@ -5,8 +5,9 @@ import puppeteer from "puppeteer-core";
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
+import { normalizeEdpLogoSourcesForPdf } from "@/lib/edp-logo-server";
 
-export const PDF_RENDERER_VERSION = "html-render-v4";
+export const PDF_RENDERER_VERSION = "html-render-v5";
 
 type PdfCacheResult = {
   bytes: Uint8Array;
@@ -110,7 +111,8 @@ async function readExternalPdf(url: string) {
 }
 
 export async function storePdfForNotificacao(notificacao: Notificacao, html = buildNotificacaoHtml(notificacao)) {
-  const pdf = new Uint8Array(await renderPdfFromHtml(html));
+  const pdfHtml = normalizeEdpLogoSourcesForPdf(html);
+  const pdf = new Uint8Array(await renderPdfFromHtml(pdfHtml));
   let pdfUrl = markPdfRoute(`/api/notificacoes/${notificacao.id}/pdf`);
   let pdfBase64: string | null = Buffer.from(pdf).toString("base64");
 

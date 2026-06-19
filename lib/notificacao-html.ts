@@ -1,6 +1,6 @@
 import type { Notificacao } from "@prisma/client";
 import { formatCNPJDisplay } from "@/lib/cnpj";
-import { EDP_LOGO_DATA_URI } from "@/lib/edp-logo";
+import { EDP_LOGO_DATA_URI, normalizeEdpLogoSources } from "@/lib/edp-logo";
 
 type AddressRow = {
   endereco: string;
@@ -124,8 +124,7 @@ function renderAddressTables(rows: AddressRow[]) {
 }
 
 export function sanitizeNotificacaoHtml(html: string) {
-  return html
-    .replaceAll("https://captadores.org.br/wp-content/uploads/2024/08/edp.png", EDP_LOGO_DATA_URI)
+  return normalizeEdpLogoSources(html)
     .replace(/\s*\(o\s*"<strong>CONTRATO<\/strong>"\),?/gi, "")
     .replace(/\s*\(o\s*"<span class="bold">Contrato<\/span>"\),?/gi, "")
     .replace(/<div class="assinatura-label">Assinatura<\/div>/gi, "");

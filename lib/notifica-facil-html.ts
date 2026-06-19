@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { NotificaFacilNotification } from "@prisma/client";
 import { formatCNPJDisplay } from "@/lib/cnpj";
-import { EDP_LOGO_DATA_URI } from "@/lib/edp-logo";
+import { normalizeEdpLogoSources } from "@/lib/edp-logo";
 
 let cachedTemplate: string | null = null;
 
@@ -109,8 +109,7 @@ function replaceAddressTable(template: string, rows: string) {
 }
 
 export function sanitizeNotificaFacilHtml(html: string) {
-  return html
-    .replaceAll("https://captadores.org.br/wp-content/uploads/2024/08/edp.png", EDP_LOGO_DATA_URI)
+  return normalizeEdpLogoSources(html)
     .replace(/\.screen-logo\s*\{\s*display:\s*none\s*!important;\s*\}/gi, ".screen-logo { display: block !important; text-align: left !important; margin-bottom: 20px !important; }")
     .replace(/\.print-table\s*\{\s*width:\s*100%;\s*border-collapse:\s*separate;\s*border-spacing:\s*0\s+6mm;\s*\}/gi, ".print-table { width: 100%; border-collapse: collapse; border-spacing: 0; }")
     .replace(/\.print-table thead\s*\{\s*display:\s*table-header-group;\s*-webkit-print-color-adjust:\s*exact;\s*print-color-adjust:\s*exact;\s*\}/gi, ".print-table thead { display: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }")
@@ -120,7 +119,7 @@ export function sanitizeNotificaFacilHtml(html: string) {
 
 export function buildNotificaFacilHtml(notification: NotificaFacilNotification) {
   let html = loadTemplate();
-  html = html.replaceAll("https://captadores.org.br/wp-content/uploads/2024/08/edp.png", EDP_LOGO_DATA_URI);
+  html = normalizeEdpLogoSources(html);
 
   if (!notification.mostrar_celebrado_em) {
     html = html.replace(/, celebrado em \{\{CELEBRADO_EM\}\},/g, ",");
