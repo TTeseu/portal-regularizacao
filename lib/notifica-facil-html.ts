@@ -111,6 +111,10 @@ function replaceAddressTable(template: string, rows: string) {
 export function sanitizeNotificaFacilHtml(html: string) {
   return html
     .replaceAll("https://captadores.org.br/wp-content/uploads/2024/08/edp.png", EDP_LOGO_DATA_URI)
+    .replace(/\.screen-logo\s*\{\s*display:\s*none\s*!important;\s*\}/gi, ".screen-logo { display: block !important; text-align: left !important; margin-bottom: 20px !important; }")
+    .replace(/\.print-table\s*\{\s*width:\s*100%;\s*border-collapse:\s*separate;\s*border-spacing:\s*0\s+6mm;\s*\}/gi, ".print-table { width: 100%; border-collapse: collapse; border-spacing: 0; }")
+    .replace(/\.print-table thead\s*\{\s*display:\s*table-header-group;\s*-webkit-print-color-adjust:\s*exact;\s*print-color-adjust:\s*exact;\s*\}/gi, ".print-table thead { display: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }")
+    .replace(/\.print-header\s*\{\s*height:\s*22mm;\s*padding-left:\s*14mm;\s*padding-top:\s*6mm;\s*\}/gi, ".print-header { display: none !important; height: 0; padding: 0; }")
     .replace(/<div class="assinatura-label">Assinatura<\/div>/gi, "");
 }
 

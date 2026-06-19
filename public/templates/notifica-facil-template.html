@@ -61,16 +61,17 @@
       html, body { background: #fff; }
       body { max-width: none; margin: 0; font-size: 11pt; }
 
-      .screen-logo { display: none !important; }
+      .screen-logo { display: block !important; text-align: left !important; margin-bottom: 20px !important; }
+      .screen-logo img { width: 80px !important; height: auto !important; display: block !important; }
       .print-logo { display: none !important; }
 
       .print-table {
         width: 100%;
-        border-collapse: separate;
-        border-spacing: 0 6mm;
+        border-collapse: collapse;
+        border-spacing: 0;
       }
       .print-table thead {
-        display: table-header-group;
+        display: none !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
@@ -78,9 +79,9 @@
 
       .print-header-cell { padding: 0; }
       .print-header {
-        height: 22mm;
-        padding-left: 14mm;
-        padding-top: 6mm;
+        display: none !important;
+        height: 0;
+        padding: 0;
       }
       .print-header img { width: 80px; height: auto; display: block; }
 
