@@ -301,7 +301,7 @@ function formToData(formData: FormData): Prisma.NotificaFacilNotificationUncheck
 
 async function generateNextNotificationNumber(tx: Prisma.TransactionClient, year: string) {
   const yearNumber = Number.parseInt(year, 10) || new Date().getFullYear();
-  await tx.$executeRaw`SELECT pg_advisory_xact_lock(680037, ${yearNumber})`;
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(680037::integer, ${yearNumber}::integer)`;
 
   const [existing, counter] = await Promise.all([
     tx.notificaFacilNotification.findMany({
@@ -366,7 +366,27 @@ export async function createNotificaFacilNotification(formData: FormData) {
     data.numero_notificacao = await generateNextNotificationNumber(tx, year);
     return tx.notificaFacilNotification.create({ data });
   });
-  await storePdfForNotificaFacil(created, buildNotificaFacilHtml(created));
+  const html = buildNotificaFacilHtml(created);
+  try {
+    await storePdfForNotificaFacil(created, html);
+  } catch (error) {
+    console.error("[notifica-facil:nova] Falha ao gerar PDF inicial", {
+      notificationId: created.id,
+      empresa: created.empresa,
+      numero_notificacao: created.numero_notificacao,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    await prisma.notificaFacilNotification.update({
+      where: { id: created.id },
+      data: {
+        html_content: html,
+        pdf_url: null,
+        pdf_base64: null,
+        updated_date: new Date()
+      }
+    });
+  }
   await logAction(created.id, "criacao", "Notificação criada no módulo Notifica Fácil");
 
   revalidatePath("/notifica-facil");
