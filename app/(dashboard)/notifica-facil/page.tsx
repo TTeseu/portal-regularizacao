@@ -32,7 +32,7 @@ const statuses = [
 const generatedNotificationWhere: Prisma.NotificaFacilNotificationWhereInput = {
   numero_notificacao: { not: null },
   pendencia_tecnica: false,
-  NOT: [{ tipo_servico: "CENSO" }]
+  OR: [{ tipo_servico: null }, { tipo_servico: { not: "CENSO" } }]
 };
 
 const DASHBOARD_BASELINE_CUTOFF = new Date("2026-06-12T17:10:00.000Z");
