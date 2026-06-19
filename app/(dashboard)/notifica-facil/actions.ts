@@ -366,27 +366,7 @@ export async function createNotificaFacilNotification(formData: FormData) {
     data.numero_notificacao = await generateNextNotificationNumber(tx, year);
     return tx.notificaFacilNotification.create({ data });
   });
-  const html = buildNotificaFacilHtml(created);
-  try {
-    await storePdfForNotificaFacil(created, html);
-  } catch (error) {
-    console.error("[notifica-facil:nova] Falha ao gerar PDF inicial", {
-      notificationId: created.id,
-      empresa: created.empresa,
-      numero_notificacao: created.numero_notificacao,
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    });
-    await prisma.notificaFacilNotification.update({
-      where: { id: created.id },
-      data: {
-        html_content: html,
-        pdf_url: null,
-        pdf_base64: null,
-        updated_date: new Date()
-      }
-    });
-  }
+  await storePdfForNotificaFacil(created, buildNotificaFacilHtml(created));
   await logAction(created.id, "criacao", "Notificação criada no módulo Notifica Fácil");
 
   revalidatePath("/notifica-facil");
@@ -657,25 +637,7 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       last_downloaded_at: null,
       last_downloaded_by: null
     });
-    try {
-      await storePdfForNotificaFacil(created, portalTemplateHtml);
-    } catch (error) {
-      console.error("[notifica-facil:notificacao-pendencias] Falha ao gerar PDF inicial", {
-        notificationId: created.id,
-        empresa: created.empresa,
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
-      });
-      await prisma.notificaFacilNotification.update({
-        where: { id: created.id },
-        data: {
-          html_content: portalTemplateHtml,
-          pdf_url: null,
-          pdf_base64: null,
-          updated_date: new Date()
-        }
-      });
-    }
+    await storePdfForNotificaFacil(created, portalTemplateHtml);
     await logAction(created.id, "criacao_pendencia", "Notificação das Pendências criada com o template do Portal de Regularização");
     createdIds.push(id);
   }
