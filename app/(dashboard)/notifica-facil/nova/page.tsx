@@ -24,6 +24,69 @@ function normalizeName(value: string | null | undefined) {
     .toLowerCase();
 }
 
+type CensoAddressSource = {
+  empresa_endereco: string | null;
+  empresa_bairro: string | null;
+  empresa_cidade: string | null;
+  numero_registro_censo: string | null;
+  numero_poste: string | null;
+};
+
+function normalizeAddressKeyPart(value: string | null | undefined) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function groupCensoAddresses(items: CensoAddressSource[]) {
+  const grouped = new Map<
+    string,
+    {
+      endereco: string;
+      bairro: string;
+      cidade: string;
+      quantidade_postes: number;
+      numero_registro_censo: string[];
+      numero_poste: string[];
+    }
+  >();
+
+  for (const item of items) {
+    const endereco = String(item.empresa_endereco || "").trim();
+    const bairro = String(item.empresa_bairro || "").trim();
+    const cidade = String(item.empresa_cidade || "").trim();
+    const key = [
+      normalizeAddressKeyPart(endereco),
+      normalizeAddressKeyPart(bairro),
+      normalizeAddressKeyPart(cidade)
+    ].join("|");
+    const current = grouped.get(key);
+    if (current) {
+      current.quantidade_postes += 1;
+      if (item.numero_registro_censo) current.numero_registro_censo.push(item.numero_registro_censo);
+      if (item.numero_poste) current.numero_poste.push(item.numero_poste);
+      continue;
+    }
+    grouped.set(key, {
+      endereco,
+      bairro,
+      cidade,
+      quantidade_postes: 1,
+      numero_registro_censo: item.numero_registro_censo ? [item.numero_registro_censo] : [],
+      numero_poste: item.numero_poste ? [item.numero_poste] : []
+    });
+  }
+
+  return Array.from(grouped.values()).map((item) => ({
+    ...item,
+    numero_registro_censo: item.numero_registro_censo.join("; "),
+    numero_poste: item.numero_poste.join("; ")
+  }));
+}
+
 export default async function NovaNotificaFacilPage({
   searchParams
 }: {
@@ -122,6 +185,7 @@ export default async function NovaNotificaFacilPage({
     ? baseCompanies.find((empresa) => normalizeName(empresa.nome) === normalizeName(selectedCensoCompany))
     : null;
   const linkedCensoIds = selectedCenso.map((item) => item.id);
+  const groupedCensoAddresses = groupCensoAddresses(selectedCenso);
   const notificationPrefill = selectedCenso.length
     ? {
         empresa: baseCompany?.nome || selectedCensoCompany,
@@ -150,14 +214,7 @@ export default async function NovaNotificaFacilPage({
         valor_atualizado: baseCompany?.valor_atualizado || null,
         multa: baseCompany?.multa || null,
         retroativo: baseCompany?.retroativo || null,
-        enderecos_revelia: selectedCenso.map((item) => ({
-          endereco: item.empresa_endereco || "",
-          bairro: item.empresa_bairro || "",
-          cidade: item.empresa_cidade || "",
-          quantidade_postes: 1,
-          numero_registro_censo: item.numero_registro_censo,
-          numero_poste: item.numero_poste
-        }))
+        enderecos_revelia: groupedCensoAddresses
       }
     : null;
 
