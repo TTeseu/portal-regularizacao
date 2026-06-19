@@ -1,9 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { NotificaFacilNotification } from "@prisma/client";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { canEdit, requireUser } from "@/lib/auth";
 import { NotificaFacilForm } from "@/components/notifica-facil-form";
+import { activeCensoWhere } from "@/lib/notifica-facil-censo";
 import { prisma } from "@/lib/prisma";
 import { createNotificaFacilNotification } from "../actions";
 
@@ -13,10 +15,28 @@ function parseRegNumber(value: string | null | undefined) {
   return { sequence: Number(match[1]), year: match[2] };
 }
 
-export default async function NovaNotificaFacilPage() {
+function normalizeName(value: string | null | undefined) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+export default async function NovaNotificaFacilPage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | undefined>>;
+}) {
   const user = await requireUser();
   const mayEdit = canEdit(user);
-  const [baseCompanies, existingNumbers, counters, templateHtml] = await Promise.all([
+  const params = (await searchParams) || {};
+  const censoIds = String(params.censo || "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  const [baseCompanies, existingNumbers, counters, templateHtml, selectedCenso] = await Promise.all([
     prisma.empresa.findMany({
       orderBy: { nome: "asc" },
       select: {
@@ -50,7 +70,13 @@ export default async function NovaNotificaFacilPage() {
       select: { numero_notificacao: true }
     }),
     prisma.notificaFacilNotificationCounter.findMany({ select: { year: true, current: true } }),
-    readFile(join(process.cwd(), "public", "templates", "notifica-facil-template.html"), "utf8").catch(() => "")
+    readFile(join(process.cwd(), "public", "templates", "notifica-facil-template.html"), "utf8").catch(() => ""),
+    censoIds.length
+      ? prisma.notificaFacilNotification.findMany({
+          where: { AND: [activeCensoWhere, { id: { in: censoIds } }] },
+          orderBy: [{ created_date: "asc" }, { numero_registro_censo: "asc" }]
+        })
+      : Promise.resolve([])
   ]);
 
   const nextByYear = new Map<string, number>();
@@ -91,6 +117,49 @@ export default async function NovaNotificaFacilPage() {
     multa: empresa.multa,
     retroativo: empresa.retroativo
   }));
+  const selectedCensoCompany = selectedCenso[0]?.empresa || "";
+  const baseCompany = selectedCensoCompany
+    ? baseCompanies.find((empresa) => normalizeName(empresa.nome) === normalizeName(selectedCensoCompany))
+    : null;
+  const linkedCensoIds = selectedCenso.map((item) => item.id);
+  const notificationPrefill = selectedCenso.length
+    ? {
+        empresa: baseCompany?.nome || selectedCensoCompany,
+        tipo_servico: "OcupaÃ§Ã£o Ã  Revelia",
+        numero_registro_censo: selectedCenso.map((item) => item.numero_registro_censo).filter(Boolean).join("; "),
+        censo_registro_id: selectedCenso.map((item) => item.numero_registro_censo).filter(Boolean).join("; "),
+        destinatario_nome: baseCompany?.nome || selectedCensoCompany,
+        status_envio_notificacao: baseCompany?.status_envio_notificacao || null,
+        vencimento_contrato: baseCompany?.vencimento_contrato || null,
+        ano_vencimento_contrato: baseCompany?.ano_vencimento_contrato || null,
+        empresa_endereco: baseCompany?.endereco || null,
+        empresa_bairro: baseCompany?.bairro || null,
+        empresa_cidade: baseCompany?.cidade || null,
+        empresa_estado: baseCompany?.estado || null,
+        contrato_numero: baseCompany?.contrato_numero || null,
+        ac: baseCompany?.ac || null,
+        numero_nome_empresa: baseCompany?.numero_nome_empresa || null,
+        celebrado_em: baseCompany?.celebrado_em || null,
+        numero_parceiro: baseCompany?.numero_parceiro || null,
+        cnpj: baseCompany?.cnpj || null,
+        texto_contrato_7_14: baseCompany?.texto_contrato_7_14 || null,
+        texto_ocupacao_revelia: baseCompany?.texto_ocupacao_revelia || null,
+        texto_23_3: baseCompany?.texto_23_3 || null,
+        texto_24_1: baseCompany?.texto_24_1 || null,
+        texto_24_3: baseCompany?.texto_24_3 || null,
+        valor_atualizado: baseCompany?.valor_atualizado || null,
+        multa: baseCompany?.multa || null,
+        retroativo: baseCompany?.retroativo || null,
+        enderecos_revelia: selectedCenso.map((item) => ({
+          endereco: item.empresa_endereco || "",
+          bairro: item.empresa_bairro || "",
+          cidade: item.empresa_cidade || "",
+          quantidade_postes: 1,
+          numero_registro_censo: item.numero_registro_censo,
+          numero_poste: item.numero_poste
+        }))
+      }
+    : null;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -105,12 +174,14 @@ export default async function NovaNotificaFacilPage() {
         </div>
       </div>
       <NotificaFacilForm
+        notification={notificationPrefill as NotificaFacilNotification | null}
         action={createNotificaFacilNotification}
         canEdit={mayEdit}
         companyOptions={companyOptions}
         nextNumero={nextNumero}
         nextByYear={nextByYearObject}
         templateHtml={templateHtml}
+        linkedCensoIds={linkedCensoIds}
       />
     </div>
   );

@@ -358,7 +358,8 @@ export function NotificaFacilForm({
   companyOptions = [],
   nextNumero = "",
   nextByYear = {},
-  templateHtml = ""
+  templateHtml = "",
+  linkedCensoIds = []
 }: {
   notification?: NotificaFacilNotification | null;
   action: (formData: FormData) => void | Promise<void>;
@@ -367,6 +368,7 @@ export function NotificaFacilForm({
   nextNumero?: string;
   nextByYear?: Record<string, number>;
   templateHtml?: string;
+  linkedCensoIds?: string[];
 }) {
   const [values, setValues] = useState(() => initialValues(notification, nextNumero));
   const [addressRows, setAddressRows] = useState(() => parseAddressInput(initialValues(notification, nextNumero).enderecos_revelia));
@@ -375,7 +377,7 @@ export function NotificaFacilForm({
   const [cnpjInvalid, setCnpjInvalid] = useState(false);
   const [prazoTouched, setPrazoTouched] = useState(Boolean(notification?.prazo_resposta));
   const [mostrarCelebradoEm, setMostrarCelebradoEm] = useState(notification?.mostrar_celebrado_em ?? true);
-  const isEditing = Boolean(notification);
+  const isEditing = Boolean(notification?.id);
   const currentYear = yearFromDate(values.data_notificacao);
   const previewNumber = isEditing
     ? values.numero_notificacao
@@ -490,6 +492,9 @@ export function NotificaFacilForm({
       <input type="hidden" name="valor_cobrado" value={valorMulta ? valorMulta.toFixed(2) : ""} />
       <input type="hidden" name="total_ids_identificados" value={totalIds} />
       <input type="hidden" name="quantidade_postes" value={totalPostes || ""} />
+      {linkedCensoIds.map((id) => (
+        <input key={id} type="hidden" name="censo_ids" value={id} />
+      ))}
 
       <div className="border-b border-line bg-surface px-6 py-5">
         <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">

@@ -8,14 +8,12 @@ import {
   Building2,
   Clock3,
   Database,
-  FileArchive,
   FileClock,
   FileText,
   History,
   LayoutDashboard,
   LogOut,
   Search,
-  Upload,
   Users
 } from "lucide-react";
 import { SidebarWeather } from "@/components/sidebar-weather";
@@ -48,14 +46,12 @@ const notificaFacilNav: NavItem[] = [
   { href: "/notifica-facil", label: "Dashboard", icon: LayoutDashboard },
   { href: "/notifica-facil/nova", label: "Nova Notificação", icon: FileText },
   { href: "/notifica-facil/empresas", label: "Banco de Dados das Empresas", icon: Building2 },
-  { href: "/notifica-facil/importar-csv", label: "Importar CSV", icon: Upload },
   { href: "/notifica-facil/importar-censo", label: "Importar CENSO", icon: Bell },
   { href: "/notifica-facil/historico-censo", label: "Histórico CENSO", icon: Clock3 },
   { href: "/notifica-facil/pendencia-tecnica", label: "Pendência Técnica", icon: AlertTriangle },
   { href: "/notifica-facil/historico-pendencia-tecnica", label: "Histórico Pendência Técnica", icon: History },
   { href: "/notifica-facil/notificacao-pendencias", label: "Notificação das Pendências", icon: FileClock },
-  { href: "/notifica-facil/stand-by", label: "Stand-by", icon: Clock3 },
-  { href: "/notifica-facil/pdfs", label: "Todos os PDFs", icon: FileArchive }
+  { href: "/notifica-facil/stand-by", label: "Stand-by", icon: Clock3 }
 ];
 
 type CurrentSearchParams = {

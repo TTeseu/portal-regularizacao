@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import {
   clearNotificaFacilCensoObservacoes,
   importNotificaFacilCensoCsv,
+  prepareNotificaFacilFromCenso,
   updateNotificaFacilCensoRegistro
 } from "../actions";
 
@@ -79,6 +80,12 @@ export default async function ImportarCensoPage({
             <div className="flex flex-wrap gap-2">
               <Link href="/notifica-facil/importar-censo" className="btn-secondary"><RefreshCw size={16} />Atualizar</Link>
               <a href={`/api/notifica-facil/export?${query.toString()}`} className="btn-secondary"><Download size={16} />Exportar CSV</a>
+              {canEdit ? (
+                <button className="btn-primary" type="submit" form="censo-select-form">
+                  <FileSpreadsheet size={16} />
+                  Gerar notificacao
+                </button>
+              ) : null}
               <button className="btn-secondary" type="button"><Bot size={16} />Ler Legendas (IA)</button>
               {canEdit ? (
                 <form action={clearNotificaFacilCensoObservacoes}>
@@ -98,14 +105,25 @@ export default async function ImportarCensoPage({
           </label>
           <button className="btn-primary h-11" type="submit"><FileSpreadsheet size={16} />Importar CSV</button>
           {values.importados ? <span className="text-sm font-semibold text-edp">{values.importados} importados · {values.ignorados || 0} já existentes</span> : null}
-          {values.erro ? <span className="text-sm font-semibold text-red-200">Selecione um arquivo CSV válido.</span> : null}
+          {values.erro && !["selecao", "empresas"].includes(values.erro) ? <span className="text-sm font-semibold text-red-200">Selecione um arquivo CSV valido.</span> : null}
         </form>
+      ) : null}
+
+      {values.erro === "selecao" ? (
+        <div className="rounded-2xl border border-amber-300/30 bg-amber-400/10 px-4 py-3 text-sm font-semibold text-amber-100">
+          Selecione ao menos um CENSO disponivel para gerar a notificacao.
+        </div>
+      ) : null}
+      {values.erro === "empresas" ? (
+        <div className="rounded-2xl border border-red-300/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-100">
+          Selecione apenas CENSOs da mesma empresa para gerar uma notificacao.
+        </div>
       ) : null}
 
       <section className="grid gap-5 md:grid-cols-3">
         <Metric label="Registros recebidos" value={total} tone="blue" />
         <Metric label="Empresas identificadas" value={empresasIdentificadas.length} tone="yellow" />
-        <Metric label="Selecionados" value={0} tone="green" />
+        <Metric label="Disponiveis" value={total} tone="green" />
       </section>
 
       <form className="panel p-4">
@@ -115,7 +133,7 @@ export default async function ImportarCensoPage({
         </label>
       </form>
 
-      <section className="panel overflow-hidden">
+      <form id="censo-select-form" action={prepareNotificaFacilFromCenso} className="panel overflow-hidden">
         <div className="border-b border-line px-5 py-4">
           <h2 className="font-bold text-white">Registros Recebidos do COLETA DE DADOS</h2>
           <p className="mt-1 text-sm text-edp-muted">Mostrando {items.length} de {total} registros.</p>
@@ -144,7 +162,7 @@ export default async function ImportarCensoPage({
             <tbody>
               {items.map((item) => (
                 <tr key={item.id} className="border-t border-line align-top">
-                  <td className="px-4 py-4"><input type="checkbox" /></td>
+                  <td className="px-4 py-4"><input type="checkbox" name="censo_ids" value={item.id} /></td>
                   <td className="px-4 py-4 text-edp-muted">{formatDate(item.created_date)}</td>
                   <td className="px-4 py-4 font-bold text-edp">{item.numero_registro_censo}</td>
                   <td className="px-4 py-4">
@@ -173,7 +191,7 @@ export default async function ImportarCensoPage({
             </tbody>
           </table>
         </div>
-      </section>
+      </form>
 
       <div className="hidden">
         {items.map((item) => (

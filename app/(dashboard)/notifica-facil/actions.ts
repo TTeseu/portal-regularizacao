@@ -357,6 +357,7 @@ export async function createNotificaFacilNotification(formData: FormData) {
   const user = await requireUser();
   if (!canEdit(user)) redirect("/notifica-facil");
 
+  const linkedCensoIds = formData.getAll("censo_ids").map(String).map((id) => id.trim()).filter(Boolean);
   const data = formToData(formData);
   data.created_by_id = user.id;
   data.created_by = user.email;
@@ -364,13 +365,49 @@ export async function createNotificaFacilNotification(formData: FormData) {
   const created = await prisma.$transaction(async (tx) => {
     const year = yearFromDateText(data.data_notificacao);
     data.numero_notificacao = await generateNextNotificationNumber(tx, year);
-    return tx.notificaFacilNotification.create({ data });
+    const notification = await tx.notificaFacilNotification.create({ data });
+    if (linkedCensoIds.length) {
+      await tx.notificaFacilNotification.updateMany({
+        where: { AND: [activeCensoWhere, { id: { in: linkedCensoIds } }] },
+        data: {
+          censo_finalizado: true,
+          censo_draft_id: notification.id,
+          status: "Finalizado",
+          status_envio_notificacao: "Finalizado - notificacao gerada",
+          updated_date: new Date()
+        }
+      });
+    }
+    return notification;
   });
   await storePdfForNotificaFacil(created, buildNotificaFacilHtml(created));
   await logAction(created.id, "criacao", "Notificação criada no módulo Notifica Fácil");
 
   revalidatePath("/notifica-facil");
+  revalidatePath("/notifica-facil/importar-censo");
+  revalidatePath("/notifica-facil/historico-censo");
   redirect(withFlash("/notifica-facil", { success: "notificacao-gerada", count: 1 }));
+}
+
+export async function prepareNotificaFacilFromCenso(formData: FormData) {
+  const user = await requireUser();
+  if (!canEdit(user)) redirect("/notifica-facil/importar-censo");
+
+  const ids = Array.from(new Set(formData.getAll("censo_ids").map(String).map((id) => id.trim()).filter(Boolean)));
+  if (!ids.length) redirect("/notifica-facil/importar-censo?erro=selecao");
+
+  const selected = await prisma.notificaFacilNotification.findMany({
+    where: { AND: [activeCensoWhere, { id: { in: ids } }] },
+    select: { id: true, empresa: true }
+  });
+  if (!selected.length) redirect("/notifica-facil/importar-censo?erro=selecao");
+
+  const companies = new Set(selected.map((item) => String(item.empresa || "").trim().toLowerCase()).filter(Boolean));
+  if (companies.size !== 1 || selected.length !== ids.length) {
+    redirect("/notifica-facil/importar-censo?erro=empresas");
+  }
+
+  redirect(`/notifica-facil/nova?censo=${encodeURIComponent(ids.join(","))}`);
 }
 
 export async function importNotificaFacilCensoCsv(formData: FormData) {
