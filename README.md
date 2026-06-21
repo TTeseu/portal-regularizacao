@@ -27,7 +27,7 @@ O projeto foi migrado/recriado a partir dos apps Base44 usando Next.js, TypeScri
 - `/notifica-facil`: dashboard/listagem do modulo Notifica Facil.
 - `/notifica-facil/nova`: criacao de notificacao do Notifica Facil.
 - `/notifica-facil/[id]`: detalhe, preview, historico e edicao.
-- `/api/notifica-facil/integracoes/coleta`: endpoint preparado para integracao futura com Coleta de Dados.
+- `/api/notifica-facil/integracoes/coleta`: endpoint para receber registros do app Coleta Dados na aba Importar CENSO.
 - `/api/news/energy`: noticias do setor eletrico via GNews com cache de 6 horas e fallback seguro.
 
 ## Variaveis de ambiente
@@ -56,6 +56,7 @@ BASE44_TOKEN=""
 BASE44_SERVER_URL="https://base44.app"
 BLOB_READ_WRITE_TOKEN=""
 NOTIFICA_FACIL_INTEGRATION_TOKEN=""
+COLETA_DADOS_API_KEY=""
 GNEWS_API_KEY=""
 ```
 
@@ -65,7 +66,7 @@ GNEWS_API_KEY=""
 
 `BLOB_READ_WRITE_TOKEN` habilita armazenamento permanente de PDFs no Vercel Blob. Sem essa variavel, o sistema usa fallback no banco (`pdf_base64`) e continua evitando regeracao em cada download.
 
-`NOTIFICA_FACIL_INTEGRATION_TOKEN` protege o endpoint futuro do Coleta de Dados.
+`COLETA_DADOS_API_KEY` protege o endpoint do Coleta Dados. `NOTIFICA_FACIL_INTEGRATION_TOKEN` continua aceito como nome legado, mas prefira `COLETA_DADOS_API_KEY` para novas configuracoes.
 
 `GNEWS_API_KEY` habilita noticias reais no Radar do Setor Eletrico da Home. A chave e lida somente pela rota backend `/api/news/energy`; o frontend nunca recebe esse segredo. Se a variavel estiver ausente ou a API falhar, a Home usa noticias institucionais de fallback.
 
@@ -232,27 +233,91 @@ Rotas cacheadas:
 
 Se um registro antigo ainda nao tiver PDF salvo, o sistema gera uma unica vez no primeiro download e persiste para os proximos acessos.
 
-## Integracao futura com Coleta de Dados
+## Integracao com Coleta Dados
 
-Endpoint preparado:
+Endpoint de entrada dos registros do CENSO em campo:
 
 ```bash
 POST /api/notifica-facil/integracoes/coleta
-Authorization: Bearer $NOTIFICA_FACIL_INTEGRATION_TOKEN
+Authorization: Bearer $COLETA_DADOS_API_KEY
+Content-Type: application/json
 ```
 
-Campos aceitos inicialmente:
+Tambem e aceito o header `x-api-key: $COLETA_DADOS_API_KEY`.
+
+O endpoint recebe um unico registro, um array direto, ou um objeto com `registros`, `records`, `items` ou `data`.
+
+Exemplo de registro unico:
+
+```json
+{
+  "numero_registro_censo": "CS01003723",
+  "empresa": "TERA CORPORATION",
+  "endereco": "Avenida Francisco Ferreira Lopes",
+  "bairro": "Vila Rubens",
+  "cidade": "Mogi das Cruzes",
+  "numero_poste": "343462114",
+  "latitude": -23.534427,
+  "longitude": -46.2170446,
+  "fotos": [
+    "https://exemplo.com/foto-1.jpg",
+    "https://exemplo.com/foto-2.jpg"
+  ],
+  "observacoes": "Registro recebido do app Coleta Dados",
+  "usuario_que_enviou": "usuario@empresa.com"
+}
+```
+
+Exemplo em lote:
+
+```json
+{
+  "registros": [
+    {
+      "numero_registro_censo": "CS01003723",
+      "empresa": "TERA CORPORATION",
+      "endereco": "Avenida Francisco Ferreira Lopes",
+      "bairro": "Vila Rubens",
+      "cidade": "Mogi das Cruzes"
+    }
+  ]
+}
+```
+
+Campos aceitos:
 
 - `id_censo`
 - `numero_registro_censo` ou `numero_registro`
 - `empresa` ou `empresa_a_notificar`
-- `endereco`, `bairro`, `cidade`
-- `fotos`
+- `endereco`, `bairro`, `cidade` ou `municipio`
+- `latitude`, `longitude` ou `coordenadas`
+- `fotos`, `imagens`, `anexos`, `evidencias` ou `arquivos`
 - `analise_humana`
 - `numero_poste`
-- `pendencia_tecnica`
 - `dados_plaqueta`
+- `ordem_venda`
+- `status`
 - `usuario_que_enviou`
+
+Regra de destino:
+
+- registros novos entram na aba `/notifica-facil/importar-censo`;
+- registros repetidos ainda ativos sao atualizados;
+- registros ja processados, finalizados, em stand-by ou marcados como pendencia tecnica sao ignorados para evitar sobrescrever historico;
+- o endpoint nao gera notificacao e nao gera PDF. A notificacao continua sendo criada pela tela Importar CENSO do Notifica Facil.
+
+Resposta resumida:
+
+```json
+{
+  "success": true,
+  "total_recebidos": 1,
+  "validos": 1,
+  "criados": 1,
+  "atualizados": 0,
+  "ignorados": 0
+}
+```
 
 ## Deploy Vercel
 
