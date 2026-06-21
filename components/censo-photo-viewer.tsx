@@ -1,6 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
+import type { MouseEvent, WheelEvent } from "react";
 import { useMemo, useState } from "react";
 import { Camera, ChevronLeft, ChevronRight, Download, ImageIcon, Maximize2, Minimize2, X } from "lucide-react";
 
@@ -14,9 +15,30 @@ type PhotoRef = {
 export function CensoPhotoViewer({ value }: { value: unknown }) {
   const [open, setOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [zoomed, setZoomed] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [zoomOrigin, setZoomOrigin] = useState("50% 50%");
   const photos = useMemo(() => normalizePhotos(value), [value]);
   const selectedPhoto = selectedIndex === null ? null : photos[selectedIndex] || null;
+  const isZoomed = zoomScale > 1;
+
+  function resetZoom() {
+    setZoomScale(1);
+    setZoomOrigin("50% 50%");
+  }
+
+  function focusZoomAt(event: MouseEvent<HTMLImageElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    setZoomOrigin(`${clamp(x, 0, 100)}% ${clamp(y, 0, 100)}%`);
+  }
+
+  function handleImageWheel(event: WheelEvent<HTMLImageElement>) {
+    event.preventDefault();
+    focusZoomAt(event);
+    const delta = event.deltaY < 0 ? 0.25 : -0.25;
+    setZoomScale((current) => clamp(Number((current + delta).toFixed(2)), 1, 5));
+  }
 
   if (photos.length === 0) {
     return (
@@ -56,7 +78,7 @@ export function CensoPhotoViewer({ value }: { value: unknown }) {
                 onClick={() => {
                   setOpen(false);
                   setSelectedIndex(null);
-                  setZoomed(false);
+                  resetZoom();
                 }}
                 className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 text-edp-muted transition hover:border-edp/40 hover:text-white"
                 aria-label="Fechar fotos"
@@ -73,7 +95,7 @@ export function CensoPhotoViewer({ value }: { value: unknown }) {
                       type="button"
                       onClick={() => {
                         setSelectedIndex(index);
-                        setZoomed(false);
+                        resetZoom();
                       }}
                       className="block w-full bg-black/20 text-left"
                     >
@@ -98,7 +120,7 @@ export function CensoPhotoViewer({ value }: { value: unknown }) {
                           type="button"
                           onClick={() => {
                             setSelectedIndex(index);
-                            setZoomed(false);
+                            resetZoom();
                           }}
                         >
                           <Maximize2 size={14} />
@@ -127,9 +149,20 @@ export function CensoPhotoViewer({ value }: { value: unknown }) {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <button className="btn-secondary h-10 px-3 text-xs" type="button" onClick={() => setZoomed((current) => !current)}>
-                      {zoomed ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-                      {zoomed ? "Ajustar" : "Zoom"}
+                    <button
+                      className="btn-secondary h-10 px-3 text-xs"
+                      type="button"
+                      onClick={() => {
+                        if (isZoomed) {
+                          resetZoom();
+                        } else {
+                          setZoomOrigin("50% 50%");
+                          setZoomScale(2);
+                        }
+                      }}
+                    >
+                      {isZoomed ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+                      {isZoomed ? "Ajustar" : "Zoom"}
                     </button>
                     <a className="btn-primary h-10 px-3 text-xs" href={selectedPhoto.downloadUrl} target="_blank" rel="noreferrer">
                       <Download size={15} />
@@ -139,7 +172,7 @@ export function CensoPhotoViewer({ value }: { value: unknown }) {
                       type="button"
                       onClick={() => {
                         setSelectedIndex(null);
-                        setZoomed(false);
+                        resetZoom();
                       }}
                       className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 text-edp-muted transition hover:border-edp/40 hover:text-white"
                       aria-label="Fechar visualizacao"
@@ -156,7 +189,7 @@ export function CensoPhotoViewer({ value }: { value: unknown }) {
                         type="button"
                         onClick={() => {
                           setSelectedIndex((current) => (current === null ? 0 : (current - 1 + photos.length) % photos.length));
-                          setZoomed(false);
+                          resetZoom();
                         }}
                         className="absolute left-4 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#1E2D44]/80 text-white transition hover:border-edp/50 hover:text-edp"
                         aria-label="Foto anterior"
@@ -167,7 +200,7 @@ export function CensoPhotoViewer({ value }: { value: unknown }) {
                         type="button"
                         onClick={() => {
                           setSelectedIndex((current) => (current === null ? 0 : (current + 1) % photos.length));
-                          setZoomed(false);
+                          resetZoom();
                         }}
                         className="absolute right-4 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#1E2D44]/80 text-white transition hover:border-edp/50 hover:text-edp"
                         aria-label="Proxima foto"
@@ -180,8 +213,17 @@ export function CensoPhotoViewer({ value }: { value: unknown }) {
                   <img
                     src={selectedPhoto.url}
                     alt={selectedPhoto.name}
-                    className={zoomed ? "max-w-none cursor-zoom-out" : "max-h-[72vh] max-w-full cursor-zoom-in object-contain"}
-                    onClick={() => setZoomed((current) => !current)}
+                    className={isZoomed ? "max-h-[72vh] max-w-full cursor-zoom-out object-contain" : "max-h-[72vh] max-w-full cursor-zoom-in object-contain"}
+                    onClick={(event) => {
+                      focusZoomAt(event);
+                      setZoomScale((current) => (current > 1 ? 1 : 2));
+                    }}
+                    onWheel={handleImageWheel}
+                    style={{
+                      transform: `scale(${zoomScale})`,
+                      transformOrigin: zoomOrigin,
+                      transition: "transform 120ms ease-out"
+                    }}
                   />
                 </div>
               </div>
@@ -244,4 +286,8 @@ function fileNameFromUrl(url: string) {
   } catch {
     return url.split("/").filter(Boolean).pop() || "";
   }
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
 }
