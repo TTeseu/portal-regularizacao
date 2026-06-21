@@ -284,11 +284,28 @@ Exemplo em lote:
 }
 ```
 
+Exemplo com mais de uma empresa no mesmo CENSO:
+
+```json
+{
+  "numero_registro_censo": "CS01004567",
+  "empresas": ["TELEFONICA", "CLARO"],
+  "endereco": "Rua das Flores, 100",
+  "bairro": "Centro",
+  "cidade": "Caraguatatuba",
+  "numero_poste": "8844851",
+  "fotos": ["https://exemplo.com/foto-censo.jpg"]
+}
+```
+
+Esse exemplo cria duas linhas em `Importar CENSO`: uma para `TELEFONICA` e outra para `CLARO`.
+
 Campos aceitos:
 
 - `id_censo`
 - `numero_registro_censo` ou `numero_registro`
 - `empresa` ou `empresa_a_notificar`
+- `empresas`, `empresas_identificadas`, `empresas_a_notificar` ou `ocupantes`
 - `endereco`, `bairro`, `cidade` ou `municipio`
 - `latitude`, `longitude` ou `coordenadas`
 - `fotos`, `imagens`, `anexos`, `evidencias` ou `arquivos`
@@ -302,6 +319,8 @@ Campos aceitos:
 Regra de destino:
 
 - registros novos entram na aba `/notifica-facil/importar-censo`;
+- se um CENSO vier com mais de uma empresa, o endpoint cria uma linha por empresa mantendo as mesmas informacoes de endereco, poste, coordenadas, fotos e observacoes;
+- para multiplas empresas, prefira enviar `empresas` como array, por exemplo `["TELEFONICA", "CLARO"]`;
 - registros repetidos ainda ativos sao atualizados;
 - registros ja processados, finalizados, em stand-by ou marcados como pendencia tecnica sao ignorados para evitar sobrescrever historico;
 - o endpoint nao gera notificacao e nao gera PDF. A notificacao continua sendo criada pela tela Importar CENSO do Notifica Facil.

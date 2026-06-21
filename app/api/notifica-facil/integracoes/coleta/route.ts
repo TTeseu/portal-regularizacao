@@ -9,11 +9,24 @@ export const dynamic = "force-dynamic";
 
 type PayloadRecord = Record<string, unknown>;
 type NormalizedCenso =
-  | { input: Prisma.NotificaFacilNotificationUncheckedCreateInput; error?: never }
-  | { error: string; input?: never };
+  | { inputs: Prisma.NotificaFacilNotificationUncheckedCreateInput[]; error?: never }
+  | { error: string; inputs?: never };
 
 const MAX_REGISTROS_POR_REQUISICAO = 500;
+const MAX_LINHAS_NORMALIZADAS = 1000;
 const FINAL_CENSO_STATUSES = new Set(["finalizado", "excluido", "excluído"]);
+const OPERADORAS_CONHECIDAS = [
+  "telefonica",
+  "telefônica",
+  "vivo",
+  "claro",
+  "embratel",
+  "tim",
+  "oi",
+  "algar",
+  "sercomtel",
+  "sky"
+];
 
 function configuredToken() {
   return (
@@ -148,6 +161,98 @@ function normalizePhotos(value: unknown): string[] {
   return [];
 }
 
+function normalizeCompanyKey(value: string | null | undefined) {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w]+/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function shouldSplitByConjunction(text: string) {
+  const normalized = normalizeCompanyKey(text);
+  const operators = OPERADORAS_CONHECIDAS.filter((operator) => normalized.includes(normalizeCompanyKey(operator)));
+  if (operators.length >= 2) return true;
+  const corporateWords = /\b(ltda|eireli|telecom|telecomunicacoes|telecomunicacao|comunicacao|informatica|provedor|servicos|comercio|industria|fibra|net)\b/i;
+  return !corporateWords.test(normalized) && normalized.split(/\s+/).length <= 5;
+}
+
+function normalizeCompanies(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return uniqueCompanies(value.flatMap((item) => normalizeCompanies(item)));
+  }
+
+  if (value && typeof value === "object") {
+    const record = value as PayloadRecord;
+    return normalizeCompanies(firstRaw(record, ["nome", "name", "empresa", "razao_social", "razaoSocial"]));
+  }
+
+  const text = asText(value);
+  if (!text) return [];
+
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) return normalizeCompanies(parsed);
+  } catch {
+    // Segue com texto simples.
+  }
+
+  const delimiterParts = text
+    .split(/\r?\n|;|\|/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (delimiterParts.length > 1) return uniqueCompanies(delimiterParts);
+
+  const commaParts = text.split(",").map((item) => item.trim()).filter(Boolean);
+  if (commaParts.length > 1) return uniqueCompanies(commaParts);
+
+  const slashParts = text.split(/\s+\/\s+/).map((item) => item.trim()).filter(Boolean);
+  if (slashParts.length > 1) return uniqueCompanies(slashParts);
+
+  const conjunctionParts = text.split(/\s+(?:e|&)\s+/i).map((item) => item.trim()).filter(Boolean);
+  if (conjunctionParts.length > 1 && shouldSplitByConjunction(text)) return uniqueCompanies(conjunctionParts);
+
+  return [text];
+}
+
+function uniqueCompanies(companies: string[]) {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const company of companies) {
+    const text = company.trim();
+    const key = normalizeCompanyKey(text);
+    if (!text || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(text);
+  }
+  return unique;
+}
+
+function companyNamesFrom(record: PayloadRecord) {
+  const multiCompanyValue = firstRaw(record, [
+    "empresas",
+    "empresas_identificadas",
+    "empresasIdentificadas",
+    "empresas_a_notificar",
+    "empresasANotificar",
+    "ocupantes"
+  ]);
+  const multi = normalizeCompanies(multiCompanyValue);
+  if (multi.length) return multi;
+
+  const singleCompanyValue = firstRaw(record, [
+    "empresa",
+    "empresa_nome",
+    "empresaNome",
+    "empresa_a_notificar",
+    "empresaNotificar",
+    "ocupante"
+  ]);
+  return normalizeCompanies(singleCompanyValue);
+}
+
 function coordinates(record: PayloadRecord) {
   const raw = firstText(record, ["coordenadas", "coordenadas_fotos", "coordenadasPelasFotos"]);
   return {
@@ -192,17 +297,17 @@ function toCensoInput(record: PayloadRecord, index: number): NormalizedCenso {
   const status = firstText(record, ["status", "status_banco", "statusBanco"]) || "Recebido do COLETA DE DADOS";
   const { latitude, longitude } = coordinates(record);
   const fotos = normalizePhotos(firstRaw(record, ["fotos_censo", "fotos", "imagens", "anexos", "evidencias", "arquivos"]));
+  const empresas = companyNamesFrom(record);
   const observacoes =
     firstText(record, ["observacoes", "observacao", "analise_humana", "analiseHumana", "legenda", "comentario"]) ||
     firstText(record, ["dados_plaqueta", "dadosPlaqueta", "plaqueta"]);
 
-  const input = {
+  const baseInput = {
     id: randomUUID(),
     created_date: parseDate(dataText),
     updated_date: new Date(),
     created_by_id: "coleta-dados-api",
     created_by: firstText(record, ["usuario_que_enviou", "usuarioQueEnviou", "usuario", "email_usuario"]) || "coleta-dados-api",
-    empresa: firstText(record, ["empresa", "empresa_nome", "empresaNome", "empresa_a_notificar", "empresaNotificar", "ocupante"]) || "SEM PLAQUETA",
     tipo_servico: "CENSO",
     numero_registro_censo: registro,
     data_notificacao: dataText,
@@ -224,9 +329,19 @@ function toCensoInput(record: PayloadRecord, index: number): NormalizedCenso {
     is_draft: false,
     is_standby: false,
     pendencia_tecnica: false
-  } satisfies Prisma.NotificaFacilNotificationUncheckedCreateInput;
+  } satisfies Omit<Prisma.NotificaFacilNotificationUncheckedCreateInput, "empresa">;
 
-  return { input };
+  const inputs = (empresas.length ? empresas : ["SEM PLAQUETA"]).map((empresa) => ({
+    ...baseInput,
+    id: randomUUID(),
+    empresa
+  })) satisfies Prisma.NotificaFacilNotificationUncheckedCreateInput[];
+
+  return { inputs };
+}
+
+function notificationKey(registro: string | null | undefined, empresa: string | null | undefined) {
+  return `${registro || "sem-registro"}::${normalizeCompanyKey(empresa) || "sem-empresa"}`;
 }
 
 function canUpdateExistingCenso(existing: {
@@ -247,7 +362,7 @@ export async function GET() {
     formato: {
       registro_unico: {
         numero_registro_censo: "CS01003723",
-        empresa: "TERA CORPORATION",
+        empresa: ["TELEFONICA", "CLARO"],
         endereco: "Avenida Francisco Ferreira Lopes",
         bairro: "Vila Rubens",
         cidade: "Mogi das Cruzes",
@@ -296,19 +411,26 @@ export async function POST(request: Request) {
     .map((item, index) => item.error ? { index, error: item.error } : null)
     .filter((item): item is { index: number; error: string } => Boolean(item));
   const validInputs = normalized
-    .map((item) => item.input)
-    .filter((item): item is Prisma.NotificaFacilNotificationUncheckedCreateInput => Boolean(item?.numero_registro_censo));
+    .flatMap((item) => item.inputs || [])
+    .filter((item): item is Prisma.NotificaFacilNotificationUncheckedCreateInput => Boolean(item.numero_registro_censo));
 
   if (!validInputs.length) {
     return NextResponse.json({ success: false, error: "Nenhum registro valido.", detalhes: invalid }, { status: 400 });
   }
+  if (validInputs.length > MAX_LINHAS_NORMALIZADAS) {
+    return NextResponse.json({
+      success: false,
+      error: `Os registros recebidos geram ${validInputs.length} linhas de CENSO. Envie no maximo ${MAX_LINHAS_NORMALIZADAS} linhas normalizadas por requisicao.`
+    }, { status: 413 });
+  }
 
-  const uniqueInputs = Array.from(new Map(validInputs.map((input) => [input.numero_registro_censo, input])).values());
+  const uniqueInputs = Array.from(new Map(validInputs.map((input) => [notificationKey(input.numero_registro_censo, input.empresa), input])).values());
   const registros = uniqueInputs.map((input) => input.numero_registro_censo).filter(Boolean) as string[];
   const existing = await prisma.notificaFacilNotification.findMany({
     where: { numero_registro_censo: { in: registros } },
     select: {
       id: true,
+      empresa: true,
       numero_registro_censo: true,
       numero_notificacao: true,
       censo_finalizado: true,
@@ -318,41 +440,44 @@ export async function POST(request: Request) {
     orderBy: [{ updated_date: "desc" }, { created_date: "desc" }]
   });
 
-  const existingByRegistro = new Map<string, (typeof existing)[number]>();
+  const existingByRegistroEmpresa = new Map<string, (typeof existing)[number]>();
   for (const row of existing) {
     if (!row.numero_registro_censo) continue;
-    const current = existingByRegistro.get(row.numero_registro_censo);
-    if (!current || canUpdateExistingCenso(row)) existingByRegistro.set(row.numero_registro_censo, row);
+    const key = notificationKey(row.numero_registro_censo, row.empresa);
+    const current = existingByRegistroEmpresa.get(key);
+    if (!current || canUpdateExistingCenso(row)) existingByRegistroEmpresa.set(key, row);
   }
 
-  const created: Array<{ id: string; numero_registro_censo: string | null }> = [];
-  const updated: Array<{ id: string; numero_registro_censo: string | null }> = [];
-  const skipped: Array<{ numero_registro_censo: string | null; motivo: string }> = [];
+  const created: Array<{ id: string; numero_registro_censo: string | null; empresa: string }> = [];
+  const updated: Array<{ id: string; numero_registro_censo: string | null; empresa: string }> = [];
+  const skipped: Array<{ numero_registro_censo: string | null; empresa: string; motivo: string }> = [];
 
   for (const input of uniqueInputs) {
     const registro = input.numero_registro_censo || null;
-    const current = registro ? existingByRegistro.get(registro) : null;
+    const empresa = String(input.empresa || "");
+    const registroEmpresaKey = notificationKey(registro, empresa);
+    const current = existingByRegistroEmpresa.get(registroEmpresaKey);
     const rawPayload = JSON.parse(JSON.stringify(input)) as Prisma.InputJsonValue;
 
     if (!current) {
       const row = await prisma.notificaFacilNotification.create({ data: input });
       await prisma.notificaFacilRawEntity.upsert({
-        where: { entity_name_base44_id: { entity_name: "ColetaDadosCenso", base44_id: registro || row.id } },
+        where: { entity_name_base44_id: { entity_name: "ColetaDadosCenso", base44_id: registroEmpresaKey } },
         create: {
           entity_name: "ColetaDadosCenso",
-          base44_id: registro || row.id,
+          base44_id: registroEmpresaKey,
           payload: rawPayload,
           created_date: row.created_date,
           updated_date: row.updated_date
         },
         update: { payload: rawPayload, updated_date: row.updated_date }
       });
-      created.push({ id: row.id, numero_registro_censo: row.numero_registro_censo });
+      created.push({ id: row.id, numero_registro_censo: row.numero_registro_censo, empresa: row.empresa });
       continue;
     }
 
     if (!canUpdateExistingCenso(current)) {
-      skipped.push({ numero_registro_censo: registro, motivo: "Registro ja processado, finalizado, em stand-by ou marcado como pendencia tecnica." });
+      skipped.push({ numero_registro_censo: registro, empresa, motivo: "Registro ja processado, finalizado, em stand-by ou marcado como pendencia tecnica." });
       continue;
     }
 
@@ -363,17 +488,17 @@ export async function POST(request: Request) {
       data: { ...updateInput, updated_date: new Date() }
     });
     await prisma.notificaFacilRawEntity.upsert({
-      where: { entity_name_base44_id: { entity_name: "ColetaDadosCenso", base44_id: registro || row.id } },
+      where: { entity_name_base44_id: { entity_name: "ColetaDadosCenso", base44_id: registroEmpresaKey } },
       create: {
         entity_name: "ColetaDadosCenso",
-        base44_id: registro || row.id,
+        base44_id: registroEmpresaKey,
         payload: rawPayload,
         created_date: row.created_date,
         updated_date: row.updated_date
       },
       update: { payload: rawPayload, updated_date: row.updated_date }
     });
-    updated.push({ id: row.id, numero_registro_censo: row.numero_registro_censo });
+    updated.push({ id: row.id, numero_registro_censo: row.numero_registro_censo, empresa: row.empresa });
   }
 
   revalidatePath("/notifica-facil");
