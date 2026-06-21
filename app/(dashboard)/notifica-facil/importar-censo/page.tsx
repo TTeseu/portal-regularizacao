@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, Bot, Download, FileSpreadsheet, RefreshCw, Save, Trash2, Upload } from "lucide-react";
 import { Prisma } from "@prisma/client";
 import { AutoSearchInput } from "@/components/auto-search-input";
+import { CensoPhotoViewer } from "@/components/censo-photo-viewer";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { formatDate, formatPtBrDisplay } from "@/lib/format";
 import { activeCensoWhere } from "@/lib/notifica-facil-censo";
@@ -174,7 +175,7 @@ export default async function ImportarCensoPage({
                   <td className="px-4 py-4"><RowInput id={item.id} name="empresa_cidade" value={formatPtBrDisplay(item.empresa_cidade)} /></td>
                   <td className="px-4 py-4"><RowInput id={item.id} name="numero_poste" value={item.numero_poste} /></td>
                   <td className="px-4 py-4 text-xs text-edp-muted">{item.latitude && item.longitude ? `${item.latitude}, ${item.longitude}` : "-"}</td>
-                  <td className="px-4 py-4"><PhotoCount value={item.fotos_censo} /></td>
+                  <td className="px-4 py-4"><CensoPhotoViewer value={item.fotos_censo} /></td>
                   <td className="px-4 py-4"><RowInput id={item.id} name="status" value={item.status} /></td>
                   <td className="px-4 py-4"><RowInput id={item.id} name="observacoes" value={item.observacoes} wide /></td>
                   <td className="px-4 py-4"><RowInput id={item.id} name="ordem_venda" value={item.ordem_venda} /></td>
@@ -212,11 +213,6 @@ function SaveButton({ formId }: { formId: string }) {
       <Save size={14} />
     </button>
   );
-}
-
-function PhotoCount({ value }: { value: unknown }) {
-  const count = Array.isArray(value) ? value.length : 0;
-  return <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-edp-muted">{count} foto(s)</span>;
 }
 
 function Metric({ label, value, tone }: { label: string; value: number; tone: "blue" | "yellow" | "green" }) {

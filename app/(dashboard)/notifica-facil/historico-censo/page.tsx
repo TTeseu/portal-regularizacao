@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, Download, Filter } from "lucide-react";
 import { Prisma } from "@prisma/client";
 import { AutoSearchInput } from "@/components/auto-search-input";
+import { CensoPhotoViewer } from "@/components/censo-photo-viewer";
 import { formatDate, formatPtBrDisplay } from "@/lib/format";
 import { historyCensoWhere } from "@/lib/notifica-facil-censo";
 import { prisma } from "@/lib/prisma";
@@ -98,7 +99,7 @@ export default async function HistoricoCensoPage({
           <h2 className="font-bold text-white">Registros Finalizados</h2>
         </div>
         <div className="table-scroll">
-          <table className="w-full min-w-[1100px] text-left text-sm">
+          <table className="w-full min-w-[1250px] text-left text-sm">
             <thead>
               <tr>
                 <th className="px-4 py-3">Data</th>
@@ -108,6 +109,7 @@ export default async function HistoricoCensoPage({
                 <th className="px-4 py-3">Endereço</th>
                 <th className="px-4 py-3">Bairro</th>
                 <th className="px-4 py-3">Cidade</th>
+                <th className="px-4 py-3">Fotos</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Observação</th>
                 <th className="px-4 py-3">Ordem de Venda</th>
@@ -123,6 +125,7 @@ export default async function HistoricoCensoPage({
                   <td className="px-4 py-3 text-edp-muted">{item.empresa_endereco || "-"}</td>
                   <td className="px-4 py-3 text-edp-muted">{item.empresa_bairro || "-"}</td>
                   <td className="px-4 py-3 text-edp-muted">{formatPtBrDisplay(item.empresa_cidade)}</td>
+                  <td className="px-4 py-3"><CensoPhotoViewer value={item.fotos_censo} /></td>
                   <td className="px-4 py-3"><StatusBadge status={item.status} /></td>
                   <td className="px-4 py-3 text-edp-muted">{item.observacoes || "-"}</td>
                   <td className="px-4 py-3 text-edp-muted">{item.ordem_venda || "-"}</td>
@@ -130,7 +133,7 @@ export default async function HistoricoCensoPage({
               ))}
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-edp-muted">Nenhum registro no histórico do CENSO.</td>
+                  <td colSpan={11} className="px-4 py-12 text-center text-edp-muted">Nenhum registro no histórico do CENSO.</td>
                 </tr>
               ) : null}
             </tbody>
