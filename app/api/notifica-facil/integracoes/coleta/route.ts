@@ -22,6 +22,13 @@ type NormalizedCenso =
   | { inputs: Prisma.NotificaFacilNotificationUncheckedCreateInput[]; error?: never }
   | { error: string; inputs?: never };
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, x-api-key, x-coleta-dados-token",
+  "Access-Control-Max-Age": "86400"
+};
+
 const MAX_REGISTROS_POR_REQUISICAO = 500;
 const MAX_LINHAS_NORMALIZADAS = 1000;
 const FINAL_CENSO_STATUSES = new Set(["finalizado", "excluido", "excluído"]);
@@ -37,6 +44,18 @@ const OPERADORAS_CONHECIDAS = [
   "sercomtel",
   "sky"
 ];
+
+function jsonResponse(body: unknown, init: ResponseInit = {}) {
+  const headers = new Headers(init.headers);
+  for (const [key, value] of Object.entries(CORS_HEADERS)) {
+    headers.set(key, value);
+  }
+  return NextResponse.json(body, { ...init, headers });
+}
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
 
 function configuredToken() {
   return (
@@ -441,7 +460,7 @@ function canUpdateExistingCenso(existing: {
 }
 
 export async function GET() {
-  return NextResponse.json({
+  return jsonResponse({
     success: true,
     endpoint: "/api/notifica-facil/integracoes/coleta",
     method: "POST",
@@ -475,22 +494,22 @@ export async function GET() {
 export async function POST(request: Request) {
   const auth = authorize(request);
   if (!auth.ok) {
-    return NextResponse.json({ success: false, error: auth.message }, { status: auth.status });
+    return jsonResponse({ success: false, error: auth.message }, { status: auth.status });
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ success: false, error: "JSON invalido." }, { status: 400 });
+    return jsonResponse({ success: false, error: "JSON invalido." }, { status: 400 });
   }
 
   const rawRecords = normalizePayload(body);
   if (!rawRecords.length) {
-    return NextResponse.json({ success: false, error: "Nenhum registro informado." }, { status: 400 });
+    return jsonResponse({ success: false, error: "Nenhum registro informado." }, { status: 400 });
   }
   if (rawRecords.length > MAX_REGISTROS_POR_REQUISICAO) {
-    return NextResponse.json({
+    return jsonResponse({
       success: false,
       error: `Envie no maximo ${MAX_REGISTROS_POR_REQUISICAO} registros por requisicao.`
     }, { status: 413 });
@@ -511,10 +530,10 @@ export async function POST(request: Request) {
     .filter((item): item is Prisma.NotificaFacilNotificationUncheckedCreateInput => Boolean(item.numero_registro_censo));
 
   if (!validInputs.length) {
-    return NextResponse.json({ success: false, error: "Nenhum registro valido.", detalhes: invalid }, { status: 400 });
+    return jsonResponse({ success: false, error: "Nenhum registro valido.", detalhes: invalid }, { status: 400 });
   }
   if (validInputs.length > MAX_LINHAS_NORMALIZADAS) {
-    return NextResponse.json({
+    return jsonResponse({
       success: false,
       error: `Os registros recebidos geram ${validInputs.length} linhas de CENSO. Envie no maximo ${MAX_LINHAS_NORMALIZADAS} linhas normalizadas por requisicao.`
     }, { status: 413 });
@@ -601,7 +620,7 @@ export async function POST(request: Request) {
   revalidatePath("/notifica-facil/importar-censo");
   revalidatePath("/notifica-facil/historico-censo");
 
-  return NextResponse.json({
+  return jsonResponse({
     success: invalid.length === 0,
     total_recebidos: rawRecords.length,
     validos: validInputs.length,

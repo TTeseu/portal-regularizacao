@@ -245,6 +245,20 @@ Content-Type: application/json
 
 Tambem e aceito o header `x-api-key: $COLETA_DADOS_API_KEY`.
 
+No projeto Coleta Dados, configure a URL de exportacao apontando para o Portal:
+
+```bash
+FRIEND_CENSO_API_URL="https://portal-regularizacao.vercel.app/api/notifica-facil/integracoes/coleta"
+```
+
+ou, se o app usar o nome alternativo:
+
+```bash
+CENSO_EXPORT_API_URL="https://portal-regularizacao.vercel.app/api/notifica-facil/integracoes/coleta"
+```
+
+O token usado pelo Coleta Dados deve ser o mesmo valor configurado no Portal em `COLETA_DADOS_API_KEY`. A rota tambem responde `OPTIONS` e inclui CORS para permitir chamadas feitas pelo navegador do app Coleta Dados.
+
 O endpoint recebe um unico registro, um array direto, ou um objeto com `registros`, `records`, `items` ou `data`.
 
 Exemplo de registro unico:
