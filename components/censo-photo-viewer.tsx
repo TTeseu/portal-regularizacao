@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useMemo, useState } from "react";
-import { Camera, Download, ExternalLink, ImageIcon, X } from "lucide-react";
+import { Camera, ChevronLeft, ChevronRight, Download, ImageIcon, Maximize2, Minimize2, X } from "lucide-react";
 
 type PhotoRef = {
   url: string;
@@ -13,7 +13,10 @@ type PhotoRef = {
 
 export function CensoPhotoViewer({ value }: { value: unknown }) {
   const [open, setOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [zoomed, setZoomed] = useState(false);
   const photos = useMemo(() => normalizePhotos(value), [value]);
+  const selectedPhoto = selectedIndex === null ? null : photos[selectedIndex] || null;
 
   if (photos.length === 0) {
     return (
@@ -50,7 +53,11 @@ export function CensoPhotoViewer({ value }: { value: unknown }) {
               </div>
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  setOpen(false);
+                  setSelectedIndex(null);
+                  setZoomed(false);
+                }}
                 className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 text-edp-muted transition hover:border-edp/40 hover:text-white"
                 aria-label="Fechar fotos"
               >
@@ -62,7 +69,14 @@ export function CensoPhotoViewer({ value }: { value: unknown }) {
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {photos.map((photo, index) => (
                   <article key={`${photo.url}-${index}`} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
-                    <a href={photo.url} target="_blank" rel="noreferrer" className="block bg-black/20">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedIndex(index);
+                        setZoomed(false);
+                      }}
+                      className="block w-full bg-black/20 text-left"
+                    >
                       <img
                         src={photo.url}
                         alt={photo.name}
@@ -72,17 +86,24 @@ export function CensoPhotoViewer({ value }: { value: unknown }) {
                           event.currentTarget.style.display = "none";
                         }}
                       />
-                    </a>
+                    </button>
                     <div className="space-y-3 p-4">
                       <div className="min-w-0">
                         <div className="truncate text-sm font-bold text-white">{photo.name}</div>
                         {photo.source ? <div className="mt-1 text-xs text-edp-muted">{photo.source}</div> : null}
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <a className="btn-secondary h-9 px-3 text-xs" href={photo.url} target="_blank" rel="noreferrer">
-                          <ExternalLink size={14} />
-                          Abrir
-                        </a>
+                        <button
+                          className="btn-secondary h-9 px-3 text-xs"
+                          type="button"
+                          onClick={() => {
+                            setSelectedIndex(index);
+                            setZoomed(false);
+                          }}
+                        >
+                          <Maximize2 size={14} />
+                          Visualizar
+                        </button>
                         <a className="btn-primary h-9 px-3 text-xs" href={photo.downloadUrl} target="_blank" rel="noreferrer">
                           <Download size={14} />
                           Baixar
@@ -94,6 +115,78 @@ export function CensoPhotoViewer({ value }: { value: unknown }) {
               </div>
             </div>
           </div>
+
+          {selectedPhoto ? (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 p-4">
+              <div className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/15 bg-[#0D1726] shadow-2xl shadow-black/50">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
+                  <div className="min-w-0">
+                    <h3 className="truncate font-bold text-white">{selectedPhoto.name}</h3>
+                    <p className="text-xs text-edp-muted">
+                      Foto {(selectedIndex ?? 0) + 1} de {photos.length}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button className="btn-secondary h-10 px-3 text-xs" type="button" onClick={() => setZoomed((current) => !current)}>
+                      {zoomed ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+                      {zoomed ? "Ajustar" : "Zoom"}
+                    </button>
+                    <a className="btn-primary h-10 px-3 text-xs" href={selectedPhoto.downloadUrl} target="_blank" rel="noreferrer">
+                      <Download size={15} />
+                      Baixar
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedIndex(null);
+                        setZoomed(false);
+                      }}
+                      className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 text-edp-muted transition hover:border-edp/40 hover:text-white"
+                      aria-label="Fechar visualizacao"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="relative flex min-h-[60vh] flex-1 items-center justify-center overflow-auto bg-black/30 p-4">
+                  {photos.length > 1 ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedIndex((current) => (current === null ? 0 : (current - 1 + photos.length) % photos.length));
+                          setZoomed(false);
+                        }}
+                        className="absolute left-4 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#1E2D44]/80 text-white transition hover:border-edp/50 hover:text-edp"
+                        aria-label="Foto anterior"
+                      >
+                        <ChevronLeft size={22} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedIndex((current) => (current === null ? 0 : (current + 1) % photos.length));
+                          setZoomed(false);
+                        }}
+                        className="absolute right-4 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-[#1E2D44]/80 text-white transition hover:border-edp/50 hover:text-edp"
+                        aria-label="Proxima foto"
+                      >
+                        <ChevronRight size={22} />
+                      </button>
+                    </>
+                  ) : null}
+
+                  <img
+                    src={selectedPhoto.url}
+                    alt={selectedPhoto.name}
+                    className={zoomed ? "max-w-none cursor-zoom-out" : "max-h-[72vh] max-w-full cursor-zoom-in object-contain"}
+                    onClick={() => setZoomed((current) => !current)}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </>
