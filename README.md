@@ -260,8 +260,14 @@ Exemplo de registro unico:
   "latitude": -23.534427,
   "longitude": -46.2170446,
   "fotos": [
-    "https://exemplo.com/foto-1.jpg",
-    "https://exemplo.com/foto-2.jpg"
+    {
+      "external_id": "foto-123",
+      "url": "https://coleta-dados.exemplo.com/fotos/foto-123",
+      "download_url": "https://coleta-dados.exemplo.com/fotos/foto-123/download",
+      "thumbnail_url": "https://coleta-dados.exemplo.com/fotos/foto-123/thumb",
+      "nome": "foto-123.jpg",
+      "content_type": "image/jpeg"
+    }
   ],
   "observacoes": "Registro recebido do app Coleta Dados",
   "usuario_que_enviou": "usuario@empresa.com"
@@ -294,11 +300,40 @@ Exemplo com mais de uma empresa no mesmo CENSO:
   "bairro": "Centro",
   "cidade": "Caraguatatuba",
   "numero_poste": "8844851",
-  "fotos": ["https://exemplo.com/foto-censo.jpg"]
+  "fotos": [
+    {
+      "external_id": "foto-censo-1",
+      "url": "https://coleta-dados.exemplo.com/fotos/foto-censo-1",
+      "download_url": "https://coleta-dados.exemplo.com/fotos/foto-censo-1/download",
+      "thumbnail_url": "https://coleta-dados.exemplo.com/fotos/foto-censo-1/thumb",
+      "nome": "foto-censo-1.jpg"
+    }
+  ]
 }
 ```
 
 Esse exemplo cria duas linhas em `Importar CENSO`: uma para `TELEFONICA` e outra para `CLARO`.
+
+### Fotos e evidencias do Coleta Dados
+
+As fotos nao sao salvas como arquivo, base64 ou binario no Neon. O Portal armazena apenas uma referencia externa pequena em `fotos_censo`, com `source: "coleta-dados"` e `storage: "external"`, para que a imagem continue hospedada no banco/armazenamento do Coleta Dados.
+
+Formato recomendado para cada foto:
+
+```json
+{
+  "external_id": "foto-123",
+  "url": "https://coleta-dados.exemplo.com/fotos/foto-123",
+  "download_url": "https://coleta-dados.exemplo.com/fotos/foto-123/download",
+  "thumbnail_url": "https://coleta-dados.exemplo.com/fotos/foto-123/thumb",
+  "nome": "foto-123.jpg",
+  "content_type": "image/jpeg"
+}
+```
+
+Tambem sao aceitos os nomes equivalentes `file_url`, `href`, `link`, `public_url`, `signed_url`, `downloadUrl`, `thumbnailUrl`, `thumb`, `file_id`, `fileId`, `name`, `filename`, `file_name`, `contentType` e `mime`.
+
+Nao envie `data:image/...`, base64 ou payload binario no JSON. Esses valores sao ignorados pela API para evitar gravar fotos dentro do Neon. Para visualizar e baixar no Portal, o Coleta Dados precisa fornecer uma URL acessivel ou assinada para `url`, `thumbnail_url` ou `download_url`.
 
 Campos aceitos:
 

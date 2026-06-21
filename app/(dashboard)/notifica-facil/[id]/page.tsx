@@ -154,17 +154,38 @@ function getSafeBackHref(value: string | undefined, notification: { numero_notif
 }
 
 function collectEvidences(fotos: unknown, ocr: unknown) {
-  const urls = Array.isArray(fotos) ? fotos.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : [];
+  const refs = Array.isArray(fotos)
+    ? fotos
+        .map((item, index) => photoReference(item, index))
+        .filter((item): item is { url: string; downloadUrl: string; name: string } => Boolean(item))
+    : [];
   const ocrRows = Array.isArray(ocr) ? ocr : [];
-  return urls.map((url, index) => {
+  return refs.map((ref) => {
+    const { url } = ref;
     const match = ocrRows.find((item) => item && typeof item === "object" && (item as Record<string, unknown>).url === url) as Record<string, unknown> | undefined;
     return {
       url,
-      name: fileNameFromUrl(url) || `Foto ${index + 1}`,
+      downloadUrl: ref.downloadUrl,
+      name: ref.name,
       text: typeof match?.texto === "string" ? match.texto : "",
       date: typeof match?.data_ocr === "string" ? match.data_ocr : ""
     };
   });
+}
+
+function photoReference(item: unknown, index: number) {
+  if (typeof item === "string" && item.trim()) {
+    const url = item.trim();
+    return { url, downloadUrl: url, name: fileNameFromUrl(url) || `Foto ${index + 1}` };
+  }
+  if (!item || typeof item !== "object") return null;
+  const row = item as Record<string, unknown>;
+  const url = String(row.thumbnail_url || row.thumbnailUrl || row.url || row.file_url || row.href || row.download_url || row.downloadUrl || "");
+  const downloadUrl = String(row.download_url || row.downloadUrl || row.url || row.file_url || row.href || url || "");
+  if (!url && !downloadUrl) return null;
+  const displayUrl = url || downloadUrl;
+  const name = String(row.nome || row.name || row.filename || row.file_name || fileNameFromUrl(displayUrl) || `Foto ${index + 1}`);
+  return { url: displayUrl, downloadUrl: downloadUrl || displayUrl, name };
 }
 
 function collectAttachments(...groups: unknown[]) {
@@ -195,7 +216,7 @@ function EvidencePanel({
   evidences,
   attachments
 }: {
-  evidences: Array<{ url: string; name: string; text: string; date: string }>;
+  evidences: Array<{ url: string; downloadUrl: string; name: string; text: string; date: string }>;
   attachments: Array<{ url: string; name: string }>;
 }) {
   return (
@@ -217,7 +238,7 @@ function EvidencePanel({
                     <div className="truncate text-sm font-bold text-white">{item.name}</div>
                     {item.date ? <div className="text-xs text-edp-muted">{formatDateTime(new Date(item.date))}</div> : null}
                   </div>
-                  <a className="btn-secondary h-8 px-2 text-xs" href={item.url} target="_blank" rel="noreferrer">
+                  <a className="btn-secondary h-8 px-2 text-xs" href={item.downloadUrl} target="_blank" rel="noreferrer">
                     <ExternalLink size={13} />
                   </a>
                 </div>

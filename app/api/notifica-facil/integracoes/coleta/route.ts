@@ -8,6 +8,16 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type PayloadRecord = Record<string, unknown>;
+type ExternalPhotoReference = {
+  source: "coleta-dados";
+  storage: "external";
+  url?: string;
+  download_url?: string;
+  thumbnail_url?: string;
+  external_id?: string;
+  nome?: string;
+  content_type?: string;
+};
 type NormalizedCenso =
   | { inputs: Prisma.NotificaFacilNotificationUncheckedCreateInput[]; error?: never }
   | { error: string; inputs?: never };
@@ -131,16 +141,88 @@ function normalizePayload(body: unknown) {
   return [record];
 }
 
-function normalizePhotos(value: unknown): string[] {
+function isInlineImagePayload(value: string) {
+  const text = value.trim();
+  if (/^data:image\//i.test(text)) return true;
+  if (/^data:application\/octet-stream/i.test(text)) return true;
+  return text.length > 5000 && !/^https?:\/\//i.test(text);
+}
+
+function externalPhotoFromObject(value: PayloadRecord): ExternalPhotoReference | null {
+  const url =
+    asText(value.url) ||
+    asText(value.file_url) ||
+    asText(value.href) ||
+    asText(value.link) ||
+    asText(value.public_url) ||
+    asText(value.signed_url);
+  const downloadUrl =
+    asText(value.download_url) ||
+    asText(value.downloadUrl) ||
+    asText(value.download) ||
+    url;
+  const thumbnailUrl =
+    asText(value.thumbnail_url) ||
+    asText(value.thumbnailUrl) ||
+    asText(value.thumb) ||
+    url;
+  const externalId =
+    asText(value.external_id) ||
+    asText(value.externalId) ||
+    asText(value.id) ||
+    asText(value.file_id) ||
+    asText(value.fileId);
+
+  const safeUrl = url && !isInlineImagePayload(url) ? url : undefined;
+  const safeDownloadUrl = downloadUrl && !isInlineImagePayload(downloadUrl) ? downloadUrl : undefined;
+  const safeThumbnailUrl = thumbnailUrl && !isInlineImagePayload(thumbnailUrl) ? thumbnailUrl : undefined;
+
+  if (!safeUrl && !safeDownloadUrl && !safeThumbnailUrl && !externalId) return null;
+
+  return {
+    source: "coleta-dados",
+    storage: "external",
+    ...(safeUrl ? { url: safeUrl } : {}),
+    ...(safeDownloadUrl ? { download_url: safeDownloadUrl } : {}),
+    ...(safeThumbnailUrl ? { thumbnail_url: safeThumbnailUrl } : {}),
+    ...(externalId ? { external_id: externalId } : {}),
+    ...(asText(value.nome) || asText(value.name) || asText(value.filename) || asText(value.file_name)
+      ? { nome: asText(value.nome) || asText(value.name) || asText(value.filename) || asText(value.file_name) || undefined }
+      : {}),
+    ...(asText(value.content_type) || asText(value.contentType) || asText(value.mime)
+      ? { content_type: asText(value.content_type) || asText(value.contentType) || asText(value.mime) || undefined }
+      : {})
+  };
+}
+
+function externalPhotoFromString(value: string): ExternalPhotoReference | null {
+  const text = value.trim();
+  if (!text || isInlineImagePayload(text)) return null;
+  if (!/^https?:\/\//i.test(text)) {
+    return {
+      source: "coleta-dados",
+      storage: "external",
+      external_id: text
+    };
+  }
+  return {
+    source: "coleta-dados",
+    storage: "external",
+    url: text,
+    download_url: text,
+    thumbnail_url: text
+  };
+}
+
+function normalizePhotos(value: unknown): ExternalPhotoReference[] {
   if (Array.isArray(value)) {
     return value
       .map((item) => {
-        if (typeof item === "string") return item.trim();
-        if (!item || typeof item !== "object") return "";
-        const row = item as PayloadRecord;
-        return asText(row.url) || asText(row.file_url) || asText(row.href) || asText(row.link) || "";
+        if (typeof item === "string") return externalPhotoFromString(item);
+        if (!item || typeof item !== "object") return null;
+        return externalPhotoFromObject(item as PayloadRecord);
       })
-      .filter(Boolean);
+      .filter((item): item is ExternalPhotoReference => Boolean(item));
   }
 
   if (typeof value === "string") {
@@ -152,10 +234,15 @@ function normalizePhotos(value: unknown): string[] {
     } catch {
       // Strings simples podem vir separados por linha, ponto e virgula ou virgula.
     }
+    if (/^https?:\/\//i.test(text) || !text.includes(";") && !text.includes("\n") && !text.includes(",")) {
+      const single = externalPhotoFromString(text);
+      return single ? [single] : [];
+    }
     return text
       .split(/\r?\n|;|,/)
       .map((item) => item.trim())
-      .filter(Boolean);
+      .map((item) => externalPhotoFromString(item))
+      .filter((item): item is ExternalPhotoReference => Boolean(item));
   }
 
   return [];
@@ -367,7 +454,16 @@ export async function GET() {
         bairro: "Vila Rubens",
         cidade: "Mogi das Cruzes",
         numero_poste: "343462114",
-        fotos: ["https://exemplo.com/foto-1.jpg"]
+        fotos: [
+          {
+            external_id: "foto-123",
+            url: "https://coleta-dados.exemplo.com/fotos/foto-123",
+            download_url: "https://coleta-dados.exemplo.com/fotos/foto-123/download",
+            thumbnail_url: "https://coleta-dados.exemplo.com/fotos/foto-123/thumb",
+            nome: "foto-123.jpg",
+            content_type: "image/jpeg"
+          }
+        ]
       },
       lote: {
         registros: []
