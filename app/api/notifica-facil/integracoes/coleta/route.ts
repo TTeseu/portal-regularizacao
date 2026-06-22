@@ -150,6 +150,11 @@ function isFinalCensoStatus(status: string | null) {
   return FINAL_CENSO_STATUSES.has((status || "").trim().toLowerCase());
 }
 
+function isAguardandoAutorizacaoStatus(status: string | null) {
+  const normalized = String(status || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return normalized.includes("aguardando autorizacao");
+}
+
 function normalizePayload(body: unknown) {
   if (Array.isArray(body)) return body;
   if (!body || typeof body !== "object") return [];
@@ -401,6 +406,7 @@ function toCensoInput(record: PayloadRecord, index: number): NormalizedCenso {
 
   const dataText = firstText(record, ["data", "data_censo", "dataCenso", "created_date", "criado_em", "criadoEm"]);
   const status = firstText(record, ["status", "status_banco", "statusBanco"]) || "Recebido do COLETA DE DADOS";
+  const aguardandoAutorizacao = isAguardandoAutorizacaoStatus(status);
   const { latitude, longitude } = coordinates(record);
   const fotos = normalizePhotos(firstRaw(record, ["fotos_censo", "fotos", "imagens", "anexos", "evidencias", "arquivos"]));
   const empresas = companyNamesFrom(record);
@@ -417,8 +423,8 @@ function toCensoInput(record: PayloadRecord, index: number): NormalizedCenso {
     tipo_servico: "CENSO",
     numero_registro_censo: registro,
     data_notificacao: dataText,
-    status,
-    censo_finalizado: isFinalCensoStatus(status),
+    status: aguardandoAutorizacao ? "Aguardando autorização" : status,
+    censo_finalizado: aguardandoAutorizacao ? false : isFinalCensoStatus(status),
     censo_registro_id: firstText(record, ["id_censo", "idCenso", "censo_id", "censoId"]) || registro,
     empresa_incorporada: firstText(record, ["empresa_incorporada", "empresaIncorporada"]),
     empresa_endereco: firstText(record, ["empresa_endereco", "endereco", "logradouro", "endereco_revelia", "enderecoRevelia"]),
@@ -430,10 +436,10 @@ function toCensoInput(record: PayloadRecord, index: number): NormalizedCenso {
     fotos_censo: fotos.length ? fotos : undefined,
     observacoes,
     ordem_venda: firstText(record, ["ordem_venda", "ordemVenda", "ov", "numero_ov", "numeroOv"]),
-    status_envio_notificacao: status,
+    status_envio_notificacao: aguardandoAutorizacao ? "Aguardando autorização" : status,
     numero_notificacao: null,
     is_draft: false,
-    is_standby: false,
+    is_standby: aguardandoAutorizacao,
     pendencia_tecnica: false
   } satisfies Omit<Prisma.NotificaFacilNotificationUncheckedCreateInput, "empresa">;
 
@@ -619,6 +625,7 @@ export async function POST(request: Request) {
   revalidatePath("/notifica-facil");
   revalidatePath("/notifica-facil/importar-censo");
   revalidatePath("/notifica-facil/historico-censo");
+  revalidatePath("/notifica-facil/stand-by");
 
   return jsonResponse({
     success: invalid.length === 0,

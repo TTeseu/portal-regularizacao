@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, Archive, ArrowLeft, Bot, Download, FileSpreadsheet, RefreshCw, Save, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, Archive, ArrowLeft, Bot, Clock3, Download, FileSpreadsheet, RefreshCw, Save, Trash2, Upload } from "lucide-react";
 import { Prisma } from "@prisma/client";
 import { AutoSearchInput } from "@/components/auto-search-input";
 import { CensoPhotoViewer } from "@/components/censo-photo-viewer";
@@ -15,6 +15,8 @@ import {
   markOneNotificaFacilCensoClandestino,
   markSelectedNotificaFacilCensosClandestino,
   prepareNotificaFacilFromCenso,
+  sendOneNotificaFacilCensoToStandBy,
+  sendSelectedNotificaFacilCensosToStandBy,
   updateNotificaFacilCensoRegistro
 } from "../actions";
 
@@ -97,6 +99,10 @@ export default async function ImportarCensoPage({
                     <Archive size={16} />
                     Enviar ao histórico
                   </button>
+                  <button className="btn-secondary border-amber-300/35 text-amber-100" type="submit" form="censo-select-form" formAction={sendSelectedNotificaFacilCensosToStandBy}>
+                    <Clock3 size={16} />
+                    Aguardando autorização
+                  </button>
                   <button className="btn-secondary border-red-300/35 text-red-100" type="submit" form="censo-select-form" formAction={markSelectedNotificaFacilCensosClandestino}>
                     <AlertTriangle size={16} />
                     Marcar clandestino
@@ -171,6 +177,7 @@ export default async function ImportarCensoPage({
                 <th className="px-4 py-3">Coordenadas</th>
                 <th className="px-4 py-3">Fotos</th>
                 <th className="px-4 py-3">Status Banco</th>
+                <th className="px-4 py-3">Aguardando autorização</th>
                 <th className="px-4 py-3">Observação</th>
                 <th className="px-4 py-3">Ordem de Venda</th>
                 <th className="px-4 py-3"></th>
@@ -193,6 +200,12 @@ export default async function ImportarCensoPage({
                   <td className="px-4 py-4 text-xs text-edp-muted">{item.latitude && item.longitude ? `${item.latitude}, ${item.longitude}` : "-"}</td>
                   <td className="px-4 py-4"><CensoPhotoViewer value={item.fotos_censo} /></td>
                   <td className="px-4 py-4"><RowInput id={item.id} name="status" value={item.status} /></td>
+                  <td className="px-4 py-4">
+                    <label className="inline-flex min-w-48 items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-bold text-amber-100">
+                      <input form={`censo-form-${item.id}`} type="checkbox" name="aguardando_autorizacao" value="on" />
+                      Enviar para stand-by
+                    </label>
+                  </td>
                   <td className="px-4 py-4"><RowInput id={item.id} name="observacoes" value={item.observacoes} wide /></td>
                   <td className="px-4 py-4"><RowInput id={item.id} name="ordem_venda" value={item.ordem_venda} /></td>
                   <td className="px-4 py-4">
@@ -202,6 +215,9 @@ export default async function ImportarCensoPage({
                         <>
                           <button className="btn-secondary h-9 px-3" type="submit" formAction={finalizeOneNotificaFacilCenso.bind(null, item.id)} title="Enviar este CENSO ao histórico">
                             <Archive size={14} />
+                          </button>
+                          <button className="btn-secondary h-9 px-3 border-amber-300/35 text-amber-100" type="submit" formAction={sendOneNotificaFacilCensoToStandBy.bind(null, item.id)} title="Enviar este CENSO para stand-by por aguardando autorização">
+                            <Clock3 size={14} />
                           </button>
                           <button className="btn-danger h-9 px-3" type="submit" formAction={markOneNotificaFacilCensoClandestino.bind(null, item.id)} title="Marcar este CENSO como clandestino">
                             <AlertTriangle size={14} />
@@ -214,7 +230,7 @@ export default async function ImportarCensoPage({
               ))}
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={15} className="px-4 py-12 text-center text-edp-muted">Nenhum registro recebido encontrado.</td>
+                  <td colSpan={16} className="px-4 py-12 text-center text-edp-muted">Nenhum registro recebido encontrado.</td>
                 </tr>
               ) : null}
             </tbody>

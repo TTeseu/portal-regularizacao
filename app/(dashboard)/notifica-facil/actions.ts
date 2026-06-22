@@ -242,6 +242,11 @@ function isFinalCensoStatus(status: string | null) {
   return normalized.includes("finaliz") || normalized.includes("exclu") || normalized.includes("clandest");
 }
 
+function isAguardandoAutorizacaoStatus(status: string | null) {
+  const normalized = String(status || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return normalized.includes("aguardando autorizacao");
+}
+
 function formToData(formData: FormData): Prisma.NotificaFacilNotificationUncheckedCreateInput {
   return {
     id: randomUUID(),
@@ -433,6 +438,26 @@ async function moveCensosToHistory(ids: string[], status: string, statusEnvio: s
   return result.count;
 }
 
+async function moveCensosToStandBy(ids: string[]) {
+  if (!ids.length) redirect("/notifica-facil/importar-censo?erro=selecao");
+
+  const result = await prisma.notificaFacilNotification.updateMany({
+    where: { AND: [activeCensoWhere, { id: { in: ids } }] },
+    data: {
+      is_standby: true,
+      censo_finalizado: false,
+      status: "Aguardando autorização",
+      status_envio_notificacao: "Aguardando autorização",
+      updated_date: new Date()
+    }
+  });
+
+  revalidatePath("/notifica-facil");
+  revalidatePath("/notifica-facil/importar-censo");
+  revalidatePath("/notifica-facil/stand-by");
+  return result.count;
+}
+
 export async function finalizeSelectedNotificaFacilCensos(formData: FormData) {
   const user = await requireUser();
   if (!canEdit(user)) redirect("/notifica-facil/importar-censo");
@@ -447,6 +472,14 @@ export async function markSelectedNotificaFacilCensosClandestino(formData: FormD
 
   const count = await moveCensosToHistory(selectedCensoIds(formData), "Clandestino", "Marcado como clandestino");
   redirect(withFlash("/notifica-facil/importar-censo", { success: "censos-clandestinos", count }));
+}
+
+export async function sendSelectedNotificaFacilCensosToStandBy(formData: FormData) {
+  const user = await requireUser();
+  if (!canEdit(user)) redirect("/notifica-facil/importar-censo");
+
+  const count = await moveCensosToStandBy(selectedCensoIds(formData));
+  redirect(withFlash("/notifica-facil/importar-censo", { success: "censos-standby", count }));
 }
 
 export async function finalizeOneNotificaFacilCenso(id: string) {
@@ -465,6 +498,14 @@ export async function markOneNotificaFacilCensoClandestino(id: string) {
   redirect(withFlash("/notifica-facil/importar-censo", { success: "censos-clandestinos", count }));
 }
 
+export async function sendOneNotificaFacilCensoToStandBy(id: string) {
+  const user = await requireUser();
+  if (!canEdit(user)) redirect("/notifica-facil/importar-censo");
+
+  const count = await moveCensosToStandBy([id]);
+  redirect(withFlash("/notifica-facil/importar-censo", { success: "censos-standby", count }));
+}
+
 export async function importNotificaFacilCensoCsv(formData: FormData) {
   const user = await requireUser();
   if (!canEdit(user)) redirect("/notifica-facil/importar-censo");
@@ -479,6 +520,7 @@ export async function importNotificaFacilCensoCsv(formData: FormData) {
     .map((row) => {
       const registro = firstCsvValue(row, ["Nº Registro CENSO", "N Registro CENSO", "Nº Registro", "Numero Registro", "Registro", "numero_registro_censo"]);
       const status = firstCsvValue(row, ["Status", "Status Banco"]) || "Recebido do COLETA DE DADOS";
+      const aguardandoAutorizacao = isAguardandoAutorizacaoStatus(status);
       const coordenadas = firstCsvValue(row, ["Coordenadas", "Coordenadas pelas fotos"]);
       const dataText = firstCsvValue(row, ["Data", "Data Censo", "Criado em"]);
       const fotos = photosFromCsvRow(row);
@@ -492,8 +534,9 @@ export async function importNotificaFacilCensoCsv(formData: FormData) {
         tipo_servico: "CENSO",
         numero_registro_censo: registro,
         data_notificacao: dataText,
-        status,
-        censo_finalizado: isFinalCensoStatus(status),
+        status: aguardandoAutorizacao ? "Aguardando autorização" : status,
+        is_standby: aguardandoAutorizacao,
+        censo_finalizado: aguardandoAutorizacao ? false : isFinalCensoStatus(status),
         censo_registro_id: registro,
         empresa_incorporada: firstCsvValue(row, ["Empresa Incorporada"]),
         empresa_endereco: firstCsvValue(row, ["Endereço", "Endereco"]),
@@ -505,7 +548,7 @@ export async function importNotificaFacilCensoCsv(formData: FormData) {
         fotos_censo: fotos.length ? fotos : undefined,
         observacoes: firstCsvValue(row, ["Observação", "Observacao", "Observações", "Observacoes"]),
         ordem_venda: firstCsvValue(row, ["Ordem de Venda", "OV", "Nº OV"]),
-        status_envio_notificacao: status
+        status_envio_notificacao: aguardandoAutorizacao ? "Aguardando autorização" : status
       } satisfies Prisma.NotificaFacilNotificationUncheckedCreateInput;
     })
     .filter((row) => row.numero_registro_censo);
@@ -538,12 +581,16 @@ export async function importNotificaFacilCensoCsv(formData: FormData) {
   revalidatePath("/notifica-facil");
   revalidatePath("/notifica-facil/importar-censo");
   revalidatePath("/notifica-facil/historico-censo");
+  revalidatePath("/notifica-facil/stand-by");
   redirect(`/notifica-facil/importar-censo?importados=${toCreate.length}&ignorados=${uniqueRows.length - toCreate.length}`);
 }
 
 export async function updateNotificaFacilCensoRegistro(id: string, formData: FormData) {
   const user = await requireUser();
   if (!canEdit(user)) redirect("/notifica-facil/importar-censo");
+
+  const rawStatus = text(formData, "status");
+  const aguardandoAutorizacao = checked(formData, "aguardando_autorizacao") || isAguardandoAutorizacaoStatus(rawStatus);
 
   await prisma.notificaFacilNotification.update({
     where: { id },
@@ -554,11 +601,12 @@ export async function updateNotificaFacilCensoRegistro(id: string, formData: For
       empresa_bairro: text(formData, "empresa_bairro"),
       empresa_cidade: text(formData, "empresa_cidade"),
       numero_poste: text(formData, "numero_poste"),
-      status: text(formData, "status") || "Recebido do COLETA DE DADOS",
-      status_envio_notificacao: text(formData, "status"),
+      status: aguardandoAutorizacao ? "Aguardando autorização" : rawStatus || "Recebido do COLETA DE DADOS",
+      status_envio_notificacao: aguardandoAutorizacao ? "Aguardando autorização" : rawStatus,
       observacoes: text(formData, "observacoes"),
       ordem_venda: text(formData, "ordem_venda"),
-      censo_finalizado: isFinalCensoStatus(text(formData, "status")),
+      censo_finalizado: aguardandoAutorizacao ? false : isFinalCensoStatus(rawStatus),
+      is_standby: aguardandoAutorizacao,
       updated_date: new Date()
     }
   });
@@ -566,6 +614,7 @@ export async function updateNotificaFacilCensoRegistro(id: string, formData: For
   revalidatePath("/notifica-facil");
   revalidatePath("/notifica-facil/importar-censo");
   revalidatePath("/notifica-facil/historico-censo");
+  revalidatePath("/notifica-facil/stand-by");
   redirect(withFlash("/notifica-facil/importar-censo", { success: "salvo" }));
 }
 

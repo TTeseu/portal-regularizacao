@@ -20,6 +20,8 @@ function successMessage(code: string | null, count: string | null) {
       return amount > 0 ? `${amount} CENSO${amount === 1 ? "" : "s"} enviado${amount === 1 ? "" : "s"} ao histórico.` : "CENSO enviado ao histórico.";
     case "censos-clandestinos":
       return amount > 0 ? `${amount} CENSO${amount === 1 ? "" : "s"} marcado${amount === 1 ? "" : "s"} como clandestino.` : "CENSO marcado como clandestino.";
+    case "censos-standby":
+      return amount > 0 ? `${amount} CENSO${amount === 1 ? "" : "s"} enviado${amount === 1 ? "" : "s"} para stand-by.` : "CENSO enviado para stand-by.";
     case "empresa-excluida":
       return "Empresa excluída com sucesso.";
     default:
