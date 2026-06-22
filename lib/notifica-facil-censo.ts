@@ -13,6 +13,6 @@ export const historyCensoWhere = {
   numero_notificacao: null,
   OR: [
     { censo_finalizado: true },
-    { status: { in: ["Finalizado", "Excluído", "Excluido"] } }
+    { status: { in: ["Finalizado", "Clandestino", "Excluído", "Excluido"] } }
   ]
 } satisfies Prisma.NotificaFacilNotificationWhereInput;

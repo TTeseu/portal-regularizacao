@@ -83,6 +83,7 @@ export default async function HistoricoCensoPage({
             <select className="field mt-1" name="status" defaultValue={params.status || ""}>
               <option value="">Todos os Status</option>
               <option>Finalizado</option>
+              <option>Clandestino</option>
               <option>Excluído</option>
             </select>
           </label>
@@ -146,7 +147,7 @@ export default async function HistoricoCensoPage({
 
 function StatusBadge({ status }: { status: string }) {
   const normalized = status.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const tone = normalized.includes("exclu")
+  const tone = normalized.includes("exclu") || normalized.includes("clandest")
     ? "border-red-300/30 bg-red-300/15 text-red-100"
     : "border-edp/35 bg-edp/15 text-edp";
   return <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${tone}`}>{status}</span>;

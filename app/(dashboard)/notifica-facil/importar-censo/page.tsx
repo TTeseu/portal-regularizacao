@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Bot, Download, FileSpreadsheet, RefreshCw, Save, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, Archive, ArrowLeft, Bot, Download, FileSpreadsheet, RefreshCw, Save, Trash2, Upload } from "lucide-react";
 import { Prisma } from "@prisma/client";
 import { AutoSearchInput } from "@/components/auto-search-input";
 import { CensoPhotoViewer } from "@/components/censo-photo-viewer";
@@ -9,7 +9,11 @@ import { activeCensoWhere } from "@/lib/notifica-facil-censo";
 import { prisma } from "@/lib/prisma";
 import {
   clearNotificaFacilCensoObservacoes,
+  finalizeOneNotificaFacilCenso,
+  finalizeSelectedNotificaFacilCensos,
   importNotificaFacilCensoCsv,
+  markOneNotificaFacilCensoClandestino,
+  markSelectedNotificaFacilCensosClandestino,
   prepareNotificaFacilFromCenso,
   updateNotificaFacilCensoRegistro
 } from "../actions";
@@ -86,6 +90,18 @@ export default async function ImportarCensoPage({
                   <FileSpreadsheet size={16} />
                   Gerar notificacao
                 </button>
+              ) : null}
+              {canEdit ? (
+                <>
+                  <button className="btn-secondary" type="submit" form="censo-select-form" formAction={finalizeSelectedNotificaFacilCensos}>
+                    <Archive size={16} />
+                    Enviar ao histórico
+                  </button>
+                  <button className="btn-secondary border-red-300/35 text-red-100" type="submit" form="censo-select-form" formAction={markSelectedNotificaFacilCensosClandestino}>
+                    <AlertTriangle size={16} />
+                    Marcar clandestino
+                  </button>
+                </>
               ) : null}
               <button className="btn-secondary" type="button"><Bot size={16} />Ler Legendas (IA)</button>
               {canEdit ? (
@@ -180,7 +196,19 @@ export default async function ImportarCensoPage({
                   <td className="px-4 py-4"><RowInput id={item.id} name="observacoes" value={item.observacoes} wide /></td>
                   <td className="px-4 py-4"><RowInput id={item.id} name="ordem_venda" value={item.ordem_venda} /></td>
                   <td className="px-4 py-4">
-                    <SaveButton formId={`censo-form-${item.id}`} />
+                    <div className="flex min-w-36 flex-wrap gap-2">
+                      <SaveButton formId={`censo-form-${item.id}`} />
+                      {canEdit ? (
+                        <>
+                          <button className="btn-secondary h-9 px-3" type="submit" formAction={finalizeOneNotificaFacilCenso.bind(null, item.id)} title="Enviar este CENSO ao histórico">
+                            <Archive size={14} />
+                          </button>
+                          <button className="btn-danger h-9 px-3" type="submit" formAction={markOneNotificaFacilCensoClandestino.bind(null, item.id)} title="Marcar este CENSO como clandestino">
+                            <AlertTriangle size={14} />
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ))}

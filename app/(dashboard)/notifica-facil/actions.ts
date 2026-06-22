@@ -239,7 +239,7 @@ function parseCoordinate(value: string | null, axis: "lat" | "lng") {
 
 function isFinalCensoStatus(status: string | null) {
   const normalized = String(status || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  return normalized.includes("finaliz") || normalized.includes("exclu");
+  return normalized.includes("finaliz") || normalized.includes("exclu") || normalized.includes("clandest");
 }
 
 function formToData(formData: FormData): Prisma.NotificaFacilNotificationUncheckedCreateInput {
@@ -408,6 +408,61 @@ export async function prepareNotificaFacilFromCenso(formData: FormData) {
   }
 
   redirect(`/notifica-facil/nova?censo=${encodeURIComponent(ids.join(","))}`);
+}
+
+function selectedCensoIds(formData: FormData) {
+  return Array.from(new Set(formData.getAll("censo_ids").map(String).map((id) => id.trim()).filter(Boolean)));
+}
+
+async function moveCensosToHistory(ids: string[], status: string, statusEnvio: string) {
+  if (!ids.length) redirect("/notifica-facil/importar-censo?erro=selecao");
+
+  const result = await prisma.notificaFacilNotification.updateMany({
+    where: { AND: [activeCensoWhere, { id: { in: ids } }] },
+    data: {
+      censo_finalizado: true,
+      status,
+      status_envio_notificacao: statusEnvio,
+      updated_date: new Date()
+    }
+  });
+
+  revalidatePath("/notifica-facil");
+  revalidatePath("/notifica-facil/importar-censo");
+  revalidatePath("/notifica-facil/historico-censo");
+  return result.count;
+}
+
+export async function finalizeSelectedNotificaFacilCensos(formData: FormData) {
+  const user = await requireUser();
+  if (!canEdit(user)) redirect("/notifica-facil/importar-censo");
+
+  const count = await moveCensosToHistory(selectedCensoIds(formData), "Finalizado", "Finalizado manualmente");
+  redirect(withFlash("/notifica-facil/importar-censo", { success: "censos-historico", count }));
+}
+
+export async function markSelectedNotificaFacilCensosClandestino(formData: FormData) {
+  const user = await requireUser();
+  if (!canEdit(user)) redirect("/notifica-facil/importar-censo");
+
+  const count = await moveCensosToHistory(selectedCensoIds(formData), "Clandestino", "Marcado como clandestino");
+  redirect(withFlash("/notifica-facil/importar-censo", { success: "censos-clandestinos", count }));
+}
+
+export async function finalizeOneNotificaFacilCenso(id: string) {
+  const user = await requireUser();
+  if (!canEdit(user)) redirect("/notifica-facil/importar-censo");
+
+  const count = await moveCensosToHistory([id], "Finalizado", "Finalizado manualmente");
+  redirect(withFlash("/notifica-facil/importar-censo", { success: "censos-historico", count }));
+}
+
+export async function markOneNotificaFacilCensoClandestino(id: string) {
+  const user = await requireUser();
+  if (!canEdit(user)) redirect("/notifica-facil/importar-censo");
+
+  const count = await moveCensosToHistory([id], "Clandestino", "Marcado como clandestino");
+  redirect(withFlash("/notifica-facil/importar-censo", { success: "censos-clandestinos", count }));
 }
 
 export async function importNotificaFacilCensoCsv(formData: FormData) {
