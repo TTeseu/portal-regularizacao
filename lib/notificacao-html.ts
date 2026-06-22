@@ -155,7 +155,7 @@ export function buildNotificacaoHtml(notificacao: Notificacao, options: BuildOpt
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Dancing+Script:wght@600&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { background: #dfe6ee; font-family: 'Noto Serif', 'Times New Roman', serif; font-size: 10pt; color: #000; }
-  .page { width: 794px; margin: 20px auto; background: #fff; padding: 60px 80px; box-shadow: 0 4px 18px rgba(0,0,0,.15); }
+  .page { width: 794px; margin: 20px auto; background: #fff; padding: 60px 80px; box-shadow: 0 4px 18px rgba(0,0,0,.15); color: #000; }
   .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; break-inside: avoid-page; page-break-inside: avoid; }
   .logo { width: 70px; height: auto; }
   .ref-block { text-align: right; font-size: 10pt; font-weight: 700; }
@@ -179,9 +179,9 @@ export function buildNotificacaoHtml(notificacao: Notificacao, options: BuildOpt
   .address-table-block { margin: 4mm 0 5mm; break-inside: avoid-page; page-break-inside: avoid; }
   .address-table-block.continued { break-before: page; page-break-before: always; margin-top: 60px; padding-top: 0; }
   .address-continued-title { margin: 0 0 3mm 0; font-size: 10pt; font-weight: 700; text-align: center; text-transform: uppercase; }
-  .address-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
-  .address-table th, .address-table td { border: 1px solid #000; padding: 4px 6px; text-align: left; vertical-align: top; }
-  .address-table th { text-align: center; font-weight: 700; background: #f3f3f3; }
+  .address-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; color: #000; }
+  .address-table th, .address-table td { border: 1px solid #000; color: #000 !important; padding: 4px 6px; text-align: left; vertical-align: top; }
+  .address-table th { text-align: center; font-weight: 700; background: #f3f3f3; color: #000 !important; }
   .address-table col:nth-child(1) { width: 52%; }
   .address-table col:nth-child(2), .address-table col:nth-child(3) { width: 24%; }
   .address-table tr { break-inside: avoid-page; page-break-inside: avoid; }
