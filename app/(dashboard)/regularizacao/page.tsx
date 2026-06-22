@@ -17,7 +17,8 @@ import {
 import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/format";
 import { AutoSearchInput } from "@/components/auto-search-input";
-import { updateUserPermission } from "../actions";
+import { LEGACY_NOTIFICADO_STATUSES, STATUS_OPTIONS } from "@/lib/constants";
+import { updateLoteNotificacoesStatus, updateUserPermission } from "../actions";
 
 type DashboardTab = "notificacoes" | "relatorios" | "permissoes";
 
@@ -43,9 +44,8 @@ function groupLotes(items: LoteItem[]) {
     nome,
     loteId: rows[0]?.lote_id || nome,
     rows,
-    pendentes: rows.filter((row) => row.status === "Pendente").length,
+    notificados: rows.filter((row) => (LEGACY_NOTIFICADO_STATUSES as readonly string[]).includes(row.status)).length,
     regularizadas: rows.filter((row) => row.status === "Regularizado").length,
-    analise: rows.filter((row) => row.status === "Em Análise").length,
     vencidas: rows.filter((row) => row.status === "Vencido").length,
     baixado: rows.some((row) => row.download_count > 0),
     created_date: rows[0]?.created_date,
@@ -62,9 +62,9 @@ export default async function DashboardPage({
   const params = (await searchParams) || {};
   const activeTab = (params.tab === "relatorios" || params.tab === "permissoes" ? params.tab : "notificacoes") as DashboardTab;
   const baseWhere = { arquivada: false, pdfUrl: { not: null } };
-  const [total, pendentes, regularizadas, vencidas, recentes, users] = await Promise.all([
+  const [total, notificados, regularizadas, vencidas, recentes, users] = await Promise.all([
     prisma.notificacao.count({ where: baseWhere }),
-    prisma.notificacao.count({ where: { ...baseWhere, status: "Pendente" } }),
+    prisma.notificacao.count({ where: { ...baseWhere, status: { in: [...LEGACY_NOTIFICADO_STATUSES] } } }),
     prisma.notificacao.count({ where: { ...baseWhere, status: "Regularizado" } }),
     prisma.notificacao.count({ where: { ...baseWhere, status: "Vencido" } }),
     prisma.notificacao.findMany({
@@ -91,7 +91,7 @@ export default async function DashboardPage({
 
   const lotes = groupLotes(recentes);
   const regularizacaoPct = total > 0 ? Math.round((regularizadas / total) * 100) : 0;
-  const pendentesPct = total > 0 ? Math.round((pendentes / total) * 100) : 0;
+  const notificadosPct = total > 0 ? Math.round((notificados / total) * 100) : 0;
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
@@ -111,14 +111,14 @@ export default async function DashboardPage({
           </div>
           <div className="grid gap-3 text-sm text-edp-muted md:grid-cols-3">
             <HeroSignal label="Infraestrutura" value="Compartilhamento de postes" />
-            <HeroSignal label="Operação" value={`${lotes.length} lotes recentes em análise`} />
+            <HeroSignal label="Operação" value={`${lotes.length} lotes recentes em acompanhamento`} />
             <HeroSignal label="Eficiência" value={`${regularizacaoPct}% regularizadas`} />
           </div>
         </div>
       </section>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Total de Notificações" value={total} context="Base operacional ativa" icon={<Zap size={26} />} tone="blue" />
-        <MetricCard label="Pendentes" value={pendentes} context={`${pendentesPct}% aguardando tratativa`} icon={<Clock size={28} />} tone="amber" />
+        <MetricCard label="Notificados" value={notificados} context={`${notificadosPct}% em acompanhamento`} icon={<Clock size={28} />} tone="amber" />
         <MetricCard label="Regularizadas" value={regularizadas} context={`${regularizacaoPct}% concluídas`} icon={<CheckCircle2 size={28} />} tone="green" />
         <MetricCard label="Vencidas" value={vencidas} context="Monitoramento crítico" icon={<AlertTriangle size={28} />} tone="red" />
       </section>
@@ -132,7 +132,7 @@ export default async function DashboardPage({
       </section>
 
       {activeTab === "notificacoes" ? <NotificationsPanel total={total} lotes={lotes} /> : null}
-      {activeTab === "relatorios" ? <ReportsPanel total={total} pendentes={pendentes} regularizadas={regularizadas} /> : null}
+      {activeTab === "relatorios" ? <ReportsPanel total={total} notificados={notificados} regularizadas={regularizadas} vencidas={vencidas} /> : null}
       {activeTab === "permissoes" ? <PermissionsPanel users={users} /> : null}
     </div>
   );
@@ -171,7 +171,7 @@ function NotificationsPanel({ total, lotes }: { total: number; lotes: ReturnType
             Filtros operacionais
           </div>
           <div className="grid gap-3 md:grid-cols-5">
-            <select className="field" name="status"><option value="">Todos Status</option><option>Pendente</option><option>Regularizado</option><option>Vencido</option></select>
+            <select className="field" name="status"><option value="">Todos Status</option>{STATUS_OPTIONS.map((status) => <option key={status}>{status}</option>)}</select>
             <select className="field" name="tipo"><option value="">Todos Tipos</option></select>
             <select className="field" name="origem"><option value="">Todas</option><option>manual</option><option>importacao</option></select>
             <select className="field" name="arquivada"><option value="">Não Arquivadas</option><option value="true">Arquivadas</option></select>
@@ -212,11 +212,23 @@ function NotificationsPanel({ total, lotes }: { total: number; lotes: ReturnType
               </div>
             </div>
 
-            <div className="mx-5 mb-4 grid max-w-3xl grid-cols-2 overflow-hidden rounded-2xl border border-line bg-edp-navy/35 text-sm md:grid-cols-4">
-              <StatusMetric label="Pendentes" value={lote.pendentes} className="text-amber-200" />
+            <div className="mx-5 mb-4 grid max-w-3xl grid-cols-1 overflow-hidden rounded-2xl border border-line bg-edp-navy/35 text-sm md:grid-cols-3">
+              <StatusMetric label="Notificados" value={lote.notificados} className="text-sky-200" />
               <StatusMetric label="Regularizadas" value={lote.regularizadas} className="text-edp" />
-              <StatusMetric label="Em Análise" value={lote.analise} className="text-violet-200" />
               <StatusMetric label="Vencidas" value={lote.vencidas} className="text-red-200" />
+            </div>
+
+            <div className="mx-5 mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-white/[0.03] px-4 py-3">
+              <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-edp-muted">Status rápido do lote</span>
+              {STATUS_OPTIONS.map((status) => (
+                <form key={status} action={updateLoteNotificacoesStatus.bind(null, lote.loteId)}>
+                  <input type="hidden" name="status" value={status} />
+                  <input type="hidden" name="redirect_to" value="/regularizacao" />
+                  <button className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:border-edp/50 hover:bg-edp/10 hover:text-edp">
+                    {status}
+                  </button>
+                </form>
+              ))}
             </div>
 
             <Link href={`/notificacoes?lote=${encodeURIComponent(lote.nome)}`} className="mx-5 mb-5 flex items-center justify-between rounded-2xl border border-line bg-white/[0.04] px-4 py-3 text-sm font-semibold text-edp transition hover:border-edp/35 hover:bg-edp/10">
@@ -230,10 +242,11 @@ function NotificationsPanel({ total, lotes }: { total: number; lotes: ReturnType
   );
 }
 
-function ReportsPanel({ total, pendentes, regularizadas }: { total: number; pendentes: number; regularizadas: number }) {
-  const pendentePct = total > 0 ? Math.round((pendentes / total) * 100) : 0;
+function ReportsPanel({ total, notificados, regularizadas, vencidas }: { total: number; notificados: number; regularizadas: number; vencidas: number }) {
+  const notificadoPct = total > 0 ? Math.round((notificados / total) * 100) : 0;
   const regularizadaPct = total > 0 ? Math.round((regularizadas / total) * 100) : 0;
-  const gradient = `conic-gradient(#fbbf24 0 ${pendentePct}%, #00E676 ${pendentePct}% ${pendentePct + regularizadaPct}%, rgba(255,255,255,0.08) ${pendentePct + regularizadaPct}% 100%)`;
+  const vencidaPct = total > 0 ? Math.max(0, 100 - notificadoPct - regularizadaPct) : 0;
+  const gradient = `conic-gradient(#38bdf8 0 ${notificadoPct}%, #00E676 ${notificadoPct}% ${notificadoPct + regularizadaPct}%, #f87171 ${notificadoPct + regularizadaPct}% ${notificadoPct + regularizadaPct + vencidaPct}%, rgba(255,255,255,0.08) ${notificadoPct + regularizadaPct + vencidaPct}% 100%)`;
 
   return (
     <div className="space-y-6">
@@ -261,16 +274,17 @@ function ReportsPanel({ total, pendentes, regularizadas }: { total: number; pend
           <span className="text-sm text-edp-muted">({total} notificações)</span>
         </div>
         <div className="relative flex min-h-[390px] items-center justify-center">
-          <span className="absolute left-[28%] top-[38%] text-sm text-amber-200">Pendente ({pendentePct}%)</span>
+          <span className="absolute left-[28%] top-[38%] text-sm text-sky-200">Notificado ({notificadoPct}%)</span>
           <div className="h-60 w-60 rounded-full" style={{ background: gradient }} />
           <span className="absolute right-[28%] top-[47%] text-sm text-edp">Regularizado ({regularizadaPct}%)</span>
+          <span className="absolute bottom-[20%] right-[36%] text-sm text-red-200">Vencido ({vencidas})</span>
         </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-4">
         <ReportSummary label="Total Filtrado" value={total} className="text-edp" />
-        <ReportSummary label="Visualizadas" value={0} className="text-emerald-600" />
-        <ReportSummary label="Pendentes" value={pendentes} className="text-amber-600" />
+        <ReportSummary label="Vencidas" value={vencidas} className="text-red-300" />
+        <ReportSummary label="Notificados" value={notificados} className="text-sky-300" />
         <ReportSummary label="Regularizadas" value={regularizadas} className="text-emerald-600" />
       </section>
     </div>

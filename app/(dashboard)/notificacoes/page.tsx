@@ -4,11 +4,12 @@ import { Download, Eye, Plus } from "lucide-react";
 import { AutoSearchInput } from "@/components/auto-search-input";
 import { prisma } from "@/lib/prisma";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
-import { STATUS_OPTIONS, ORIGEM_OPTIONS } from "@/lib/constants";
+import { LEGACY_NOTIFICADO_STATUSES, STATUS_OPTIONS, ORIGEM_OPTIONS } from "@/lib/constants";
 import { PageTitle } from "@/components/page-title";
 import { StatusBadge } from "@/components/status-badge";
 import { formatDateTime, formatPtBrDisplay } from "@/lib/format";
 import { cnpjSearchTerm } from "@/lib/cnpj";
+import { updateNotificacaoStatus } from "../actions";
 
 export default async function NotificacoesPage({
   searchParams
@@ -23,7 +24,11 @@ export default async function NotificacoesPage({
   const skip = (page - 1) * take;
   const where: Prisma.NotificacaoWhereInput = {};
 
-  if (params.status) where.status = params.status;
+  if (params.status === "Notificado") {
+    where.status = { in: [...LEGACY_NOTIFICADO_STATUSES] };
+  } else if (params.status) {
+    where.status = params.status;
+  }
   if (params.origem) where.origem = params.origem;
   if (params.empresa) where.empresa = { contains: params.empresa, mode: "insensitive" };
   if (params.cidade) where.cidade = { contains: params.cidade, mode: "insensitive" };
@@ -55,6 +60,9 @@ export default async function NotificacoesPage({
   ]);
 
   const totalPages = Math.max(Math.ceil(total / take), 1);
+  const redirectTo = `/notificacoes?${new URLSearchParams(
+    Object.entries(params).filter((entry): entry is [string, string] => typeof entry[1] === "string")
+  ).toString()}`;
 
   return (
     <>
@@ -148,7 +156,26 @@ export default async function NotificacoesPage({
                   <td className="px-4 py-3">{formatPtBrDisplay(item.cidade)}</td>
                   <td className="px-4 py-3">{item.lote_nome || item.lote_id || "-"}</td>
                   <td className="px-4 py-3">{item.origem}</td>
-                  <td className="px-4 py-3"><StatusBadge status={item.status} /></td>
+                  <td className="px-4 py-3">
+                    <div className="flex min-w-44 flex-col gap-2">
+                      <StatusBadge status={item.status} />
+                      {canEdit ? (
+                        <div className="flex flex-wrap gap-1">
+                          {STATUS_OPTIONS.map((status) => (
+                            <button
+                              key={status}
+                              type="submit"
+                              form={`status-${item.id}-${status}`}
+                              className="rounded-full border border-line px-2 py-1 text-[11px] font-bold text-edp-muted transition hover:border-edp/50 hover:bg-edp/10 hover:text-edp"
+                              title={`Marcar como ${status}`}
+                            >
+                              {status}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  </td>
                   <td className="px-4 py-3">{item.download_count}</td>
                   <td className="px-4 py-3">{formatDateTime(item.created_date)}</td>
                   <td className="px-4 py-3 text-right">
@@ -162,6 +189,19 @@ export default async function NotificacoesPage({
           </table>
         </div>
       </form>
+
+      {canEdit ? (
+        <div className="hidden">
+          {items.flatMap((item) =>
+            STATUS_OPTIONS.map((status) => (
+              <form key={`${item.id}-${status}`} id={`status-${item.id}-${status}`} action={updateNotificacaoStatus.bind(null, item.id)}>
+                <input type="hidden" name="status" value={status} />
+                <input type="hidden" name="redirect_to" value={redirectTo} />
+              </form>
+            ))
+          )}
+        </div>
+      ) : null}
 
       <div className="mt-4 flex items-center justify-between text-sm">
         <span>Página {page} de {totalPages}</span>

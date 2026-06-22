@@ -64,7 +64,7 @@ model Notificacao {
   pdf_base64              String?
   pdfUrl                  String?
   html_content            String?
-  status                  String    @default("Pendente")
+  status                  String    @default("Notificado")
   observacoes             String?
   retorno_cliente         String?
   anexo_url               String?

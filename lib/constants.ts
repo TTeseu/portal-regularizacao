@@ -1,9 +1,14 @@
 export const STATUS_OPTIONS = [
-  "Pendente",
   "Notificado",
-  "Em Análise",
   "Regularizado",
   "Vencido"
+] as const;
+
+export const LEGACY_NOTIFICADO_STATUSES = [
+  "Notificado",
+  "Pendente",
+  "Em Análise",
+  "Em Analise"
 ] as const;
 
 export const ORIGEM_OPTIONS = ["manual", "importacao"] as const;

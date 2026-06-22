@@ -8,7 +8,7 @@ import { canEdit, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 import { storePdfForNotificacao } from "@/lib/pdf-cache";
-import { CLAUSULA_11_6_3_TEXT } from "@/lib/constants";
+import { CLAUSULA_11_6_3_TEXT, STATUS_OPTIONS } from "@/lib/constants";
 import { notifyAdminsNewAccessRequest } from "@/lib/email";
 import { countActiveAdmins, isSuperAdminEmail } from "@/lib/super-admin";
 import { requireFormattedCNPJ } from "@/lib/cnpj";
@@ -41,6 +41,11 @@ function withFlash(path: string, params: Record<string, string | number | null |
   }
   const nextQuery = search.toString();
   return nextQuery ? `${pathname}?${nextQuery}` : pathname;
+}
+
+function notificacaoStatusValue(formData: FormData) {
+  const status = stringValue(formData, "status");
+  return status && (STATUS_OPTIONS as readonly string[]).includes(status) ? status : "Notificado";
 }
 
 function parseAnexos(formData: FormData) {
@@ -116,7 +121,7 @@ export async function createNotificacao(formData: FormData) {
     prazo_resposta: stringValue(formData, "prazo_resposta"),
     lote_nome: stringValue(formData, "lote_nome"),
     lote_id: stringValue(formData, "lote_id"),
-    status: stringValue(formData, "status") || "Pendente",
+    status: notificacaoStatusValue(formData),
     observacoes: stringValue(formData, "observacoes"),
     retorno_cliente: stringValue(formData, "retorno_cliente"),
     anexo_url: stringValue(formData, "anexo_url"),
@@ -198,7 +203,7 @@ export async function createNotificacoesWizard(formData: FormData) {
       prazo_resposta: prazoDias,
       lote_nome: loteNome,
       lote_id: loteId,
-      status: "Pendente",
+      status: "Notificado",
       origem: "manual"
     };
 
@@ -252,7 +257,7 @@ export async function updateNotificacao(id: string, formData: FormData) {
       prazo_resposta: stringValue(formData, "prazo_resposta"),
       lote_nome: stringValue(formData, "lote_nome"),
       lote_id: stringValue(formData, "lote_id"),
-      status: stringValue(formData, "status") || "Pendente",
+      status: notificacaoStatusValue(formData),
       observacoes: stringValue(formData, "observacoes"),
       retorno_cliente: stringValue(formData, "retorno_cliente"),
       anexo_url: stringValue(formData, "anexo_url"),
@@ -281,6 +286,31 @@ export async function markNotificacao(id: string, field: "visualizada" | "arquiv
   revalidatePath("/regularizacao");
   revalidatePath("/notificacoes");
   revalidatePath(`/notificacoes/${id}`);
+}
+
+export async function updateNotificacaoStatus(id: string, formData: FormData) {
+  await assertCanEdit();
+  const status = notificacaoStatusValue(formData);
+  await prisma.notificacao.update({
+    where: { id },
+    data: { status, updated_date: new Date() }
+  });
+  revalidatePath("/regularizacao");
+  revalidatePath("/notificacoes");
+  revalidatePath(`/notificacoes/${id}`);
+  redirect(withFlash(safeRedirectPath(formData, "/regularizacao"), { success: "salvo" }));
+}
+
+export async function updateLoteNotificacoesStatus(loteIdOrNome: string, formData: FormData) {
+  await assertCanEdit();
+  const status = notificacaoStatusValue(formData);
+  await prisma.notificacao.updateMany({
+    where: { OR: [{ lote_id: loteIdOrNome }, { lote_nome: loteIdOrNome }] },
+    data: { status, updated_date: new Date() }
+  });
+  revalidatePath("/regularizacao");
+  revalidatePath("/notificacoes");
+  redirect(withFlash(safeRedirectPath(formData, "/regularizacao"), { success: "salvo" }));
 }
 
 export async function createEmpresa(formData: FormData) {

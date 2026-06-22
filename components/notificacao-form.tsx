@@ -39,6 +39,11 @@ function value(notificacao: Notificacao | null | undefined, key: keyof Notificac
   return typeof item === "string" || typeof item === "number" ? String(item) : "";
 }
 
+function statusValue(notificacao: Notificacao | null | undefined) {
+  const status = value(notificacao, "status");
+  return (STATUS_OPTIONS as readonly string[]).includes(status) ? status : "Notificado";
+}
+
 export function NotificacaoForm({ notificacao, action, canEdit }: Props) {
   return (
     <form action={action} className="space-y-6">
@@ -64,7 +69,7 @@ export function NotificacaoForm({ notificacao, action, canEdit }: Props) {
             ))}
             <label className="block">
               <span className="label">Status</span>
-              <select className="field mt-1" name="status" defaultValue={value(notificacao, "status") || "Pendente"}>
+              <select className="field mt-1" name="status" defaultValue={statusValue(notificacao)}>
                 {STATUS_OPTIONS.map((status) => (
                   <option key={status} value={status}>{status}</option>
                 ))}
