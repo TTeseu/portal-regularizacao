@@ -208,9 +208,22 @@ function parseMoney(value: string | number | null | undefined) {
 function parseRetroativoMonths(value: string | number | null | undefined) {
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
   const raw = String(value || "").trim();
-  const monthMatch = raw.match(/(\d+(?:[,.]\d+)?)\s*(?:x|mes|meses)/i);
+  const monthMatch = raw.match(/(\d+(?:[,.]\d+)?)\s*(?:x|vez|vezes|mes|meses)/i);
   if (monthMatch) return parseMoney(monthMatch[1]);
   return parseMoney(raw);
+}
+
+function calculateRuleAmount(value: string | number | null | undefined, baseAmount: number, inferSmallMultiplier = false) {
+  if (typeof value === "number") {
+    if (inferSmallMultiplier && value > 0 && value <= 100 && baseAmount > 0) return baseAmount * value;
+    return Number.isFinite(value) ? value : 0;
+  }
+  const raw = String(value || "").trim();
+  const multiplierMatch = raw.match(/(\d+(?:[,.]\d+)?)\s*(?:x|vez|vezes)/i);
+  if (multiplierMatch) return baseAmount * parseMoney(multiplierMatch[1]);
+  const parsed = parseMoney(raw);
+  if (inferSmallMultiplier && parsed > 0 && parsed <= 100 && baseAmount > 0 && !/[R$]/i.test(raw)) return baseAmount * parsed;
+  return parsed;
 }
 
 function formatMoney(value: number) {
@@ -422,9 +435,10 @@ export function NotificaFacilForm({
   const postesPendentes = Math.max(totalPostes - postesRegularizados, 0);
   const percentualRegularizado = totalPostes > 0 ? Math.round((postesRegularizados / totalPostes) * 100) : 0;
   const valorPonto = parseMoney(values.valor_atualizado);
-  const multa = parseMoney(values.multa);
+  const basePontos = valorPonto * totalIds;
+  const multa = calculateRuleAmount(values.multa, basePontos, isEditing);
   const retroativoMeses = parseRetroativoMonths(values.retroativo);
-  const resultado = valorPonto * totalIds * retroativoMeses;
+  const resultado = basePontos * retroativoMeses;
   const valorMulta = multa;
   const contractExpired = isContractExpired(values.vencimento_contrato, values.ano_vencimento_contrato);
   const previewHtml = useMemo(
@@ -498,6 +512,7 @@ export function NotificaFacilForm({
     <form action={action} className="panel overflow-hidden">
       <input type="hidden" name="numero_notificacao" value={previewNumber} />
       <input type="hidden" name="valor_cobrado" value={resultado ? resultado.toFixed(2) : ""} />
+      <input type="hidden" name="multa_calculada" value={multa ? multa.toFixed(2) : ""} />
       <input type="hidden" name="total_ids_identificados" value={totalIds} />
       <input type="hidden" name="quantidade_postes" value={totalPostes || ""} />
       {linkedCensoIds.map((id) => (
@@ -557,14 +572,6 @@ export function NotificaFacilForm({
                   )}
                 </div>
               ) : null}
-            </div>
-          </Section>
-        ) : null}
-
-        {!isEditing ? (
-          <Section title="Prévia da Notificação" description="A prévia aparece desde o início e acompanha os campos preenchidos antes de gerar o PDF.">
-            <div className="overflow-hidden rounded-2xl border border-line bg-white">
-              <iframe className="h-[760px] w-full bg-white" sandbox="" srcDoc={previewHtml} title="Prévia da notificação Notifica Fácil" />
             </div>
           </Section>
         ) : null}
@@ -777,6 +784,14 @@ export function NotificaFacilForm({
             <Checkbox name="pt_notificado" label="PT notificado" defaultChecked={notification?.pt_notificado || false} />
           </div>
         </Section>
+
+        {!isEditing ? (
+          <Section title="Prévia da Notificação" description="Confira o documento completo depois de preencher os dados e antes de gerar o PDF.">
+            <div className="overflow-hidden rounded-2xl border border-line bg-white">
+              <iframe className="h-[760px] w-full bg-white" sandbox="" srcDoc={previewHtml} title="Prévia da notificação Notifica Fácil" />
+            </div>
+          </Section>
+        ) : null}
 
         <div className="flex justify-end">
           <button className="btn-primary px-6" type="submit">

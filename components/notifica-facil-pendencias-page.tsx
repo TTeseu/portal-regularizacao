@@ -6,7 +6,7 @@ import { AutoSearchInput } from "@/components/auto-search-input";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { formatDate, formatDateTime, formatPtBrDisplay } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
-import { markNotificaFacilPtNotificado } from "@/app/(dashboard)/notifica-facil/actions";
+import { markNotificaFacilPtNotificado, unmarkNotificaFacilPtNotificado } from "@/app/(dashboard)/notifica-facil/actions";
 
 type Mode = "ativas" | "historico" | "notificar";
 
@@ -213,6 +213,11 @@ export async function NotificaFacilPendenciasPage({
                       {canEdit && !item.pt_notificado ? (
                         <form action={markNotificaFacilPtNotificado.bind(null, item.id)}>
                           <button className="btn-primary h-9 px-3 text-xs" type="submit">Marcar PT</button>
+                        </form>
+                      ) : null}
+                      {canEdit && mode === "historico" && item.pt_notificado ? (
+                        <form action={unmarkNotificaFacilPtNotificado.bind(null, item.id)}>
+                          <button className="btn-secondary h-9 px-3 text-xs" type="submit">Voltar para aguardando</button>
                         </form>
                       ) : null}
                     </div>

@@ -293,7 +293,7 @@ function formToData(formData: FormData): Prisma.NotificaFacilNotificationUncheck
     texto_24_1: text(formData, "texto_24_1"),
     texto_24_3: text(formData, "texto_24_3"),
     valor_atualizado: numberValue(formData, "valor_atualizado"),
-    multa: numberValue(formData, "multa"),
+    multa: numberValue(formData, "multa_calculada") ?? numberValue(formData, "multa"),
     retroativo: text(formData, "retroativo"),
     enderecos_revelia: parseEnderecos(text(formData, "enderecos_revelia")),
     total_ids_identificados: intValue(formData, "total_ids_identificados"),
@@ -847,4 +847,26 @@ export async function markNotificaFacilPtNotificado(id: string) {
   revalidatePath("/notifica-facil/historico-pendencia-tecnica");
   revalidatePath("/notifica-facil/notificacao-pendencias");
   redirect(withFlash("/notifica-facil/pendencia-tecnica", { success: "salvo" }));
+}
+
+export async function unmarkNotificaFacilPtNotificado(id: string) {
+  const user = await requireUser();
+  if (!canEdit(user)) redirect("/notifica-facil/historico-pendencia-tecnica");
+
+  await prisma.notificaFacilNotification.update({
+    where: { id },
+    data: {
+      pendencia_tecnica: true,
+      pt_notificado: false,
+      pt_data_notificado: null,
+      updated_date: new Date()
+    }
+  });
+
+  await logAction(id, "pendencia_tecnica_reaberta", "PT voltou para aguardando notificação");
+  revalidatePath("/notifica-facil");
+  revalidatePath("/notifica-facil/pendencia-tecnica");
+  revalidatePath("/notifica-facil/historico-pendencia-tecnica");
+  revalidatePath("/notifica-facil/notificacao-pendencias");
+  redirect(withFlash("/notifica-facil/notificacao-pendencias", { success: "salvo" }));
 }

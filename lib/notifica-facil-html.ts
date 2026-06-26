@@ -74,8 +74,19 @@ function moneyNumber(value?: string | number | null) {
 function retroativoMonths(value?: string | number | null) {
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
   const raw = String(value || "").trim();
-  const monthMatch = raw.match(/(\d+(?:[,.]\d+)?)\s*(?:x|mes|meses)/i);
+  const monthMatch = raw.match(/(\d+(?:[,.]\d+)?)\s*(?:x|vez|vezes|mes|meses)/i);
   return numberFromText(monthMatch?.[1] || raw);
+}
+
+function ruleAmount(value: string | number | null | undefined, baseAmount: number) {
+  if (typeof value === "number") {
+    if (value > 0 && value <= 100 && baseAmount > 0) return value * baseAmount;
+    return Number.isFinite(value) ? value : 0;
+  }
+  const raw = String(value || "").trim();
+  const multiplierMatch = raw.match(/(\d+(?:[,.]\d+)?)\s*(?:x|vez|vezes)/i);
+  if (multiplierMatch) return (numberFromText(multiplierMatch[1]) || 0) * baseAmount;
+  return numberFromText(raw) || 0;
 }
 
 function retroativoCalculado(notification: NotificaFacilNotification) {
@@ -85,6 +96,12 @@ function retroativoCalculado(notification: NotificaFacilNotification) {
   const calculated = postes * valorPonto * meses;
   if (calculated > 0) return calculated;
   return numberFromText(notification.valor_cobrado) || 0;
+}
+
+function multaCalculada(notification: NotificaFacilNotification) {
+  const postes = notification.quantidade_postes || notification.total_ids_identificados || 0;
+  const valorPonto = numberFromText(notification.valor_atualizado) || 0;
+  return ruleAmount(notification.multa, postes * valorPonto);
 }
 
 function addressRows(notification: NotificaFacilNotification) {
@@ -160,7 +177,7 @@ export function buildNotificaFacilHtml(notification: NotificaFacilNotification) 
     "{{TEXTO_23_3}}": textBlock(notification.texto_23_3),
     "{{TEXTO_24_1}}": textBlock(notification.texto_24_1),
     "{{TEXTO_24_3}}": textBlock(notification.texto_24_3),
-    "{{VALOR_MULTA}}": moneyNumber(notification.multa),
+    "{{VALOR_MULTA}}": moneyNumber(multaCalculada(notification)),
     "{{VALOR_RETROATIVO_CALCULADO}}": moneyNumber(retroativoCalculado(notification)),
     "{{R1_MARKER}}": '<span class="r1-marker" style="color:#fff;font-size:1px;line-height:0;">R1</span>'
   };
