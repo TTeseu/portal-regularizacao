@@ -1,7 +1,8 @@
-import type { Notificacao } from "@prisma/client";
+import type { NotificaFacilNotification, Notificacao } from "@prisma/client";
 import JSZip from "jszip";
 import { ensurePdfForNotificacao } from "@/lib/pdf-cache";
-import { regularizacaoPdfFilename } from "@/lib/download-filename";
+import { ensurePdfForNotificaFacil } from "@/lib/notifica-facil-pdf-cache";
+import { notificaFacilPdfFilename, regularizacaoPdfFilename } from "@/lib/download-filename";
 
 function toArrayBuffer(bytes: Uint8Array) {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
@@ -14,6 +15,22 @@ export async function buildPdfZip(notificacoes: Notificacao[]) {
     const notificacao = notificacoes[index];
     const cachedPdf = await ensurePdfForNotificacao(notificacao);
     zip.file(`${String(index + 1).padStart(3, "0")} - ${regularizacaoPdfFilename(notificacao)}`, toArrayBuffer(cachedPdf.bytes));
+  }
+
+  return zip.generateAsync({
+    type: "uint8array",
+    compression: "DEFLATE",
+    compressionOptions: { level: 6 }
+  });
+}
+
+export async function buildNotificaFacilPdfZip(notificacoes: NotificaFacilNotification[]) {
+  const zip = new JSZip();
+
+  for (let index = 0; index < notificacoes.length; index += 1) {
+    const notificacao = notificacoes[index];
+    const cachedPdf = await ensurePdfForNotificaFacil(notificacao);
+    zip.file(`${String(index + 1).padStart(3, "0")} - ${notificaFacilPdfFilename(notificacao)}`, toArrayBuffer(cachedPdf.bytes));
   }
 
   return zip.generateAsync({
