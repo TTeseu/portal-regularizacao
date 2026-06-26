@@ -689,12 +689,13 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
   const prazoDias = text(formData, "prazo_dias");
   const enderecos = parseEnderecosWizard(formData);
   const createdIds: string[] = [];
+  const sharedNotificationNumber = numeroOficio || await prisma.$transaction((tx) =>
+    generateNextNotificationNumber(tx, yearFromDateText(dataNotificacao))
+  );
 
   for (const empresa of empresas) {
     const id = randomUUID();
-    const notificationNumber = numeroOficio || await prisma.$transaction((tx) =>
-      generateNextNotificationNumber(tx, yearFromDateText(dataNotificacao))
-    );
+    const notificationNumber = sharedNotificationNumber;
 
     const data: Prisma.NotificaFacilNotificationUncheckedCreateInput = {
       id,
@@ -710,6 +711,8 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       status: "Aguardando assinatura Gestor",
       pendencia_tecnica: true,
       pt_notificado: false,
+      lote_nome: loteNome,
+      lote_id: loteId,
       status_envio_notificacao: empresa.status_envio_notificacao,
       vencimento_contrato: empresa.vencimento_contrato,
       ano_vencimento_contrato: empresa.ano_vencimento_contrato,

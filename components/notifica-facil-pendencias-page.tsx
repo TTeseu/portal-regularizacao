@@ -79,12 +79,13 @@ export async function NotificaFacilPendenciasPage({
   exportQuery.set("tipo", mode === "historico" ? "historico-pendencia-tecnica" : "pendencia-tecnica");
   if (q) exportQuery.set("q", q);
 
-  const [items, total, aguardando, notificados, comData, logs] = await Promise.all([
+  const [items, filteredTotal, total, aguardando, notificados, comData, logs] = await Promise.all([
     prisma.notificaFacilNotification.findMany({
       where,
       orderBy: [{ updated_date: "desc" }, { created_date: "desc" }],
-      take: 150
+      take: 1000
     }),
+    prisma.notificaFacilNotification.count({ where }),
     prisma.notificaFacilNotification.count({ where: pendenciaWhere }),
     prisma.notificaFacilNotification.count({ where: mergeWhere(pendenciaWhere, { pt_notificado: false }) }),
     prisma.notificaFacilNotification.count({ where: mergeWhere(pendenciaWhere, { pt_notificado: true }) }),
@@ -172,6 +173,9 @@ export async function NotificaFacilPendenciasPage({
             {mode === "notificar" ? "Registros pendentes de marcação PT notificado." : "Registros normalizados da base Base44 do Notifica Fácil."}
           </p>
         </div>
+        <div className="px-6 pt-4 text-xs font-semibold text-edp">
+          Mostrando {items.length} de {filteredTotal} registro(s) do filtro atual.
+        </div>
         <div className="table-scroll">
           <table className="w-full min-w-[1080px] text-left text-sm">
             <thead>
@@ -193,6 +197,11 @@ export async function NotificaFacilPendenciasPage({
                       {item.numero_notificacao || item.numero_protocolo || item.id}
                     </Link>
                     <div className="mt-1 text-xs text-edp-muted">{formatDate(item.updated_date)}</div>
+                    {item.lote_nome || item.lote_id ? (
+                      <div className="mt-2 inline-flex rounded-full border border-edp/25 bg-edp/10 px-2 py-1 text-[11px] font-bold text-edp">
+                        Lote: {item.lote_nome || item.lote_id}
+                      </div>
+                    ) : null}
                   </td>
                   <td className="px-5 py-4 text-white">{item.empresa}</td>
                   <td className="px-5 py-4 text-edp-muted">{item.numero_registro_censo || "-"}</td>

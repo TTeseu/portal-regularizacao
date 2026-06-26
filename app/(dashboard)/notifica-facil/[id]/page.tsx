@@ -102,6 +102,7 @@ export default async function NotificaFacilDetailPage({
             <h2 className="mb-3 font-bold text-white">Resumo operacional</h2>
             <dl className="space-y-3 text-sm">
               <Row label="Protocolo" value={notification.numero_protocolo} />
+              <Row label="Lote" value={notification.lote_nome || notification.lote_id} />
               <Row label="Contrato" value={notification.contrato_numero} />
               <Row label="CNPJ" value={formatCNPJDisplay(notification.cnpj)} />
               <Row label="Cidade" value={notificaFacilAddressCity(notification.enderecos_revelia, notification.empresa_cidade)} />

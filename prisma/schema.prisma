@@ -266,6 +266,8 @@ model NotificaFacilNotification {
   pendencia_tecnica             Boolean   @default(false)
   pt_notificado                 Boolean   @default(false)
   pt_data_notificado            String?
+  lote_nome                     String?
+  lote_id                       String?
   pdf_url                       String?
   pdf_base64                    String?
   html_content                  String?
@@ -321,6 +323,8 @@ model NotificaFacilNotification {
   @@index([is_draft])
   @@index([is_standby])
   @@index([pendencia_tecnica])
+  @@index([lote_id])
+  @@index([lote_nome])
   @@index([created_date])
 }
 
