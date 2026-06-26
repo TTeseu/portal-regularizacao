@@ -61,6 +61,13 @@ function currentWhere(mode: Mode, query: string) {
   return filters.length === 1 ? filters[0] : { AND: filters };
 }
 
+function loteDisplayName(item?: PendenciaItem) {
+  if (!item) return "Lote sem identificador";
+  const numero = item.numero_notificacao || item.numero_registro_censo || item.lote_id || item.lote_nome || item.id;
+  const data = formatDate(item.data_notificacao || item.updated_date || item.created_date);
+  return `${numero} - ${data}`;
+}
+
 function groupGeneratedLotes(items: PendenciaItem[]) {
   const lotes = new Map<string, PendenciaItem[]>();
   const individuais: PendenciaItem[] = [];
@@ -77,7 +84,7 @@ function groupGeneratedLotes(items: PendenciaItem[]) {
   return {
     lotes: Array.from(lotes.entries()).map(([loteId, rows]) => ({
       loteId,
-      nome: rows[0]?.lote_nome || loteId,
+      nome: loteDisplayName(rows[0]),
       rows,
       created_date: rows[0]?.created_date,
       last_downloaded_at: rows.find((row) => row.last_downloaded_at)?.last_downloaded_at,

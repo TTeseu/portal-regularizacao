@@ -3,6 +3,7 @@ import { canAccessPortal, getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildNotificaFacilPdfZip, zipResponse } from "@/lib/pdf-bundle";
 import { safeDownloadFilename } from "@/lib/download-filename";
+import { formatDate } from "@/lib/format";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -38,7 +39,9 @@ export async function GET(
     });
 
     const zip = await buildNotificaFacilPdfZip(notificacoes);
-    const loteNome = notificacoes[0]?.lote_nome || decodedLoteId;
+    const first = notificacoes[0];
+    const numero = first?.numero_notificacao || first?.numero_registro_censo || first?.lote_id || decodedLoteId;
+    const loteNome = `${numero} - ${formatDate(first?.data_notificacao || first?.updated_date || first?.created_date)}`;
 
     return zipResponse(zip, `${safeDownloadFilename(`notifica-facil-lote-${loteNome}`)}.zip`);
   } catch (error) {
