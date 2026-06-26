@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { AutoSearchInput } from "@/components/auto-search-input";
-import { formatDate, formatPtBrDisplay } from "@/lib/format";
+import { formatDate } from "@/lib/format";
+import { notificaFacilAddressCity } from "@/lib/notifica-facil-address";
 import { prisma } from "@/lib/prisma";
 import { cnpjSearchTerm } from "@/lib/cnpj";
 
@@ -268,7 +269,7 @@ export default async function NotificaFacilPage({
                       </td>
                       <td className="px-5 py-4 text-white">{item.empresa}</td>
                       <td className="px-5 py-4 text-edp-muted">{item.contrato_numero || "-"}</td>
-                      <td className="px-5 py-4 text-edp-muted">{formatPtBrDisplay(item.empresa_cidade)}</td>
+                      <td className="px-5 py-4 text-edp-muted">{notificaFacilAddressCity(item.enderecos_revelia, item.empresa_cidade)}</td>
                       <td className="px-5 py-4"><StatusBadge status={item.status} /></td>
                       <td className="px-5 py-4">
                         <div className="flex flex-wrap gap-2">

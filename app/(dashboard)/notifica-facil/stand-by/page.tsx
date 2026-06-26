@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ArrowLeft, Clock3, FileText } from "lucide-react";
 import { Prisma } from "@prisma/client";
 import { AutoSearchInput } from "@/components/auto-search-input";
-import { formatDate, formatPtBrDisplay } from "@/lib/format";
+import { formatDate } from "@/lib/format";
+import { notificaFacilAddressCity } from "@/lib/notifica-facil-address";
 import { prisma } from "@/lib/prisma";
 
 function buildWhere(params: Record<string, string | undefined>) {
@@ -122,7 +123,7 @@ export default async function StandByPage({
                   </td>
                   <td className="px-5 py-4 text-white">{item.empresa}</td>
                   <td className="px-5 py-4 text-edp-muted">{item.numero_registro_censo || "-"}</td>
-                  <td className="px-5 py-4 text-edp-muted">{formatPtBrDisplay(item.empresa_cidade)}</td>
+                  <td className="px-5 py-4 text-edp-muted">{notificaFacilAddressCity(item.enderecos_revelia, item.empresa_cidade)}</td>
                   <td className="px-5 py-4 text-edp-muted">{formatDate(item.updated_date || item.created_date)}</td>
                   <td className="px-5 py-4">
                     <div className="flex flex-wrap gap-2">

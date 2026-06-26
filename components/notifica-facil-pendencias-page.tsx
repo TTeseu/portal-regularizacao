@@ -4,7 +4,8 @@ import { AlertTriangle, ArrowLeft, Bell, CheckCircle2, Clock3, Download, FileTex
 import { Prisma } from "@prisma/client";
 import { AutoSearchInput } from "@/components/auto-search-input";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
-import { formatDate, formatDateTime, formatPtBrDisplay } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
+import { notificaFacilAddressCity } from "@/lib/notifica-facil-address";
 import { prisma } from "@/lib/prisma";
 import { markNotificaFacilPtNotificado, unmarkNotificaFacilPtNotificado } from "@/app/(dashboard)/notifica-facil/actions";
 
@@ -195,7 +196,7 @@ export async function NotificaFacilPendenciasPage({
                   </td>
                   <td className="px-5 py-4 text-white">{item.empresa}</td>
                   <td className="px-5 py-4 text-edp-muted">{item.numero_registro_censo || "-"}</td>
-                  <td className="px-5 py-4 text-edp-muted">{formatPtBrDisplay(item.empresa_cidade)}</td>
+                  <td className="px-5 py-4 text-edp-muted">{notificaFacilAddressCity(item.enderecos_revelia, item.empresa_cidade)}</td>
                   <td className="px-5 py-4"><StatusBadge value={item.status} /></td>
                   <td className="px-5 py-4">
                     <div className="space-y-1">

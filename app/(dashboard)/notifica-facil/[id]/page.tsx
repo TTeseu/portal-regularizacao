@@ -8,7 +8,8 @@ import { canEdit, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildNotificaFacilHtml, sanitizeNotificaFacilHtml } from "@/lib/notifica-facil-html";
 import { NotificaFacilForm } from "@/components/notifica-facil-form";
-import { formatDateTime, formatPtBrDisplay } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
+import { notificaFacilAddressCity } from "@/lib/notifica-facil-address";
 import { deleteNotificaFacilNotification, updateNotificaFacilNotification } from "../actions";
 import { formatCNPJDisplay } from "@/lib/cnpj";
 
@@ -103,7 +104,7 @@ export default async function NotificaFacilDetailPage({
               <Row label="Protocolo" value={notification.numero_protocolo} />
               <Row label="Contrato" value={notification.contrato_numero} />
               <Row label="CNPJ" value={formatCNPJDisplay(notification.cnpj)} />
-              <Row label="Cidade" value={formatPtBrDisplay(notification.empresa_cidade)} />
+              <Row label="Cidade" value={notificaFacilAddressCity(notification.enderecos_revelia, notification.empresa_cidade)} />
               <Row label="Ordem venda" value={notification.ordem_venda} />
               <Row label="Pendência técnica" value={notification.pendencia_tecnica ? "Sim" : "Não"} />
               <Row label="Poste" value={notification.numero_poste} />
