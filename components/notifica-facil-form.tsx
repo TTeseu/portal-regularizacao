@@ -38,6 +38,7 @@ export type NotificaFacilCompanyOption = {
   texto_24_3: string | null;
   valor_atualizado: string | null;
   multa: string | null;
+  faturamento_mensal: string | null;
   retroativo: string | null;
 };
 
@@ -76,6 +77,7 @@ type FormValues = {
   texto_24_3: string;
   valor_atualizado: string;
   multa: string;
+  faturamento_mensal: string;
   retroativo: string;
   enderecos_revelia: string;
   quantidade_postes: string;
@@ -226,6 +228,24 @@ function calculateRuleAmount(value: string | number | null | undefined, baseAmou
   return parsed;
 }
 
+function normalizeCompanyName(value: string | null | undefined) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function isVelloCompany(value: string | null | undefined) {
+  const normalized = normalizeCompanyName(value);
+  return normalized.includes("vello");
+}
+
+function calculateMultaAmount(values: FormValues, baseAmount: number, inferSmallMultiplier = false) {
+  const faturamentoMensal = parseMoney(values.faturamento_mensal);
+  if (isVelloCompany(values.empresa) && faturamentoMensal > 0) return faturamentoMensal * 0.1;
+  return calculateRuleAmount(values.multa, baseAmount, inferSmallMultiplier);
+}
+
 function formatMoney(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
@@ -325,7 +345,7 @@ function isContractExpired(value: string, year: string) {
   return Number.isFinite(parsedYear) && parsedYear < new Date().getFullYear();
 }
 
-function initialValues(notification?: NotificaFacilNotification | null, nextNumero?: string): FormValues {
+function initialValues(notification?: NotificaFacilNotification | null, nextNumero?: string, faturamentoMensal = ""): FormValues {
   const date = normalizeDateForInput(notification?.data_notificacao) || todayIso();
   return {
     empresa: notification?.empresa || "",
@@ -362,6 +382,7 @@ function initialValues(notification?: NotificaFacilNotification | null, nextNume
     texto_24_3: notification?.texto_24_3 || "",
     valor_atualizado: notification?.valor_atualizado?.toString() || "",
     multa: notification?.multa?.toString() || "",
+    faturamento_mensal: faturamentoMensal,
     retroativo: notification?.retroativo || "",
     enderecos_revelia: addressJsonLines(notification?.enderecos_revelia),
     quantidade_postes: notification?.quantidade_postes?.toString() || "",
@@ -380,7 +401,8 @@ export function NotificaFacilForm({
   nextNumero = "",
   nextByYear = {},
   templateHtml = "",
-  linkedCensoIds = []
+  linkedCensoIds = [],
+  companyFaturamentoMensal = ""
 }: {
   notification?: NotificaFacilNotification | null;
   action: (formData: FormData) => void | Promise<void>;
@@ -390,9 +412,10 @@ export function NotificaFacilForm({
   nextByYear?: Record<string, number>;
   templateHtml?: string;
   linkedCensoIds?: string[];
+  companyFaturamentoMensal?: string;
 }) {
-  const [values, setValues] = useState(() => initialValues(notification, nextNumero));
-  const [addressRows, setAddressRows] = useState(() => parseAddressInput(initialValues(notification, nextNumero).enderecos_revelia));
+  const [values, setValues] = useState(() => initialValues(notification, nextNumero, companyFaturamentoMensal));
+  const [addressRows, setAddressRows] = useState(() => parseAddressInput(initialValues(notification, nextNumero, companyFaturamentoMensal).enderecos_revelia));
   const [companyQuery, setCompanyQuery] = useState(notification?.empresa || "");
   const [showCompanyResults, setShowCompanyResults] = useState(false);
   const [cnpjInvalid, setCnpjInvalid] = useState(false);
@@ -436,7 +459,7 @@ export function NotificaFacilForm({
   const percentualRegularizado = totalPostes > 0 ? Math.round((postesRegularizados / totalPostes) * 100) : 0;
   const valorPonto = parseMoney(values.valor_atualizado);
   const basePontos = valorPonto * totalIds;
-  const multa = calculateRuleAmount(values.multa, basePontos, isEditing);
+  const multa = calculateMultaAmount(values, basePontos, isEditing);
   const retroativoMeses = parseRetroativoMonths(values.retroativo);
   const resultado = basePontos * retroativoMeses;
   const valorMulta = multa;
@@ -504,6 +527,7 @@ export function NotificaFacilForm({
       texto_24_3: company.texto_24_3 || "",
       valor_atualizado: company.valor_atualizado || "",
       multa: company.multa || "",
+      faturamento_mensal: company.faturamento_mensal || "",
       retroativo: company.retroativo || ""
     }));
   }
@@ -513,6 +537,7 @@ export function NotificaFacilForm({
       <input type="hidden" name="numero_notificacao" value={previewNumber} />
       <input type="hidden" name="valor_cobrado" value={resultado ? resultado.toFixed(2) : ""} />
       <input type="hidden" name="multa_calculada" value={multa ? multa.toFixed(2) : ""} />
+      <input type="hidden" name="faturamento_mensal" value={values.faturamento_mensal} />
       <input type="hidden" name="total_ids_identificados" value={totalIds} />
       <input type="hidden" name="quantidade_postes" value={totalPostes || ""} />
       {linkedCensoIds.map((id) => (
@@ -752,6 +777,9 @@ export function NotificaFacilForm({
             <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-1">
               <Input label="Valor do Ponto" name="valor_atualizado" value={values.valor_atualizado} onChange={(value) => setField("valor_atualizado", value)} />
               <Input label="Multa" name="multa" value={values.multa} onChange={(value) => setField("multa", value)} />
+              {isVelloCompany(values.empresa) ? (
+                <Input label="Faturamento mensal (Vello)" name="faturamento_mensal" value={values.faturamento_mensal} onChange={(value) => setField("faturamento_mensal", value)} />
+              ) : null}
               <Input label="Retroativo" name="retroativo" value={values.retroativo} onChange={(value) => setField("retroativo", value)} />
             </div>
           </div>

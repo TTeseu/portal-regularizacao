@@ -125,6 +125,7 @@ export default async function NovaNotificaFacilPage({
         texto_24_3: true,
         valor_atualizado: true,
         multa: true,
+        faturamento_mensal: true,
         retroativo: true
       }
     }),
@@ -178,6 +179,7 @@ export default async function NovaNotificaFacilPage({
     texto_24_3: empresa.texto_24_3,
     valor_atualizado: empresa.valor_atualizado,
     multa: empresa.multa,
+    faturamento_mensal: empresa.faturamento_mensal,
     retroativo: empresa.retroativo
   }));
   const selectedCensoCompany = selectedCenso[0]?.empresa || "";
@@ -213,6 +215,7 @@ export default async function NovaNotificaFacilPage({
         texto_24_3: baseCompany?.texto_24_3 || null,
         valor_atualizado: baseCompany?.valor_atualizado || null,
         multa: baseCompany?.multa || null,
+        faturamento_mensal: baseCompany?.faturamento_mensal || null,
         retroativo: baseCompany?.retroativo || null,
         enderecos_revelia: groupedCensoAddresses
       }
@@ -239,6 +242,7 @@ export default async function NovaNotificaFacilPage({
         nextByYear={nextByYearObject}
         templateHtml={templateHtml}
         linkedCensoIds={linkedCensoIds}
+        companyFaturamentoMensal={baseCompany?.faturamento_mensal || ""}
       />
     </div>
   );

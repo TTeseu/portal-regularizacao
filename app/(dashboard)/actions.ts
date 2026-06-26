@@ -345,6 +345,7 @@ export async function createEmpresa(formData: FormData) {
       texto_24_3: stringValue(formData, "texto_24_3"),
       valor_atualizado: stringValue(formData, "valor_atualizado"),
       multa: stringValue(formData, "multa"),
+      faturamento_mensal: stringValue(formData, "faturamento_mensal"),
       retroativo: stringValue(formData, "retroativo"),
       tem_clausula_11_6_3: boolValue(formData, "tem_clausula_11_6_3"),
       campo_11_6_3: stringValue(formData, "campo_11_6_3")
@@ -383,6 +384,7 @@ export async function updateEmpresa(id: string, formData: FormData) {
       texto_24_3: stringValue(formData, "texto_24_3"),
       valor_atualizado: stringValue(formData, "valor_atualizado"),
       multa: stringValue(formData, "multa"),
+      faturamento_mensal: stringValue(formData, "faturamento_mensal"),
       retroativo: stringValue(formData, "retroativo"),
       tem_clausula_11_6_3: boolValue(formData, "tem_clausula_11_6_3"),
       campo_11_6_3: stringValue(formData, "campo_11_6_3")

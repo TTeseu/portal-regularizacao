@@ -121,6 +121,7 @@ model Empresa {
   texto_24_3            String?
   valor_atualizado      String?
   multa                 String?
+  faturamento_mensal    String?
   retroativo            String?
   tem_clausula_11_6_3   Boolean   @default(false)
   campo_11_6_3          String?

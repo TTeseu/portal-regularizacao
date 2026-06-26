@@ -33,6 +33,7 @@ const basicFields: Array<[keyof Empresa, string, boolean?]> = [
   ["empresa_incorporada", "Empresa incorporada"],
   ["valor_atualizado", "Valor atualizado"],
   ["multa", "Multa"],
+  ["faturamento_mensal", "Faturamento mensal (Vello)"],
   ["retroativo", "Retroativo"]
 ];
 

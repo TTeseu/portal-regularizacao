@@ -3,6 +3,7 @@ import { join } from "node:path";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Download, ExternalLink, FileText, ImageIcon, Trash2 } from "lucide-react";
+import type { Prisma } from "@prisma/client";
 import { canEdit, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildNotificaFacilHtml, sanitizeNotificaFacilHtml } from "@/lib/notifica-facil-html";
@@ -30,6 +31,16 @@ export default async function NotificaFacilDetailPage({
   ]);
 
   if (!notification) notFound();
+  const empresaFilters: Prisma.EmpresaWhereInput[] = [];
+  if (notification.empresa) empresaFilters.push({ nome: { equals: notification.empresa, mode: "insensitive" } });
+  if (notification.contrato_numero) empresaFilters.push({ contrato_numero: notification.contrato_numero });
+  if (notification.cnpj) empresaFilters.push({ cnpj: formatCNPJDisplay(notification.cnpj) });
+  const empresaFinanceira = empresaFilters.length
+    ? await prisma.empresa.findFirst({
+        where: { OR: empresaFilters },
+        select: { faturamento_mensal: true }
+      })
+    : null;
   const mayEdit = canEdit(user);
   const html = sanitizeNotificaFacilHtml(notification.html_content || buildNotificaFacilHtml(notification));
   const backHref = getSafeBackHref(query?.from, notification);
@@ -132,6 +143,7 @@ export default async function NotificaFacilDetailPage({
         action={updateNotificaFacilNotification.bind(null, notification.id)}
         canEdit={mayEdit}
         templateHtml={templateHtml}
+        companyFaturamentoMensal={empresaFinanceira?.faturamento_mensal || ""}
       />
     </div>
   );

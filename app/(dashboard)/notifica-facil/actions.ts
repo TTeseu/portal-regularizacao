@@ -51,6 +51,37 @@ function numberFromText(value: string | number | null | undefined) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function normalizeCompanyName(value: string | null | undefined) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function isVelloCompany(value: string | null | undefined) {
+  return normalizeCompanyName(value).includes("vello");
+}
+
+function ruleAmountFromText(value: string | number | null | undefined, baseAmount: number) {
+  if (typeof value === "number") {
+    if (value > 0 && value <= 100 && baseAmount > 0) return value * baseAmount;
+    return Number.isFinite(value) ? value : 0;
+  }
+  const raw = String(value || "").trim();
+  const multiplierMatch = raw.match(/(\d+(?:[,.]\d+)?)\s*(?:x|vez|vezes)/i);
+  if (multiplierMatch) return (numberFromText(multiplierMatch[1]) || 0) * baseAmount;
+  const parsed = numberFromText(raw) || 0;
+  if (parsed > 0 && parsed <= 100 && baseAmount > 0 && !/[R$]/i.test(raw)) return parsed * baseAmount;
+  return parsed;
+}
+
+function multaFromEmpresa(empresa: { nome?: string | null; multa?: string | null; faturamento_mensal?: string | null; valor_atualizado?: string | null }, totalPostes: number) {
+  const faturamentoMensal = numberFromText(empresa.faturamento_mensal);
+  if (isVelloCompany(empresa.nome) && faturamentoMensal && faturamentoMensal > 0) return faturamentoMensal * 0.1;
+  const valorPonto = numberFromText(empresa.valor_atualizado) || 0;
+  return ruleAmountFromText(empresa.multa, valorPonto * totalPostes);
+}
+
 function intValue(formData: FormData, key: string) {
   const raw = String(formData.get(key) || "").trim();
   if (!raw) return null;
@@ -699,7 +730,7 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       texto_24_1: empresa.texto_24_1,
       texto_24_3: empresa.texto_24_3,
       valor_atualizado: numberFromText(empresa.valor_atualizado),
-      multa: numberFromText(empresa.multa),
+      multa: multaFromEmpresa(empresa, enderecos.count),
       retroativo: empresa.retroativo,
       enderecos_revelia: enderecos.jsonArray,
       total_ids_identificados: enderecos.count,
