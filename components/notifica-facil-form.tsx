@@ -205,6 +205,14 @@ function parseMoney(value: string | number | null | undefined) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function parseRetroativoMonths(value: string | number | null | undefined) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  const raw = String(value || "").trim();
+  const monthMatch = raw.match(/(\d+(?:[,.]\d+)?)\s*(?:x|mes|meses)/i);
+  if (monthMatch) return parseMoney(monthMatch[1]);
+  return parseMoney(raw);
+}
+
 function formatMoney(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
@@ -268,7 +276,7 @@ function replaceAddressTable(template: string, rows: string) {
   );
 }
 
-function buildPreviewHtml(templateHtml: string, values: FormValues, previewNumber: string, mostrarCelebradoEm: boolean, valorMulta: number) {
+function buildPreviewHtml(templateHtml: string, values: FormValues, previewNumber: string, mostrarCelebradoEm: boolean, multa: number, retroativoCalculado: number) {
   let html = templateHtml || "<html><body><p>Template não encontrado.</p></body></html>";
   if (!mostrarCelebradoEm) html = html.replace(/, celebrado em \{\{CELEBRADO_EM\}\},/g, ",");
   html = replaceAddressTable(html, previewAddressRows(values));
@@ -289,8 +297,8 @@ function buildPreviewHtml(templateHtml: string, values: FormValues, previewNumbe
     "{{TEXTO_23_3}}": textBlock(values.texto_23_3),
     "{{TEXTO_24_1}}": textBlock(values.texto_24_1),
     "{{TEXTO_24_3}}": textBlock(values.texto_24_3),
-    "{{VALOR_MULTA}}": plainMoney(valorMulta),
-    "{{VALOR_RETROATIVO_CALCULADO}}": escapeHtml(values.retroativo || "0,00"),
+    "{{VALOR_MULTA}}": plainMoney(multa),
+    "{{VALOR_RETROATIVO_CALCULADO}}": plainMoney(retroativoCalculado),
     "{{R1_MARKER}}": '<span class="r1-marker">R1</span>'
   };
   for (const [placeholder, value] of Object.entries(replacements)) html = html.replaceAll(placeholder, value);
@@ -415,13 +423,13 @@ export function NotificaFacilForm({
   const percentualRegularizado = totalPostes > 0 ? Math.round((postesRegularizados / totalPostes) * 100) : 0;
   const valorPonto = parseMoney(values.valor_atualizado);
   const multa = parseMoney(values.multa);
-  const retroativo = parseMoney(values.retroativo);
-  const resultado = valorPonto * totalIds;
-  const valorMulta = resultado + multa + retroativo;
+  const retroativoMeses = parseRetroativoMonths(values.retroativo);
+  const resultado = valorPonto * totalIds * retroativoMeses;
+  const valorMulta = multa;
   const contractExpired = isContractExpired(values.vencimento_contrato, values.ano_vencimento_contrato);
   const previewHtml = useMemo(
-    () => buildPreviewHtml(templateHtml, values, previewNumber, mostrarCelebradoEm, valorMulta),
-    [templateHtml, values, previewNumber, mostrarCelebradoEm, valorMulta]
+    () => buildPreviewHtml(templateHtml, values, previewNumber, mostrarCelebradoEm, multa, resultado),
+    [templateHtml, values, previewNumber, mostrarCelebradoEm, multa, resultado]
   );
 
   function setField(field: keyof FormValues, value: string) {
@@ -489,7 +497,7 @@ export function NotificaFacilForm({
   return (
     <form action={action} className="panel overflow-hidden">
       <input type="hidden" name="numero_notificacao" value={previewNumber} />
-      <input type="hidden" name="valor_cobrado" value={valorMulta ? valorMulta.toFixed(2) : ""} />
+      <input type="hidden" name="valor_cobrado" value={resultado ? resultado.toFixed(2) : ""} />
       <input type="hidden" name="total_ids_identificados" value={totalIds} />
       <input type="hidden" name="quantidade_postes" value={totalPostes || ""} />
       {linkedCensoIds.map((id) => (

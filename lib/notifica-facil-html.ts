@@ -71,6 +71,22 @@ function moneyNumber(value?: string | number | null) {
   }).format(parsed);
 }
 
+function retroativoMonths(value?: string | number | null) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  const raw = String(value || "").trim();
+  const monthMatch = raw.match(/(\d+(?:[,.]\d+)?)\s*(?:x|mes|meses)/i);
+  return numberFromText(monthMatch?.[1] || raw);
+}
+
+function retroativoCalculado(notification: NotificaFacilNotification) {
+  const postes = notification.quantidade_postes || notification.total_ids_identificados || 0;
+  const valorPonto = numberFromText(notification.valor_atualizado) || 0;
+  const meses = retroativoMonths(notification.retroativo) || 0;
+  const calculated = postes * valorPonto * meses;
+  if (calculated > 0) return calculated;
+  return numberFromText(notification.valor_cobrado) || 0;
+}
+
 function addressRows(notification: NotificaFacilNotification) {
   const rows = Array.isArray(notification.enderecos_revelia) ? notification.enderecos_revelia : [];
   const normalized = rows
@@ -144,8 +160,8 @@ export function buildNotificaFacilHtml(notification: NotificaFacilNotification) 
     "{{TEXTO_23_3}}": textBlock(notification.texto_23_3),
     "{{TEXTO_24_1}}": textBlock(notification.texto_24_1),
     "{{TEXTO_24_3}}": textBlock(notification.texto_24_3),
-    "{{VALOR_MULTA}}": moneyNumber(notification.valor_cobrado ?? notification.multa),
-    "{{VALOR_RETROATIVO_CALCULADO}}": text(notification.retroativo || moneyNumber(0)),
+    "{{VALOR_MULTA}}": moneyNumber(notification.multa),
+    "{{VALOR_RETROATIVO_CALCULADO}}": moneyNumber(retroativoCalculado(notification)),
     "{{R1_MARKER}}": '<span class="r1-marker" style="color:#fff;font-size:1px;line-height:0;">R1</span>'
   };
 

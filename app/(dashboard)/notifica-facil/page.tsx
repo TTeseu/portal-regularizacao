@@ -121,7 +121,7 @@ export default async function NotificaFacilPage({
       _count: { empresa: true }
     }),
     prisma.notificaFacilNotification.count({ where: combineWhere([metricWhere, { data_email_encaminhado: { not: null } }]) }),
-    prisma.notificaFacilNotification.aggregate({ where: metricWhere, _sum: { valor_atualizado: true } }),
+    prisma.notificaFacilNotification.aggregate({ where: metricWhere, _sum: { valor_cobrado: true } }),
     prisma.notificaFacilNotification.aggregate({ where: metricWhere, _sum: { multa: true } }),
     prisma.notificaFacilNotification.aggregate({ where: metricWhere, _sum: { total_ids_identificados: true } }),
     prisma.notificaFacilNotification.aggregate({
@@ -131,7 +131,7 @@ export default async function NotificaFacilPage({
   ]);
 
   const total = DASHBOARD_BASELINE.totalNotificacoes + novasNotificacoes;
-  const totalRetroativo = DASHBOARD_BASELINE.totalRetroativo + (novoValorAgg._sum.valor_atualizado || 0);
+  const totalRetroativo = DASHBOARD_BASELINE.totalRetroativo + (novoValorAgg._sum.valor_cobrado || 0);
   const totalMultas = DASHBOARD_BASELINE.totalMultas + (novaMultaAgg._sum.multa || 0);
   const multaMaisRetroativo = totalRetroativo + totalMultas;
   const novosPontosRegularizados = novosRegularizadosAgg._sum.total_ids_identificados || 0;
