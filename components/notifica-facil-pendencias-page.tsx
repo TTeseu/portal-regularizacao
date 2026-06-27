@@ -7,9 +7,15 @@ import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { notificaFacilAddressCity } from "@/lib/notifica-facil-address";
 import { prisma } from "@/lib/prisma";
-import { markNotificaFacilPtNotificado, unmarkNotificaFacilPtNotificado } from "@/app/(dashboard)/notifica-facil/actions";
+import {
+  markNotificaFacilPtNotificado,
+  markNotificaFacilRegularizacaoNotificada,
+  unmarkNotificaFacilPtNotificado,
+  unmarkNotificaFacilRegularizacaoNotificada
+} from "@/app/(dashboard)/notifica-facil/actions";
 
 type Mode = "ativas" | "historico" | "notificar";
+type ProcessKind = "pendencia" | "regularizacao";
 type PendenciaItem = NotificaFacilNotification;
 
 const pendenciaImportadaWhere: Prisma.NotificaFacilNotificationWhereInput = {
@@ -26,21 +32,89 @@ const notificacaoPendenciaGeradaWhere: Prisma.NotificaFacilNotificationWhereInpu
   pendencia_tecnica: true
 };
 
-const pendenciaWhere: Prisma.NotificaFacilNotificationWhereInput = {
-  OR: [pendenciaImportadaWhere, notificacaoPendenciaGeradaWhere]
+const regularizacaoImportadaWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  numero_notificacao: null,
+  OR: [
+    { regularizacao: true },
+    { regularizacao_notificada: true },
+    { regularizacao_data_notificada: { not: null } }
+  ]
+};
+
+const notificacaoRegularizacaoGeradaWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  numero_notificacao: { not: null },
+  regularizacao: true
+};
+
+const processConfigs = {
+  pendencia: {
+    baseWhere: { OR: [pendenciaImportadaWhere, notificacaoPendenciaGeradaWhere] } satisfies Prisma.NotificaFacilNotificationWhereInput,
+    notifiedTrue: { pt_notificado: true } satisfies Prisma.NotificaFacilNotificationWhereInput,
+    notifiedFalse: { pt_notificado: false } satisfies Prisma.NotificaFacilNotificationWhereInput,
+    withDate: { pt_data_notificado: { not: null } } satisfies Prisma.NotificaFacilNotificationWhereInput,
+    logTerm: "pendencia",
+    activeHref: "/notifica-facil/pendencia-tecnica",
+    notifyHref: "/notifica-facil/notificacao-pendencias",
+    historyHref: "/notifica-facil/historico-pendencia-tecnica",
+    newHref: "/notifica-facil/notificacao-pendencias/nova",
+    exportType: "pendencia-tecnica",
+    exportHistoryType: "historico-pendencia-tecnica",
+    batchLabel: "Lote de pendência técnica",
+    totalMetric: "Pendências técnicas",
+    waitingMetric: "Aguardando PT",
+    notifiedMetric: "PT notificado",
+    withDateMetric: "Com data PT",
+    listTitle: "Notificações com pendência técnica",
+    historyTitle: "Histórico das pendências",
+    generatedDescription: "Lotes de notificações geradas e registros pendentes de marcação PT notificado.",
+    emptyText: "Nenhuma pendência técnica encontrada.",
+    statusColumn: "PT",
+    waitingLabel: "Aguardando",
+    notifiedLabel: "Notificado",
+    noDateLabel: "Sem data PT",
+    markLabel: "Marcar PT"
+  },
+  regularizacao: {
+    baseWhere: { OR: [regularizacaoImportadaWhere, notificacaoRegularizacaoGeradaWhere] } satisfies Prisma.NotificaFacilNotificationWhereInput,
+    notifiedTrue: { regularizacao_notificada: true } satisfies Prisma.NotificaFacilNotificationWhereInput,
+    notifiedFalse: { regularizacao_notificada: false } satisfies Prisma.NotificaFacilNotificationWhereInput,
+    withDate: { regularizacao_data_notificada: { not: null } } satisfies Prisma.NotificaFacilNotificationWhereInput,
+    logTerm: "regularizacao",
+    activeHref: "/notifica-facil/regularizacao",
+    notifyHref: "/notifica-facil/regularizacao",
+    historyHref: "/notifica-facil/historico-regularizacao",
+    newHref: "/notifica-facil/regularizacao/nova",
+    exportType: "regularizacao",
+    exportHistoryType: "historico-regularizacao",
+    batchLabel: "Lote de regularização",
+    totalMetric: "Regularizações",
+    waitingMetric: "Aguardando regularização",
+    notifiedMetric: "Regularizadas",
+    withDateMetric: "Com data de regularização",
+    listTitle: "Notificações de regularização",
+    historyTitle: "Histórico de regularização",
+    generatedDescription: "Lotes de notificações geradas no processo de regularização.",
+    emptyText: "Nenhuma regularização encontrada.",
+    statusColumn: "Regularização",
+    waitingLabel: "Aguardando",
+    notifiedLabel: "Regularizada",
+    noDateLabel: "Sem data",
+    markLabel: "Marcar regularização"
+  }
 };
 
 function mergeWhere(base: Prisma.NotificaFacilNotificationWhereInput, extra: Prisma.NotificaFacilNotificationWhereInput) {
   return { AND: [base, extra] } satisfies Prisma.NotificaFacilNotificationWhereInput;
 }
 
-function currentWhere(mode: Mode, query: string) {
-  const filters: Prisma.NotificaFacilNotificationWhereInput[] = [pendenciaWhere];
+function currentWhere(mode: Mode, query: string, process: ProcessKind) {
+  const config = processConfigs[process];
+  const filters: Prisma.NotificaFacilNotificationWhereInput[] = [config.baseWhere];
   if (mode === "historico") {
-    filters.push({ OR: [{ pt_notificado: true }, { pt_data_notificado: { not: null } }] });
+    filters.push({ OR: [config.notifiedTrue, config.withDate] });
   }
   if (mode === "notificar") {
-    filters.push({ pt_notificado: false });
+    filters.push(config.notifiedFalse);
   }
   if (query) {
     const q = { contains: query, mode: "insensitive" as const };
@@ -99,21 +173,24 @@ export async function NotificaFacilPendenciasPage({
   title,
   description,
   mode,
+  process = "pendencia",
   icon,
   searchParams
 }: {
   title: string;
   description: string;
   mode: Mode;
+  process?: ProcessKind;
   icon?: ReactNode;
   searchParams?: Promise<Record<string, string | undefined>>;
 }) {
   const [params, user] = await Promise.all([searchParams, requireUser()]);
   const q = (params?.q || "").trim();
   const canEdit = canEditUser(user);
-  const where = currentWhere(mode, q);
+  const config = processConfigs[process];
+  const where = currentWhere(mode, q, process);
   const exportQuery = new URLSearchParams();
-  exportQuery.set("tipo", mode === "historico" ? "historico-pendencia-tecnica" : "pendencia-tecnica");
+  exportQuery.set("tipo", mode === "historico" ? config.exportHistoryType : config.exportType);
   if (q) exportQuery.set("q", q);
 
   const [items, filteredTotal, total, aguardando, notificados, comData, logs] = await Promise.all([
@@ -123,17 +200,17 @@ export async function NotificaFacilPendenciasPage({
       take: 1000
     }),
     prisma.notificaFacilNotification.count({ where }),
-    prisma.notificaFacilNotification.count({ where: pendenciaWhere }),
-    prisma.notificaFacilNotification.count({ where: mergeWhere(pendenciaWhere, { pt_notificado: false }) }),
-    prisma.notificaFacilNotification.count({ where: mergeWhere(pendenciaWhere, { pt_notificado: true }) }),
-    prisma.notificaFacilNotification.count({ where: mergeWhere(pendenciaWhere, { pt_data_notificado: { not: null } }) }),
+    prisma.notificaFacilNotification.count({ where: config.baseWhere }),
+    prisma.notificaFacilNotification.count({ where: mergeWhere(config.baseWhere, config.notifiedFalse) }),
+    prisma.notificaFacilNotification.count({ where: mergeWhere(config.baseWhere, config.notifiedTrue) }),
+    prisma.notificaFacilNotification.count({ where: mergeWhere(config.baseWhere, config.withDate) }),
     mode === "historico"
       ? prisma.notificaFacilActivityLog.findMany({
           where: {
             OR: [
-              { action: { contains: "pendencia", mode: "insensitive" } },
-              { details: { contains: "pendencia", mode: "insensitive" } },
-              { field_changed: { contains: "pendencia", mode: "insensitive" } }
+              { action: { contains: config.logTerm, mode: "insensitive" } },
+              { details: { contains: config.logTerm, mode: "insensitive" } },
+              { field_changed: { contains: config.logTerm, mode: "insensitive" } }
             ]
           },
           orderBy: { timestamp: "desc" },
@@ -141,7 +218,7 @@ export async function NotificaFacilPendenciasPage({
         })
       : Promise.resolve([])
   ]);
-  const grouped = mode === "notificar" ? groupGeneratedLotes(items) : null;
+  const grouped = mode === "notificar" || process === "regularizacao" ? groupGeneratedLotes(items) : null;
 
   return (
     <div className="mx-auto max-w-[1500px] space-y-6">
@@ -168,15 +245,24 @@ export async function NotificaFacilPendenciasPage({
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <ProcessLink href="/notifica-facil/pendencia-tecnica" active={mode === "ativas"} label="Pendências" />
-              <ProcessLink href="/notifica-facil/notificacao-pendencias" active={mode === "notificar"} label="Notificar" />
-              <ProcessLink href="/notifica-facil/historico-pendencia-tecnica" active={mode === "historico"} label="Histórico" />
+              {process === "regularizacao" ? (
+                <>
+                  <ProcessLink href={config.activeHref} active={mode === "ativas"} label="Regularização" />
+                  <ProcessLink href={config.historyHref} active={mode === "historico"} label="Histórico Regularização" />
+                </>
+              ) : (
+                <>
+                  <ProcessLink href={config.activeHref} active={mode === "ativas"} label="Pendências" />
+                  <ProcessLink href={config.notifyHref} active={mode === "notificar"} label="Notificar" />
+                  <ProcessLink href={config.historyHref} active={mode === "historico"} label="Histórico" />
+                </>
+              )}
               <a className="btn-secondary" href={`/api/notifica-facil/export?${exportQuery.toString()}`}>
                 <Download size={16} />
                 Exportar CSV
               </a>
-              {mode === "notificar" && canEdit ? (
-                <Link className="btn-primary" href="/notifica-facil/notificacao-pendencias/nova">
+              {canEdit && (mode === "notificar" || process === "regularizacao") ? (
+                <Link className="btn-primary" href={config.newHref}>
                   <Plus size={16} />
                   Criar notificação
                 </Link>
@@ -187,10 +273,10 @@ export async function NotificaFacilPendenciasPage({
       </section>
 
       <section className="grid gap-4 md:grid-cols-4">
-        <Metric label="Pendências técnicas" value={total} icon={<AlertTriangle size={22} />} />
-        <Metric label="Aguardando PT" value={aguardando} icon={<Clock3 size={22} />} />
-        <Metric label="PT notificado" value={notificados} icon={<CheckCircle2 size={22} />} />
-        <Metric label="Com data PT" value={comData} icon={<FileText size={22} />} />
+        <Metric label={config.totalMetric} value={total} icon={<AlertTriangle size={22} />} />
+        <Metric label={config.waitingMetric} value={aguardando} icon={<Clock3 size={22} />} />
+        <Metric label={config.notifiedMetric} value={notificados} icon={<CheckCircle2 size={22} />} />
+        <Metric label={config.withDateMetric} value={comData} icon={<FileText size={22} />} />
       </section>
 
       <section className="panel p-5">
@@ -200,15 +286,15 @@ export async function NotificaFacilPendenciasPage({
             <AutoSearchInput className="relative" defaultValue={q} placeholder="Empresa, notificação, lote, censo, protocolo, cidade..." />
           </label>
           <button className="btn-primary h-[42px]">Filtrar</button>
-          {q ? <Link className="btn-secondary h-[42px]" href={modeHref(mode)}>Limpar</Link> : null}
+          {q ? <Link className="btn-secondary h-[42px]" href={modeHref(mode, process)}>Limpar</Link> : null}
         </form>
       </section>
 
       <section className="panel overflow-hidden">
         <div className="border-b border-line px-6 py-5">
-          <h2 className="text-xl font-bold text-white">{mode === "historico" ? "Histórico das pendências" : "Notificações com pendência técnica"}</h2>
+          <h2 className="text-xl font-bold text-white">{mode === "historico" ? config.historyTitle : config.listTitle}</h2>
           <p className="mt-1 text-sm text-edp-muted">
-            {mode === "notificar" ? "Lotes de notificações geradas e registros pendentes de marcação PT notificado." : "Registros normalizados da base Base44 do Notifica Fácil."}
+            {mode === "notificar" || process === "regularizacao" ? config.generatedDescription : "Registros normalizados da base Base44 do Notifica Fácil."}
           </p>
         </div>
         <div className="px-6 pt-4 text-xs font-semibold text-edp">
@@ -216,22 +302,22 @@ export async function NotificaFacilPendenciasPage({
         </div>
         {grouped ? (
           <div className="space-y-5 p-6">
-            <LoteCards lotes={grouped.lotes} canEdit={canEdit} mode={mode} />
+            <LoteCards lotes={grouped.lotes} canEdit={canEdit} mode={mode} process={process} />
             {grouped.individuais.length ? (
               <div className="overflow-hidden rounded-2xl border border-line">
                 <div className="border-b border-line bg-surface/60 px-5 py-4">
-                  <h3 className="font-bold text-white">Pendências ainda sem lote</h3>
+                  <h3 className="font-bold text-white">Registros ainda sem lote</h3>
                   <p className="mt-1 text-xs text-edp-muted">Registros que ainda não foram agrupados em uma notificação.</p>
                 </div>
-                <PendenciasTable items={grouped.individuais} canEdit={canEdit} mode={mode} />
+                <PendenciasTable items={grouped.individuais} canEdit={canEdit} mode={mode} process={process} />
               </div>
             ) : null}
             {!grouped.lotes.length && !grouped.individuais.length ? (
-              <div className="px-5 py-12 text-center text-edp-muted">Nenhuma pendência técnica encontrada.</div>
+              <div className="px-5 py-12 text-center text-edp-muted">{config.emptyText}</div>
             ) : null}
           </div>
         ) : (
-          <PendenciasTable items={items} canEdit={canEdit} mode={mode} />
+          <PendenciasTable items={items} canEdit={canEdit} mode={mode} process={process} />
         )}
       </section>
 
@@ -246,7 +332,7 @@ export async function NotificaFacilPendenciasPage({
                 <div className="mt-2 text-sm text-edp-muted">{log.details || log.field_changed || "Registro de alteração"}</div>
               </div>
             ))}
-            {logs.length === 0 ? <p className="text-sm text-edp-muted">Nenhum log de pendência registrado.</p> : null}
+            {logs.length === 0 ? <p className="text-sm text-edp-muted">Nenhum log de {config.logTerm} registrado.</p> : null}
           </div>
         </section>
       ) : null}
@@ -257,12 +343,15 @@ export async function NotificaFacilPendenciasPage({
 function LoteCards({
   lotes,
   canEdit,
-  mode
+  mode,
+  process
 }: {
   lotes: ReturnType<typeof groupGeneratedLotes>["lotes"];
   canEdit: boolean;
   mode: Mode;
+  process: ProcessKind;
 }) {
+  const config = processConfigs[process];
   return (
     <div className="space-y-4">
       {lotes.map((lote) => (
@@ -273,7 +362,7 @@ function LoteCards({
                 <FileText size={21} />
               </div>
               <div>
-                <div className="text-xs font-bold uppercase tracking-wide text-edp">Lote de pendência técnica</div>
+                <div className="text-xs font-bold uppercase tracking-wide text-edp">{config.batchLabel}</div>
                 <h3 className="mt-1 text-xl font-bold text-white">{lote.nome}</h3>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-edp-muted">
                   <span className="rounded-full bg-edp px-3 py-1 font-bold text-edp-navy">{lote.rows.length} notificação(ões)</span>
@@ -300,7 +389,7 @@ function LoteCards({
             <summary className="cursor-pointer px-5 py-4 text-sm font-bold text-edp transition hover:bg-edp/10">
               Abrir lote e ver notificações
             </summary>
-            <PendenciasTable items={lote.rows} canEdit={canEdit} mode={mode} compact />
+            <PendenciasTable items={lote.rows} canEdit={canEdit} mode={mode} process={process} compact />
           </details>
         </article>
       ))}
@@ -312,13 +401,16 @@ function PendenciasTable({
   items,
   canEdit,
   mode,
+  process,
   compact
 }: {
   items: PendenciaItem[];
   canEdit: boolean;
   mode: Mode;
+  process: ProcessKind;
   compact?: boolean;
 }) {
+  const config = processConfigs[process];
   return (
     <div className="table-scroll">
       <table className="w-full min-w-[1080px] text-left text-sm">
@@ -329,59 +421,70 @@ function PendenciasTable({
             <th className="px-5 py-4 font-semibold">Registro censo</th>
             <th className="px-5 py-4 font-semibold">Cidade</th>
             <th className="px-5 py-4 font-semibold">Status</th>
-            <th className="px-5 py-4 font-semibold">PT</th>
+            <th className="px-5 py-4 font-semibold">{config.statusColumn}</th>
             <th className="px-5 py-4 font-semibold">Ações</th>
           </tr>
         </thead>
         <tbody>
-          {items.length ? items.map((item) => (
-            <tr key={item.id} className="border-t border-line">
-              <td className="px-5 py-4">
-                <Link href={`/notifica-facil/${item.id}?from=${encodeURIComponent(modeHref(mode))}`} className="font-bold text-edp hover:text-edp-hover">
-                  {item.numero_notificacao || item.numero_protocolo || item.id}
-                </Link>
-                <div className="mt-1 text-xs text-edp-muted">{formatDate(item.updated_date)}</div>
-                {!compact && (item.lote_nome || item.lote_id) ? (
-                  <div className="mt-2 inline-flex rounded-full border border-edp/25 bg-edp/10 px-2 py-1 text-[11px] font-bold text-edp">
-                    Lote: {item.lote_nome || item.lote_id}
+          {items.length ? items.map((item) => {
+            const isNotified = process === "regularizacao" ? item.regularizacao_notificada : item.pt_notificado;
+            const notifiedDate = process === "regularizacao" ? item.regularizacao_data_notificada : item.pt_data_notificado;
+            const markAction = process === "regularizacao"
+              ? markNotificaFacilRegularizacaoNotificada.bind(null, item.id)
+              : markNotificaFacilPtNotificado.bind(null, item.id);
+            const unmarkAction = process === "regularizacao"
+              ? unmarkNotificaFacilRegularizacaoNotificada.bind(null, item.id)
+              : unmarkNotificaFacilPtNotificado.bind(null, item.id);
+
+            return (
+              <tr key={item.id} className="border-t border-line">
+                <td className="px-5 py-4">
+                  <Link href={`/notifica-facil/${item.id}?from=${encodeURIComponent(modeHref(mode, process))}`} className="font-bold text-edp hover:text-edp-hover">
+                    {item.numero_notificacao || item.numero_protocolo || item.id}
+                  </Link>
+                  <div className="mt-1 text-xs text-edp-muted">{formatDate(item.updated_date)}</div>
+                  {!compact && (item.lote_nome || item.lote_id) ? (
+                    <div className="mt-2 inline-flex rounded-full border border-edp/25 bg-edp/10 px-2 py-1 text-[11px] font-bold text-edp">
+                      Lote: {item.lote_nome || item.lote_id}
+                    </div>
+                  ) : null}
+                </td>
+                <td className="px-5 py-4 text-white">{item.empresa}</td>
+                <td className="px-5 py-4 text-edp-muted">{item.numero_registro_censo || "-"}</td>
+                <td className="px-5 py-4 text-edp-muted">{notificaFacilAddressCity(item.enderecos_revelia, item.empresa_cidade)}</td>
+                <td className="px-5 py-4"><StatusBadge value={item.status} /></td>
+                <td className="px-5 py-4">
+                  <div className="space-y-1">
+                    <SmallBadge tone={isNotified ? "green" : "yellow"} label={isNotified ? config.notifiedLabel : config.waitingLabel} />
+                    <div className="text-xs text-edp-muted">{notifiedDate || config.noDateLabel}</div>
                   </div>
-                ) : null}
-              </td>
-              <td className="px-5 py-4 text-white">{item.empresa}</td>
-              <td className="px-5 py-4 text-edp-muted">{item.numero_registro_censo || "-"}</td>
-              <td className="px-5 py-4 text-edp-muted">{notificaFacilAddressCity(item.enderecos_revelia, item.empresa_cidade)}</td>
-              <td className="px-5 py-4"><StatusBadge value={item.status} /></td>
-              <td className="px-5 py-4">
-                <div className="space-y-1">
-                  <SmallBadge tone={item.pt_notificado ? "green" : "yellow"} label={item.pt_notificado ? "Notificado" : "Aguardando"} />
-                  <div className="text-xs text-edp-muted">{item.pt_data_notificado || "Sem data PT"}</div>
-                </div>
-              </td>
-              <td className="px-5 py-4">
-                <div className="flex flex-wrap gap-2">
-                  <Link href={`/notifica-facil/${item.id}?from=${encodeURIComponent(modeHref(mode))}`} className="btn-secondary h-9 px-3 text-xs">Abrir</Link>
-                  {item.numero_notificacao ? (
-                    <a href={`/api/notifica-facil/notifications/${item.id}/pdf`} className="btn-secondary h-9 px-3 text-xs">
-                      <Download size={14} />
-                      PDF
-                    </a>
-                  ) : null}
-                  {canEdit && !item.pt_notificado ? (
-                    <form action={markNotificaFacilPtNotificado.bind(null, item.id)}>
-                      <button className="btn-primary h-9 px-3 text-xs" type="submit">Marcar PT</button>
-                    </form>
-                  ) : null}
-                  {canEdit && mode === "historico" && item.pt_notificado ? (
-                    <form action={unmarkNotificaFacilPtNotificado.bind(null, item.id)}>
-                      <button className="btn-secondary h-9 px-3 text-xs" type="submit">Voltar para aguardando</button>
-                    </form>
-                  ) : null}
-                </div>
-              </td>
-            </tr>
-          )) : (
+                </td>
+                <td className="px-5 py-4">
+                  <div className="flex flex-wrap gap-2">
+                    <Link href={`/notifica-facil/${item.id}?from=${encodeURIComponent(modeHref(mode, process))}`} className="btn-secondary h-9 px-3 text-xs">Abrir</Link>
+                    {item.numero_notificacao ? (
+                      <a href={`/api/notifica-facil/notifications/${item.id}/pdf`} className="btn-secondary h-9 px-3 text-xs">
+                        <Download size={14} />
+                        PDF
+                      </a>
+                    ) : null}
+                    {canEdit && !isNotified ? (
+                      <form action={markAction}>
+                        <button className="btn-primary h-9 px-3 text-xs" type="submit">{config.markLabel}</button>
+                      </form>
+                    ) : null}
+                    {canEdit && mode === "historico" && isNotified ? (
+                      <form action={unmarkAction}>
+                        <button className="btn-secondary h-9 px-3 text-xs" type="submit">Voltar para aguardando</button>
+                      </form>
+                    ) : null}
+                  </div>
+                </td>
+              </tr>
+            );
+          }) : (
             <tr>
-              <td colSpan={7} className="px-5 py-12 text-center text-edp-muted">Nenhuma pendência técnica encontrada.</td>
+              <td colSpan={7} className="px-5 py-12 text-center text-edp-muted">{config.emptyText}</td>
             </tr>
           )}
         </tbody>
@@ -390,10 +493,11 @@ function PendenciasTable({
   );
 }
 
-function modeHref(mode: Mode) {
-  if (mode === "historico") return "/notifica-facil/historico-pendencia-tecnica";
-  if (mode === "notificar") return "/notifica-facil/notificacao-pendencias";
-  return "/notifica-facil/pendencia-tecnica";
+function modeHref(mode: Mode, process: ProcessKind) {
+  const config = processConfigs[process];
+  if (mode === "historico") return config.historyHref;
+  if (mode === "notificar") return config.notifyHref;
+  return config.activeHref;
 }
 
 function ProcessLink({ href, label, active }: { href: string; label: string; active?: boolean }) {

@@ -663,8 +663,17 @@ export async function clearNotificaFacilCensoObservacoes() {
 }
 
 export async function createNotificaFacilPendenciaWizard(formData: FormData) {
+  return createNotificaFacilProcessWizard(formData, "pendencia");
+}
+
+export async function createNotificaFacilRegularizacaoWizard(formData: FormData) {
+  return createNotificaFacilProcessWizard(formData, "regularizacao");
+}
+
+async function createNotificaFacilProcessWizard(formData: FormData, process: "pendencia" | "regularizacao") {
   const user = await requireUser();
-  if (!canEdit(user)) redirect("/notifica-facil/notificacao-pendencias");
+  const targetPath = process === "regularizacao" ? "/notifica-facil/regularizacao" : "/notifica-facil/notificacao-pendencias";
+  if (!canEdit(user)) redirect(targetPath);
 
   const empresaIds = formData.getAll("empresa_ids").map(String).filter(Boolean);
   if (empresaIds.length === 0) {
@@ -710,8 +719,10 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       data_notificacao: dataNotificacao,
       prazo_resposta: prazoDias,
       status: "Aguardando assinatura Gestor",
-      pendencia_tecnica: true,
+      pendencia_tecnica: process === "pendencia",
       pt_notificado: false,
+      regularizacao: process === "regularizacao",
+      regularizacao_notificada: false,
       lote_nome: loteNomeFinal,
       lote_id: loteId,
       status_envio_notificacao: empresa.status_envio_notificacao,
@@ -814,13 +825,20 @@ export async function createNotificaFacilPendenciaWizard(formData: FormData) {
       last_downloaded_by: null
     });
     await storePdfForNotificaFacil(created, portalTemplateHtml);
-    await logAction(created.id, "criacao_pendencia", "Notificação das Pendências criada com o template do Portal de Regularização");
+    await logAction(
+      created.id,
+      process === "regularizacao" ? "criacao_regularizacao" : "criacao_pendencia",
+      process === "regularizacao"
+        ? "Notificação de Regularização criada com o template do Portal de Regularização"
+        : "Notificação das Pendências criada com o template do Portal de Regularização"
+    );
     createdIds.push(id);
   }
 
   revalidatePath("/notifica-facil");
   revalidatePath("/notifica-facil/notificacao-pendencias");
-  redirect(withFlash("/notifica-facil/notificacao-pendencias", { success: "notificacoes-geradas", count: createdIds.length }));
+  revalidatePath("/notifica-facil/regularizacao");
+  redirect(withFlash(targetPath, { success: "notificacoes-geradas", count: createdIds.length }));
 }
 
 export async function updateNotificaFacilNotification(id: string, formData: FormData) {
@@ -904,4 +922,47 @@ export async function unmarkNotificaFacilPtNotificado(id: string) {
   revalidatePath("/notifica-facil/historico-pendencia-tecnica");
   revalidatePath("/notifica-facil/notificacao-pendencias");
   redirect(withFlash("/notifica-facil/notificacao-pendencias", { success: "salvo" }));
+}
+
+export async function markNotificaFacilRegularizacaoNotificada(id: string) {
+  const user = await requireUser();
+  if (!canEdit(user)) redirect("/notifica-facil/regularizacao");
+
+  const today = new Date().toISOString().slice(0, 10);
+  await prisma.notificaFacilNotification.update({
+    where: { id },
+    data: {
+      regularizacao: true,
+      regularizacao_notificada: true,
+      regularizacao_data_notificada: today,
+      updated_date: new Date()
+    }
+  });
+
+  await logAction(id, "regularizacao", "Regularização marcada como notificada");
+  revalidatePath("/notifica-facil");
+  revalidatePath("/notifica-facil/regularizacao");
+  revalidatePath("/notifica-facil/historico-regularizacao");
+  redirect(withFlash("/notifica-facil/regularizacao", { success: "salvo" }));
+}
+
+export async function unmarkNotificaFacilRegularizacaoNotificada(id: string) {
+  const user = await requireUser();
+  if (!canEdit(user)) redirect("/notifica-facil/historico-regularizacao");
+
+  await prisma.notificaFacilNotification.update({
+    where: { id },
+    data: {
+      regularizacao: true,
+      regularizacao_notificada: false,
+      regularizacao_data_notificada: null,
+      updated_date: new Date()
+    }
+  });
+
+  await logAction(id, "regularizacao_reaberta", "Regularização voltou para aguardando");
+  revalidatePath("/notifica-facil");
+  revalidatePath("/notifica-facil/regularizacao");
+  revalidatePath("/notifica-facil/historico-regularizacao");
+  redirect(withFlash("/notifica-facil/regularizacao", { success: "salvo" }));
 }

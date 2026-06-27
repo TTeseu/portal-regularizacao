@@ -151,16 +151,29 @@ export default async function NotificaFacilDetailPage({
   );
 }
 
-function getSafeBackHref(value: string | undefined, notification: { numero_notificacao?: string | null; pendencia_tecnica: boolean; pt_notificado: boolean; pt_data_notificado?: string | null }) {
+function getSafeBackHref(value: string | undefined, notification: {
+  numero_notificacao?: string | null;
+  pendencia_tecnica: boolean;
+  pt_notificado: boolean;
+  pt_data_notificado?: string | null;
+  regularizacao: boolean;
+  regularizacao_notificada: boolean;
+  regularizacao_data_notificada?: string | null;
+}) {
   const allowed = new Set([
     "/notifica-facil",
     "/notifica-facil/pendencia-tecnica",
     "/notifica-facil/notificacao-pendencias",
     "/notifica-facil/historico-pendencia-tecnica",
+    "/notifica-facil/regularizacao",
+    "/notifica-facil/historico-regularizacao",
     "/notifica-facil/stand-by",
     "/notifica-facil/pdfs"
   ]);
   if (value && allowed.has(value)) return value;
+  if (!notification.numero_notificacao && (notification.regularizacao || notification.regularizacao_notificada || notification.regularizacao_data_notificada)) {
+    return "/notifica-facil/regularizacao";
+  }
   if (!notification.numero_notificacao && (notification.pendencia_tecnica || notification.pt_notificado || notification.pt_data_notificado)) {
     return "/notifica-facil/pendencia-tecnica";
   }

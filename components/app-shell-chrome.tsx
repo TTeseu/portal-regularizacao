@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   Bell,
   Building2,
+  CheckCircle2,
   Clock3,
   Database,
   FileClock,
@@ -52,6 +53,8 @@ const notificaFacilNav: NavItem[] = [
   { href: "/notifica-facil/pendencia-tecnica", label: "Pendência Técnica", icon: AlertTriangle },
   { href: "/notifica-facil/historico-pendencia-tecnica", label: "Histórico Pendência Técnica", icon: History },
   { href: "/notifica-facil/notificacao-pendencias", label: "Notificação das Pendências", icon: FileClock },
+  { href: "/notifica-facil/regularizacao", label: "Regularização", icon: CheckCircle2 },
+  { href: "/notifica-facil/historico-regularizacao", label: "Histórico Regularização", icon: History },
   { href: "/notifica-facil/stand-by", label: "Stand-by", icon: Clock3 }
 ];
 

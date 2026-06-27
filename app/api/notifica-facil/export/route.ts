@@ -13,6 +13,8 @@ type ExportType =
   | "historico-censo"
   | "pendencia-tecnica"
   | "historico-pendencia-tecnica"
+  | "regularizacao"
+  | "historico-regularizacao"
   | "stand-by"
   | "empresas";
 
@@ -56,6 +58,32 @@ function pendenciaWhere(historico: boolean, q: string | null) {
     filters.push({
       OR: [
         { empresa: search },
+        { numero_registro_censo: search },
+        { numero_protocolo: search },
+        { contrato_numero: search },
+        { empresa_cidade: search },
+        { observacoes: search }
+      ]
+    });
+  }
+  return { AND: filters } satisfies Prisma.NotificaFacilNotificationWhereInput;
+}
+
+function regularizacaoWhere(historico: boolean, q: string | null) {
+  const filters: Prisma.NotificaFacilNotificationWhereInput[] = [{
+    OR: [
+      { regularizacao: true },
+      { regularizacao_notificada: true },
+      { regularizacao_data_notificada: { not: null } }
+    ]
+  }];
+  if (historico) filters.push({ OR: [{ regularizacao_notificada: true }, { regularizacao_data_notificada: { not: null } }] });
+  if (q) {
+    const search = { contains: q, mode: "insensitive" as const };
+    filters.push({
+      OR: [
+        { empresa: search },
+        { numero_notificacao: search },
         { numero_registro_censo: search },
         { numero_protocolo: search },
         { contrato_numero: search },
@@ -118,6 +146,8 @@ async function exportNotifications(tipo: ExportType, params: URLSearchParams) {
     tipo === "importar-censo" ? censoWhere(false, params) :
     tipo === "historico-censo" ? censoWhere(true, params) :
     tipo === "stand-by" ? standbyWhere(params) :
+    tipo === "regularizacao" ? regularizacaoWhere(false, params.get("q")) :
+    tipo === "historico-regularizacao" ? regularizacaoWhere(true, params.get("q")) :
     tipo === "historico-pendencia-tecnica" ? pendenciaWhere(true, params.get("q")) :
     pendenciaWhere(false, params.get("q"));
 
