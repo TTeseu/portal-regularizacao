@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
+import { put } from "@vercel/blob";
 import { canEdit, requireUser } from "@/lib/auth";
 import { activeCensoWhere } from "@/lib/notifica-facil-censo";
 import { prisma } from "@/lib/prisma";
@@ -12,6 +13,19 @@ import { buildNotificaFacilHtml } from "@/lib/notifica-facil-html";
 import { storePdfForNotificaFacil } from "@/lib/notifica-facil-pdf-cache";
 import { requireFormattedCNPJ } from "@/lib/cnpj";
 import { formatDate } from "@/lib/format";
+
+const CLIENT_RESPONSE_STATUS = "Resposta do Cliente - Anexo do E-mail.";
+const MAX_CLIENT_RESPONSE_FILE_BYTES = 15 * 1024 * 1024;
+const DATA_URL_FALLBACK_BYTES = 900 * 1024;
+
+type ClientResponseAttachment = {
+  nome: string;
+  url: string;
+  tipo?: string;
+  tamanho?: number;
+  uploadedAt?: string;
+  uploadedBy?: string;
+};
 
 function text(formData: FormData, key: string) {
   const value = String(formData.get(key) || "").trim();
@@ -185,6 +199,43 @@ function parseAnexos(value: string | null): Prisma.JsonArray | undefined {
       return { nome, url };
     });
   return rows.length ? rows : undefined;
+}
+
+function normalizeAttachmentRows(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item, index) => {
+      if (typeof item === "string") {
+        const url = item.trim();
+        return url ? { nome: `Anexo ${index + 1}`, url } : null;
+      }
+      if (!item || typeof item !== "object") return null;
+      const row = item as Record<string, unknown>;
+      const url = String(row.url || row.file_url || row.href || "").trim();
+      if (!url) return null;
+      return {
+        nome: String(row.nome || row.name || row.filename || `Anexo ${index + 1}`).trim(),
+        url,
+        tipo: typeof row.tipo === "string" ? row.tipo : undefined,
+        tamanho: typeof row.tamanho === "number" ? row.tamanho : undefined,
+        uploadedAt: typeof row.uploadedAt === "string" ? row.uploadedAt : undefined,
+        uploadedBy: typeof row.uploadedBy === "string" ? row.uploadedBy : undefined
+      };
+    })
+    .filter((item): item is ClientResponseAttachment => Boolean(item));
+}
+
+function safeFileName(value: string) {
+  return (value || "anexo")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120) || "anexo";
+}
+
+function hasBlobToken() {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
 }
 
 function parseDelimitedCsv(textValue: string) {
@@ -868,6 +919,97 @@ export async function updateNotificaFacilNotification(id: string, formData: Form
   revalidatePath("/notifica-facil");
   revalidatePath(`/notifica-facil/${id}`);
   redirect(withFlash(`/notifica-facil/${id}`, { success: "salvo" }));
+}
+
+export async function saveNotificaFacilClientResponse(id: string, formData: FormData) {
+  const user = await requireUser();
+  if (!canEdit(user)) redirect(`/notifica-facil/${id}`);
+
+  const notification = await prisma.notificaFacilNotification.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      pendencia_tecnica: true,
+      regularizacao: true,
+      numero_notificacao: true,
+      anexos_resposta_email: true
+    }
+  });
+  if (!notification) redirect("/notifica-facil");
+  if (!notification.numero_notificacao || (!notification.pendencia_tecnica && !notification.regularizacao)) {
+    redirect(withFlash(`/notifica-facil/${id}`, { error: "resposta-indisponivel" }));
+  }
+
+  const observacoes = text(formData, "observacoes");
+  const file = formData.get("resposta_cliente_arquivo");
+  const anexos = normalizeAttachmentRows(notification.anexos_resposta_email);
+  let uploadedName: string | null = null;
+
+  if (file instanceof File && file.size > 0) {
+    if (file.size > MAX_CLIENT_RESPONSE_FILE_BYTES) {
+      redirect(withFlash(`/notifica-facil/${id}`, { error: "arquivo-grande" }));
+    }
+
+    const safeName = safeFileName(file.name);
+    const contentType = file.type || "application/octet-stream";
+    let url: string;
+
+    if (hasBlobToken()) {
+      const blob = await put(
+        `notifica-facil/respostas-clientes/${notification.id}/${Date.now()}-${safeName}`,
+        Buffer.from(await file.arrayBuffer()),
+        {
+          access: "public",
+          contentType,
+          addRandomSuffix: true
+        }
+      );
+      url = blob.url;
+    } else if (file.size <= DATA_URL_FALLBACK_BYTES) {
+      const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
+      url = `data:${contentType};base64,${base64}`;
+    } else {
+      redirect(withFlash(`/notifica-facil/${id}`, { error: "blob" }));
+    }
+
+    anexos.push({
+      nome: file.name || safeName,
+      url,
+      tipo: contentType,
+      tamanho: file.size,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: user.email
+    });
+    uploadedName = file.name || safeName;
+  }
+
+  const hasResponse = Boolean(observacoes || anexos.length);
+  await prisma.notificaFacilNotification.update({
+    where: { id },
+    data: {
+      observacoes,
+      anexos_resposta_email: anexos.length ? (anexos as Prisma.JsonArray) : Prisma.JsonNull,
+      status: hasResponse ? CLIENT_RESPONSE_STATUS : undefined,
+      updated_date: new Date()
+    }
+  });
+
+  await logAction(
+    id,
+    "resposta_cliente",
+    uploadedName
+      ? `Resposta do cliente registrada com anexo: ${uploadedName}`
+      : "Resposta do cliente registrada"
+  );
+
+  revalidatePath("/notifica-facil");
+  revalidatePath("/notifica-facil/notificacao-pendencias");
+  revalidatePath("/notifica-facil/pendencia-tecnica");
+  revalidatePath("/notifica-facil/historico-pendencia-tecnica");
+  revalidatePath("/notifica-facil/regularizacao");
+  revalidatePath("/notifica-facil/historico-regularizacao");
+  revalidatePath(`/notifica-facil/${id}`);
+  redirect(withFlash(`/notifica-facil/${id}`, { success: "resposta-cliente" }));
 }
 
 export async function deleteNotificaFacilNotification(id: string) {

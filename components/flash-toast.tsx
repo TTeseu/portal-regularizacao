@@ -24,6 +24,8 @@ function successMessage(code: string | null, count: string | null) {
       return amount > 0 ? `${amount} CENSO${amount === 1 ? "" : "s"} enviado${amount === 1 ? "" : "s"} para stand-by.` : "CENSO enviado para stand-by.";
     case "empresa-excluida":
       return "Empresa excluída com sucesso.";
+    case "resposta-cliente":
+      return "Resposta do cliente registrada com sucesso.";
     default:
       return null;
   }
@@ -35,6 +37,12 @@ function errorMessage(code: string | null) {
       return "Não foi possível excluir: esta empresa possui registros vinculados.";
     case "arquivo":
       return "Selecione um arquivo válido para importar.";
+    case "arquivo-grande":
+      return "O arquivo é muito grande. Envie um arquivo de até 15 MB.";
+    case "blob":
+      return "Não foi possível anexar arquivo grande porque o armazenamento Blob não está configurado.";
+    case "resposta-indisponivel":
+      return "Esta notificação ainda não aceita resposta do cliente.";
     default:
       return null;
   }

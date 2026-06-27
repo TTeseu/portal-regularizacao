@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Download, ExternalLink, FileText, ImageIcon, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, FileText, ImageIcon, MessageSquareText, Paperclip, Trash2, UploadCloud } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { canEdit, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -10,7 +10,7 @@ import { buildNotificaFacilHtml, sanitizeNotificaFacilHtml } from "@/lib/notific
 import { NotificaFacilForm } from "@/components/notifica-facil-form";
 import { formatDateTime } from "@/lib/format";
 import { notificaFacilAddressCity } from "@/lib/notifica-facil-address";
-import { deleteNotificaFacilNotification, updateNotificaFacilNotification } from "../actions";
+import { deleteNotificaFacilNotification, saveNotificaFacilClientResponse, updateNotificaFacilNotification } from "../actions";
 import { formatCNPJDisplay } from "@/lib/cnpj";
 
 export default async function NotificaFacilDetailPage({
@@ -46,7 +46,9 @@ export default async function NotificaFacilDetailPage({
   const html = sanitizeNotificaFacilHtml(notification.html_content || buildNotificaFacilHtml(notification));
   const backHref = getSafeBackHref(query?.from, notification);
   const evidences = collectEvidences(notification.fotos_censo, notification.ocr_legendas);
-  const attachments = collectAttachments(notification.notificacao_assinada_anexos, notification.anexos_resposta_email);
+  const signedAttachments = collectAttachments(notification.notificacao_assinada_anexos);
+  const responseAttachments = collectAttachments(notification.anexos_resposta_email);
+  const showClientResponse = Boolean(notification.numero_notificacao && (notification.pendencia_tecnica || notification.regularizacao));
   const postesNotificados = notification.quantidade_postes || notification.total_ids_identificados || 0;
   const postesRegularizados = notification.quantidade_postes_regularizados || 0;
   const postesPendentes = Math.max(postesNotificados - postesRegularizados, 0);
@@ -122,7 +124,16 @@ export default async function NotificaFacilDetailPage({
             </dl>
           </div>
 
-          <EvidencePanel evidences={evidences} attachments={attachments} />
+          <EvidencePanel evidences={evidences} attachments={signedAttachments} />
+
+          {showClientResponse ? (
+            <ClientResponsePanel
+              notificationId={notification.id}
+              canEdit={mayEdit}
+              observacoes={notification.observacoes}
+              attachments={responseAttachments}
+            />
+          ) : null}
 
           <div className="panel p-5">
             <h2 className="mb-3 font-bold text-white">Histórico</h2>
@@ -237,6 +248,83 @@ function fileNameFromUrl(url: string) {
   } catch {
     return url.split("/").filter(Boolean).pop() || "";
   }
+}
+
+function ClientResponsePanel({
+  notificationId,
+  canEdit,
+  observacoes,
+  attachments
+}: {
+  notificationId: string;
+  canEdit: boolean;
+  observacoes?: string | null;
+  attachments: Array<{ url: string; name: string }>;
+}) {
+  return (
+    <div className="panel p-5">
+      <div className="mb-4 flex items-center gap-2">
+        <MessageSquareText className="text-edp" size={18} />
+        <div>
+          <h2 className="font-bold text-white">Resposta do cliente</h2>
+          <p className="text-xs text-edp-muted">Registre observações e anexos recebidos por e-mail para atualizar o status desta notificação.</p>
+        </div>
+      </div>
+
+      {canEdit ? (
+        <form action={saveNotificaFacilClientResponse.bind(null, notificationId)} encType="multipart/form-data" className="space-y-4">
+          <label className="block text-xs font-bold uppercase text-edp-muted">
+            Observação
+            <textarea
+              className="field mt-2 min-h-28"
+              name="observacoes"
+              defaultValue={observacoes || ""}
+              placeholder="Descreva a resposta do cliente, data do retorno ou tratativa combinada."
+            />
+          </label>
+
+          <label className="block text-xs font-bold uppercase text-edp-muted">
+            Anexar arquivo
+            <span className="mt-2 flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-line bg-surface px-4 py-4 text-sm font-semibold text-white transition hover:border-edp/50">
+              <UploadCloud className="text-edp" size={18} />
+              <span className="flex-1">E-mail, PDF, imagem ou documento de resposta</span>
+            </span>
+            <input className="sr-only" type="file" name="resposta_cliente_arquivo" />
+          </label>
+
+          <button className="btn-primary w-full justify-center" type="submit">
+            <Paperclip size={16} />
+            Salvar resposta do cliente
+          </button>
+        </form>
+      ) : (
+        <p className="text-sm text-edp-muted">Você não tem permissão para editar esta resposta.</p>
+      )}
+
+      {attachments.length ? (
+        <div className="mt-5 border-t border-line pt-4">
+          <h3 className="mb-3 text-sm font-bold text-white">Anexos de resposta</h3>
+          <div className="space-y-2">
+            {attachments.map((item) => (
+              <a
+                key={item.url}
+                className="flex items-center justify-between gap-3 rounded-xl border border-line bg-card px-3 py-2 text-sm text-edp-muted hover:border-edp/40 hover:text-edp"
+                href={item.url}
+                target="_blank"
+                rel="noreferrer"
+                download
+              >
+                <span className="truncate">{item.name}</span>
+                <Download size={14} />
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="mt-4 rounded-xl border border-line bg-surface px-3 py-2 text-sm text-edp-muted">Nenhum anexo de resposta registrado.</p>
+      )}
+    </div>
+  );
 }
 
 function EvidencePanel({
