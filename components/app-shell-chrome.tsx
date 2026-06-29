@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
-  AlertTriangle,
   Bell,
   Building2,
   CheckCircle2,
@@ -11,7 +10,6 @@ import {
   Database,
   FileClock,
   FileText,
-  History,
   LayoutDashboard,
   LogOut,
   Search,
@@ -50,11 +48,8 @@ const notificaFacilNav: NavItem[] = [
   { href: "/notifica-facil/empresas", label: "Banco de Dados das Empresas", icon: Building2 },
   { href: "/notifica-facil/importar-censo", label: "Importar CENSO", icon: Bell },
   { href: "/notifica-facil/historico-censo", label: "Histórico CENSO", icon: Clock3 },
-  { href: "/notifica-facil/pendencia-tecnica", label: "Pendência Técnica", icon: AlertTriangle },
-  { href: "/notifica-facil/historico-pendencia-tecnica", label: "Histórico Pendência Técnica", icon: History },
   { href: "/notifica-facil/notificacao-pendencias", label: "Notificação das Pendências", icon: FileClock },
   { href: "/notifica-facil/regularizacao", label: "Regularização", icon: CheckCircle2 },
-  { href: "/notifica-facil/historico-regularizacao", label: "Histórico Regularização", icon: History },
   { href: "/notifica-facil/stand-by", label: "Stand-by", icon: Clock3 }
 ];
 

@@ -13,11 +13,8 @@ const LIVE_EXACT_PATHS = new Set([
   "/notifica-facil",
   "/notifica-facil/importar-censo",
   "/notifica-facil/historico-censo",
-  "/notifica-facil/pendencia-tecnica",
-  "/notifica-facil/historico-pendencia-tecnica",
   "/notifica-facil/notificacao-pendencias",
   "/notifica-facil/regularizacao",
-  "/notifica-facil/historico-regularizacao",
   "/notifica-facil/stand-by",
   "/notifica-facil/empresas"
 ]);

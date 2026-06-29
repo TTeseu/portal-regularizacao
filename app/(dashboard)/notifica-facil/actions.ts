@@ -931,7 +931,9 @@ export async function saveNotificaFacilClientResponse(id: string, formData: Form
     select: {
       id: true,
       pendencia_tecnica: true,
+      pt_notificado: true,
       regularizacao: true,
+      regularizacao_notificada: true,
       numero_notificacao: true,
       anexos_resposta_email: true
     }
@@ -985,12 +987,17 @@ export async function saveNotificaFacilClientResponse(id: string, formData: Form
   }
 
   const hasResponse = Boolean(observacoes || anexos.length);
+  const today = new Date().toISOString().slice(0, 10);
   await prisma.notificaFacilNotification.update({
     where: { id },
     data: {
       observacoes,
       anexos_resposta_email: anexos.length ? (anexos as Prisma.JsonArray) : Prisma.JsonNull,
       status: hasResponse ? CLIENT_RESPONSE_STATUS : undefined,
+      pt_notificado: hasResponse && notification.pendencia_tecnica ? true : undefined,
+      pt_data_notificado: hasResponse && notification.pendencia_tecnica && !notification.pt_notificado ? today : undefined,
+      regularizacao_notificada: hasResponse && notification.regularizacao ? true : undefined,
+      regularizacao_data_notificada: hasResponse && notification.regularizacao && !notification.regularizacao_notificada ? today : undefined,
       updated_date: new Date()
     }
   });
@@ -1024,7 +1031,7 @@ export async function deleteNotificaFacilNotification(id: string) {
 
 export async function markNotificaFacilPtNotificado(id: string) {
   const user = await requireUser();
-  if (!canEdit(user)) redirect("/notifica-facil/pendencia-tecnica");
+  if (!canEdit(user)) redirect("/notifica-facil/notificacao-pendencias");
 
   const today = new Date().toISOString().slice(0, 10);
   await prisma.notificaFacilNotification.update({
@@ -1042,12 +1049,12 @@ export async function markNotificaFacilPtNotificado(id: string) {
   revalidatePath("/notifica-facil/pendencia-tecnica");
   revalidatePath("/notifica-facil/historico-pendencia-tecnica");
   revalidatePath("/notifica-facil/notificacao-pendencias");
-  redirect(withFlash("/notifica-facil/pendencia-tecnica", { success: "salvo" }));
+  redirect(withFlash("/notifica-facil/notificacao-pendencias", { success: "salvo" }));
 }
 
 export async function unmarkNotificaFacilPtNotificado(id: string) {
   const user = await requireUser();
-  if (!canEdit(user)) redirect("/notifica-facil/historico-pendencia-tecnica");
+  if (!canEdit(user)) redirect("/notifica-facil/notificacao-pendencias");
 
   await prisma.notificaFacilNotification.update({
     where: { id },
@@ -1091,7 +1098,7 @@ export async function markNotificaFacilRegularizacaoNotificada(id: string) {
 
 export async function unmarkNotificaFacilRegularizacaoNotificada(id: string) {
   const user = await requireUser();
-  if (!canEdit(user)) redirect("/notifica-facil/historico-regularizacao");
+  if (!canEdit(user)) redirect("/notifica-facil/regularizacao");
 
   await prisma.notificaFacilNotification.update({
     where: { id },

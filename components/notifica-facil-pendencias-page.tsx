@@ -16,6 +16,7 @@ import {
 
 type Mode = "ativas" | "historico" | "notificar";
 type ProcessKind = "pendencia" | "regularizacao";
+type ListFilter = "todas" | "notificadas" | "resposta-cliente";
 type PendenciaItem = NotificaFacilNotification;
 
 const CLIENT_RESPONSE_STATUS = "Resposta do Cliente - Anexo do E-mail.";
@@ -74,7 +75,7 @@ const processConfigs = {
     waitingLabel: "Aguardando",
     notifiedLabel: "Notificado",
     noDateLabel: "Sem data PT",
-    markLabel: "Marcar PT"
+    markLabel: "Marcar como notificada"
   },
   regularizacao: {
     baseWhere: { OR: [regularizacaoImportadaWhere, notificacaoRegularizacaoGeradaWhere] } satisfies Prisma.NotificaFacilNotificationWhereInput,
@@ -109,14 +110,24 @@ function mergeWhere(base: Prisma.NotificaFacilNotificationWhereInput, extra: Pri
   return { AND: [base, extra] } satisfies Prisma.NotificaFacilNotificationWhereInput;
 }
 
-function currentWhere(mode: Mode, query: string, process: ProcessKind) {
+function baseWhereForMode(mode: Mode, process: ProcessKind) {
   const config = processConfigs[process];
-  const filters: Prisma.NotificaFacilNotificationWhereInput[] = [config.baseWhere];
+  if (process === "pendencia" && mode === "notificar") return notificacaoPendenciaGeradaWhere;
+  if (process === "regularizacao" && mode === "ativas") return notificacaoRegularizacaoGeradaWhere;
+  return config.baseWhere;
+}
+
+function currentWhere(mode: Mode, query: string, process: ProcessKind, filter: ListFilter) {
+  const config = processConfigs[process];
+  const filters: Prisma.NotificaFacilNotificationWhereInput[] = [baseWhereForMode(mode, process)];
   if (mode === "historico") {
     filters.push({ OR: [config.notifiedTrue, config.withDate] });
   }
-  if (mode === "notificar") {
-    filters.push(config.notifiedFalse);
+  if (filter === "notificadas") {
+    filters.push(config.notifiedTrue);
+  }
+  if (filter === "resposta-cliente") {
+    filters.push({ status: CLIENT_RESPONSE_STATUS });
   }
   if (query) {
     const q = { contains: query, mode: "insensitive" as const };
@@ -196,10 +207,12 @@ export async function NotificaFacilPendenciasPage({
 }) {
   const [params, user] = await Promise.all([searchParams, requireUser()]);
   const q = (params?.q || "").trim();
+  const filter = normalizeListFilter(params?.filtro);
   const canEdit = canEditUser(user);
   const config = processConfigs[process];
-  const where = currentWhere(mode, q, process);
-  const generatedWhere = mergeWhere(config.baseWhere, { numero_notificacao: { not: null } });
+  const where = currentWhere(mode, q, process, filter);
+  const metricBaseWhere = baseWhereForMode(mode, process);
+  const generatedWhere = mergeWhere(metricBaseWhere, { numero_notificacao: { not: null } });
   const exportQuery = new URLSearchParams();
   exportQuery.set("tipo", mode === "historico" ? config.exportHistoryType : config.exportType);
   if (q) exportQuery.set("q", q);
@@ -211,10 +224,10 @@ export async function NotificaFacilPendenciasPage({
       take: 1000
     }),
     prisma.notificaFacilNotification.count({ where }),
-    prisma.notificaFacilNotification.count({ where: config.baseWhere }),
-    prisma.notificaFacilNotification.count({ where: mergeWhere(config.baseWhere, config.notifiedFalse) }),
-    prisma.notificaFacilNotification.count({ where: mergeWhere(config.baseWhere, config.notifiedTrue) }),
-    prisma.notificaFacilNotification.count({ where: mergeWhere(config.baseWhere, config.withDate) }),
+    prisma.notificaFacilNotification.count({ where: metricBaseWhere }),
+    prisma.notificaFacilNotification.count({ where: mergeWhere(metricBaseWhere, config.notifiedFalse) }),
+    prisma.notificaFacilNotification.count({ where: mergeWhere(metricBaseWhere, config.notifiedTrue) }),
+    prisma.notificaFacilNotification.count({ where: mergeWhere(metricBaseWhere, config.withDate) }),
     prisma.notificaFacilNotification.count({ where: mergeWhere(generatedWhere, { status: CLIENT_RESPONSE_STATUS }) }),
     prisma.notificaFacilNotification.count({ where: mergeWhere(generatedWhere, { status: { not: CLIENT_RESPONSE_STATUS } }) }),
     mode === "historico"
@@ -261,13 +274,10 @@ export async function NotificaFacilPendenciasPage({
               {process === "regularizacao" ? (
                 <>
                   <ProcessLink href={config.activeHref} active={mode === "ativas"} label="Regularização" />
-                  <ProcessLink href={config.historyHref} active={mode === "historico"} label="Histórico Regularização" />
                 </>
               ) : (
                 <>
-                  <ProcessLink href={config.activeHref} active={mode === "ativas"} label="Pendências" />
-                  <ProcessLink href={config.notifyHref} active={mode === "notificar"} label="Notificar" />
-                  <ProcessLink href={config.historyHref} active={mode === "historico"} label="Histórico" />
+                  <ProcessLink href={config.notifyHref} active={mode === "notificar"} label="Notificações" />
                 </>
               )}
               <a className="btn-secondary" href={`/api/notifica-facil/export?${exportQuery.toString()}`}>
@@ -300,8 +310,16 @@ export async function NotificaFacilPendenciasPage({
             <span className="label">Buscar no processo</span>
             <AutoSearchInput className="relative" defaultValue={q} placeholder="Empresa, notificação, lote, censo, protocolo, cidade..." />
           </label>
+          <label className="w-full space-y-2 md:w-72">
+            <span className="label">Filtro</span>
+            <select name="filtro" defaultValue={filter} className="input">
+              <option value="todas">Todas</option>
+              <option value="notificadas">Somente notificadas</option>
+              <option value="resposta-cliente">Com resposta do cliente</option>
+            </select>
+          </label>
           <button className="btn-primary h-[42px]">Filtrar</button>
-          {q ? <Link className="btn-secondary h-[42px]" href={modeHref(mode, process)}>Limpar</Link> : null}
+          {q || filter !== "todas" ? <Link className="btn-secondary h-[42px]" href={modeHref(mode, process)}>Limpar</Link> : null}
         </form>
       </section>
 
@@ -513,6 +531,10 @@ function modeHref(mode: Mode, process: ProcessKind) {
   if (mode === "historico") return config.historyHref;
   if (mode === "notificar") return config.notifyHref;
   return config.activeHref;
+}
+
+function normalizeListFilter(value: string | undefined): ListFilter {
+  return value === "notificadas" || value === "resposta-cliente" ? value : "todas";
 }
 
 function ProcessLink({ href, label, active }: { href: string; label: string; active?: boolean }) {

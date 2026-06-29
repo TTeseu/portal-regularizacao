@@ -9,7 +9,7 @@ export default function NotificacaoPendenciasPage({
   return (
     <NotificaFacilPendenciasPage
       title="Notificação das Pendências"
-      description="Fila de pendências técnicas ainda não marcadas como PT notificado, seguindo o processo documental do Base44."
+      description="Notificações de pendência técnica geradas no Notifica Fácil, agrupadas por lote ou registro quando houver mais de uma notificação relacionada."
       mode="notificar"
       icon={<FileClock size={24} />}
       searchParams={searchParams}

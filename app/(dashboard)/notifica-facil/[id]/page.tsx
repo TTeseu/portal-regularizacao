@@ -171,13 +171,16 @@ function getSafeBackHref(value: string | undefined, notification: {
   regularizacao_notificada: boolean;
   regularizacao_data_notificada?: string | null;
 }) {
+  if (value === "/notifica-facil/pendencia-tecnica" || value === "/notifica-facil/historico-pendencia-tecnica") {
+    return "/notifica-facil/notificacao-pendencias";
+  }
+  if (value === "/notifica-facil/historico-regularizacao") {
+    return "/notifica-facil/regularizacao";
+  }
   const allowed = new Set([
     "/notifica-facil",
-    "/notifica-facil/pendencia-tecnica",
     "/notifica-facil/notificacao-pendencias",
-    "/notifica-facil/historico-pendencia-tecnica",
     "/notifica-facil/regularizacao",
-    "/notifica-facil/historico-regularizacao",
     "/notifica-facil/stand-by",
     "/notifica-facil/pdfs"
   ]);
@@ -186,7 +189,7 @@ function getSafeBackHref(value: string | undefined, notification: {
     return "/notifica-facil/regularizacao";
   }
   if (!notification.numero_notificacao && (notification.pendencia_tecnica || notification.pt_notificado || notification.pt_data_notificado)) {
-    return "/notifica-facil/pendencia-tecnica";
+    return "/notifica-facil/notificacao-pendencias";
   }
   return "/notifica-facil";
 }
