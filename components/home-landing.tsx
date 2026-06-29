@@ -35,6 +35,10 @@ type EnergyNewsArticle = {
   sourceName?: string;
 };
 
+type OperationMetrics = {
+  notifications: number;
+};
+
 const modules = [
   {
     title: "Portal de Regularização",
@@ -87,7 +91,7 @@ const operations = [
   { title: "Acompanhamento em tempo real", description: "Indicadores e status para operação, tratativa e governança.", icon: Gauge }
 ];
 
-export function HomeLanding({ user }: { user: HomeUser }) {
+export function HomeLanding({ user, operationMetrics }: { user: HomeUser; operationMetrics: OperationMetrics }) {
   const router = useRouter();
   const [transition, setTransition] = useState<{ label: string; href: string } | null>(null);
   const [news, setNews] = useState<EnergyNewsArticle[]>(fallbackNews);
@@ -192,7 +196,7 @@ export function HomeLanding({ user }: { user: HomeUser }) {
             </div>
           </div>
 
-          <HeroDashboard />
+          <HeroDashboard metrics={operationMetrics} />
         </div>
 
         <div className="mx-auto grid w-full max-w-[1680px] gap-8 px-6 pb-4 md:px-10 xl:grid-cols-[0.97fr_1fr]">
@@ -257,7 +261,7 @@ export function HomeLanding({ user }: { user: HomeUser }) {
   );
 }
 
-function HeroDashboard() {
+function HeroDashboard({ metrics }: { metrics: OperationMetrics }) {
   return (
     <div className="relative mx-auto w-full max-w-[590px] xl:max-w-[610px]">
       <div className="absolute -inset-5 rounded-[38px] bg-[#00E676]/20 blur-3xl" />
@@ -280,7 +284,7 @@ function HeroDashboard() {
 
         <div className="relative mt-8 rounded-[28px] bg-[#132744]/78 p-5 backdrop-blur">
           <div className="grid gap-3 sm:grid-cols-3">
-            <MiniMetric label="Notificações" value="1.9k" tone="green" />
+            <MiniMetric label="Notificações" value={formatMetricNumber(metrics.notifications)} tone="green" />
             <MiniMetric label="Pendências" value="86" tone="blue" />
             <MiniMetric label="Fluxos" value="2" tone="white" />
           </div>
@@ -311,6 +315,10 @@ function HeroDashboard() {
       </div>
     </div>
   );
+}
+
+function formatMetricNumber(value: number) {
+  return new Intl.NumberFormat("pt-BR").format(value);
 }
 
 function MiniMetric({ label, value, tone }: { label: string; value: string; tone: "green" | "blue" | "white" }) {
