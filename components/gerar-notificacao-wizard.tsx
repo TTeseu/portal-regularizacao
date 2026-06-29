@@ -57,6 +57,7 @@ type Props = {
   action: (formData: FormData) => Promise<void>;
   backHref?: string;
   cancelHref?: string;
+  defaultPrazoDias?: string;
 };
 
 const steps = [
@@ -169,7 +170,15 @@ function buildPreviewHtml(empresa: EmpresaOption | undefined, form: WizardForm, 
   }, { preview: true });
 }
 
-export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action, backHref = "/notificacoes", cancelHref = "/notificacoes" }: Props) {
+export function GerarNotificacaoWizard({
+  empresas,
+  tipos,
+  canEdit,
+  action,
+  backHref = "/notificacoes",
+  cancelHref = "/notificacoes",
+  defaultPrazoDias = "10 (dez) dias"
+}: Props) {
   const [step, setStep] = useState(1);
   const [query, setQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -182,7 +191,7 @@ export function GerarNotificacaoWizard({ empresas, tipos, canEdit, action, backH
     tipo_notificacao: tipos[0] || "",
     numero_oficio: "",
     data_notificacao: todayInput(),
-    prazo_dias: "10 (dez) dias",
+    prazo_dias: defaultPrazoDias,
     lote_nome: ""
   });
 

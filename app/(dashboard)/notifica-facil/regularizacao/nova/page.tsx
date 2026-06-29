@@ -53,6 +53,7 @@ export default async function NovaRegularizacaoPage() {
       action={createNotificaFacilRegularizacaoWizard}
       backHref="/notifica-facil/regularizacao"
       cancelHref="/notifica-facil/regularizacao"
+      defaultPrazoDias="30 (trinta) dias"
     />
   );
 }

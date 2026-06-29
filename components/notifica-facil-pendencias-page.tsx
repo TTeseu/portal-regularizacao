@@ -18,6 +18,8 @@ type Mode = "ativas" | "historico" | "notificar";
 type ProcessKind = "pendencia" | "regularizacao";
 type PendenciaItem = NotificaFacilNotification;
 
+const CLIENT_RESPONSE_STATUS = "Resposta do Cliente - Anexo do E-mail.";
+
 const pendenciaImportadaWhere: Prisma.NotificaFacilNotificationWhereInput = {
   numero_notificacao: null,
   OR: [
@@ -148,23 +150,31 @@ function groupGeneratedLotes(items: PendenciaItem[]) {
 
   for (const item of items) {
     const loteId = item.lote_id || item.lote_nome;
-    if (item.numero_notificacao && loteId) {
-      lotes.set(loteId, [...(lotes.get(loteId) || []), item]);
+    const registroKey = item.numero_registro_censo ? `registro:${item.numero_registro_censo}` : "";
+    const groupKey = loteId || registroKey;
+    if (item.numero_notificacao && groupKey) {
+      lotes.set(groupKey, [...(lotes.get(groupKey) || []), item]);
     } else {
       individuais.push(item);
     }
   }
 
   return {
-    lotes: Array.from(lotes.entries()).map(([loteId, rows]) => ({
-      loteId,
-      nome: loteDisplayName(rows[0]),
-      rows,
-      created_date: rows[0]?.created_date,
-      last_downloaded_at: rows.find((row) => row.last_downloaded_at)?.last_downloaded_at,
-      last_downloaded_by: rows.find((row) => row.last_downloaded_by)?.last_downloaded_by,
-      cidades: Array.from(new Set(rows.map((row) => notificaFacilAddressCity(row.enderecos_revelia, row.empresa_cidade)).filter(Boolean)))
-    })),
+    lotes: Array.from(lotes.entries()).flatMap(([loteId, rows]) => {
+      if (loteId.startsWith("registro:") && rows.length === 1) {
+        individuais.push(rows[0]);
+        return [];
+      }
+      return [{
+        loteId,
+        nome: loteDisplayName(rows[0]),
+        rows,
+        created_date: rows[0]?.created_date,
+        last_downloaded_at: rows.find((row) => row.last_downloaded_at)?.last_downloaded_at,
+        last_downloaded_by: rows.find((row) => row.last_downloaded_by)?.last_downloaded_by,
+        cidades: Array.from(new Set(rows.map((row) => notificaFacilAddressCity(row.enderecos_revelia, row.empresa_cidade)).filter(Boolean)))
+      }];
+    }),
     individuais
   };
 }
@@ -189,11 +199,12 @@ export async function NotificaFacilPendenciasPage({
   const canEdit = canEditUser(user);
   const config = processConfigs[process];
   const where = currentWhere(mode, q, process);
+  const generatedWhere = mergeWhere(config.baseWhere, { numero_notificacao: { not: null } });
   const exportQuery = new URLSearchParams();
   exportQuery.set("tipo", mode === "historico" ? config.exportHistoryType : config.exportType);
   if (q) exportQuery.set("q", q);
 
-  const [items, filteredTotal, total, aguardando, notificados, comData, logs] = await Promise.all([
+  const [items, filteredTotal, total, aguardando, notificados, comData, respondidas, semRespostaCliente, logs] = await Promise.all([
     prisma.notificaFacilNotification.findMany({
       where,
       orderBy: [{ updated_date: "desc" }, { created_date: "desc" }],
@@ -204,6 +215,8 @@ export async function NotificaFacilPendenciasPage({
     prisma.notificaFacilNotification.count({ where: mergeWhere(config.baseWhere, config.notifiedFalse) }),
     prisma.notificaFacilNotification.count({ where: mergeWhere(config.baseWhere, config.notifiedTrue) }),
     prisma.notificaFacilNotification.count({ where: mergeWhere(config.baseWhere, config.withDate) }),
+    prisma.notificaFacilNotification.count({ where: mergeWhere(generatedWhere, { status: CLIENT_RESPONSE_STATUS }) }),
+    prisma.notificaFacilNotification.count({ where: mergeWhere(generatedWhere, { status: { not: CLIENT_RESPONSE_STATUS } }) }),
     mode === "historico"
       ? prisma.notificaFacilActivityLog.findMany({
           where: {
@@ -218,7 +231,7 @@ export async function NotificaFacilPendenciasPage({
         })
       : Promise.resolve([])
   ]);
-  const grouped = mode === "notificar" || process === "regularizacao" ? groupGeneratedLotes(items) : null;
+  const grouped = mode === "notificar" || mode === "historico" || process === "regularizacao" ? groupGeneratedLotes(items) : null;
 
   return (
     <div className="mx-auto max-w-[1500px] space-y-6">
@@ -272,11 +285,13 @@ export async function NotificaFacilPendenciasPage({
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
         <Metric label={config.totalMetric} value={total} icon={<AlertTriangle size={22} />} />
         <Metric label={config.waitingMetric} value={aguardando} icon={<Clock3 size={22} />} />
         <Metric label={config.notifiedMetric} value={notificados} icon={<CheckCircle2 size={22} />} />
         <Metric label={config.withDateMetric} value={comData} icon={<FileText size={22} />} />
+        <Metric label="Com resposta do cliente" value={respondidas} icon={<CheckCircle2 size={22} />} />
+        <Metric label="Sem resposta do cliente" value={semRespostaCliente} icon={<Clock3 size={22} />} />
       </section>
 
       <section className="panel p-5">

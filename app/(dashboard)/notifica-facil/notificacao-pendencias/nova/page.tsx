@@ -53,6 +53,7 @@ export default async function NovaNotificacaoPendenciaPage() {
       action={createNotificaFacilPendenciaWizard}
       backHref="/notifica-facil/notificacao-pendencias"
       cancelHref="/notifica-facil/notificacao-pendencias"
+      defaultPrazoDias="30 (trinta) dias"
     />
   );
 }

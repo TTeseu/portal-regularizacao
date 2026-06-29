@@ -19,10 +19,15 @@ export async function GET(
   if (!decodedLoteId) return new NextResponse("lote_id obrigatorio", { status: 400 });
 
   try {
+    const registroCenso = decodedLoteId.startsWith("registro:") ? decodedLoteId.slice("registro:".length) : decodedLoteId;
     const notificacoes = await prisma.notificaFacilNotification.findMany({
       where: {
         numero_notificacao: { not: null },
-        OR: [{ lote_id: decodedLoteId }, { lote_nome: decodedLoteId }]
+        OR: [
+          { lote_id: decodedLoteId },
+          { lote_nome: decodedLoteId },
+          { numero_registro_censo: registroCenso }
+        ]
       },
       orderBy: [{ created_date: "asc" }, { id: "asc" }]
     });

@@ -17,6 +17,7 @@ import { formatDate } from "@/lib/format";
 const CLIENT_RESPONSE_STATUS = "Resposta do Cliente - Anexo do E-mail.";
 const MAX_CLIENT_RESPONSE_FILE_BYTES = 15 * 1024 * 1024;
 const DATA_URL_FALLBACK_BYTES = 900 * 1024;
+const DEFAULT_NOTIFICA_FACIL_PRAZO_DIAS = "30 (trinta) dias";
 
 type ClientResponseAttachment = {
   nome: string;
@@ -745,7 +746,7 @@ async function createNotificaFacilProcessWizard(formData: FormData, process: "pe
   const tipo = text(formData, "tipo_notificacao") || "Ocupação Irregular";
   const numeroOficio = text(formData, "numero_oficio");
   const dataNotificacao = dateFromInput(text(formData, "data_notificacao"));
-  const prazoDias = text(formData, "prazo_dias");
+  const prazoDias = text(formData, "prazo_dias") || DEFAULT_NOTIFICA_FACIL_PRAZO_DIAS;
   const enderecos = parseEnderecosWizard(formData);
   const createdIds: string[] = [];
   const sharedNotificationNumber = numeroOficio || await prisma.$transaction((tx) =>
