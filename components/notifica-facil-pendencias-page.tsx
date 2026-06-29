@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { AlertTriangle, ArrowLeft, Bell, CheckCircle2, Clock3, Download, FileText, Plus } from "lucide-react";
 import { NotificaFacilNotification, Prisma } from "@prisma/client";
 import { AutoSearchInput } from "@/components/auto-search-input";
+import { NotificaFacilNotificationChart } from "@/components/notifica-facil-notification-chart";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { notificaFacilAddressCity } from "@/lib/notifica-facil-address";
@@ -303,6 +304,14 @@ export async function NotificaFacilPendenciasPage({
         <Metric label="Com resposta do cliente" value={respondidas} icon={<CheckCircle2 size={22} />} />
         <Metric label="Sem resposta do cliente" value={semRespostaCliente} icon={<Clock3 size={22} />} />
       </section>
+
+      <NotificaFacilNotificationChart
+        title={process === "regularizacao" ? "Gráfico de notificações de regularização" : "Gráfico de notificações de pendência técnica"}
+        description="Comparativo entre notificações geradas, marcadas como notificadas e com resposta do cliente."
+        generated={total}
+        sent={notificados}
+        responded={respondidas}
+      />
 
       <section className="panel p-5">
         <form className="flex flex-col gap-3 md:flex-row md:items-end">

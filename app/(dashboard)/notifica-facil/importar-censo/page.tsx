@@ -3,6 +3,7 @@ import { AlertTriangle, Archive, ArrowLeft, Bot, Clock3, Download, FileSpreadshe
 import { Prisma } from "@prisma/client";
 import { AutoSearchInput } from "@/components/auto-search-input";
 import { CensoPhotoViewer } from "@/components/censo-photo-viewer";
+import { NotificaFacilNotificationChart } from "@/components/notifica-facil-notification-chart";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { formatDate, formatPtBrDisplay } from "@/lib/format";
 import { activeCensoWhere } from "@/lib/notifica-facil-censo";
@@ -19,6 +20,13 @@ import {
   sendSelectedNotificaFacilCensosToStandBy,
   updateNotificaFacilCensoRegistro
 } from "../actions";
+
+const CLIENT_RESPONSE_STATUS = "Resposta do Cliente - Anexo do E-mail.";
+
+const generatedFromCensoWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  numero_notificacao: { not: null },
+  numero_registro_censo: { not: null }
+};
 
 function buildWhere(params: Record<string, string | undefined>) {
   const filters: Prisma.NotificaFacilNotificationWhereInput[] = [activeCensoWhere];
@@ -53,14 +61,31 @@ export default async function ImportarCensoPage({
   if (values.q) query.set("q", values.q);
   if (values.empresa) query.set("empresa", values.empresa);
   query.set("tipo", "importar-censo");
-  const [items, total, empresasIdentificadas] = await Promise.all([
+  const [items, total, empresasIdentificadas, censoGenerated, censoSent, censoResponded] = await Promise.all([
     prisma.notificaFacilNotification.findMany({
       where,
       orderBy: [{ created_date: "desc" }, { numero_registro_censo: "desc" }],
       take: 250
     }),
     prisma.notificaFacilNotification.count({ where }),
-    prisma.notificaFacilNotification.groupBy({ by: ["empresa"], where: activeCensoWhere, _count: { empresa: true } })
+    prisma.notificaFacilNotification.groupBy({ by: ["empresa"], where: activeCensoWhere, _count: { empresa: true } }),
+    prisma.notificaFacilNotification.count({ where: generatedFromCensoWhere }),
+    prisma.notificaFacilNotification.count({
+      where: {
+        AND: [
+          generatedFromCensoWhere,
+          {
+            OR: [
+              { data_email_encaminhado: { not: null } },
+              { pt_notificado: true },
+              { regularizacao_notificada: true },
+              { status: "Notificação Encaminhada por E-mail." }
+            ]
+          }
+        ]
+      }
+    }),
+    prisma.notificaFacilNotification.count({ where: { AND: [generatedFromCensoWhere, { status: CLIENT_RESPONSE_STATUS }] } })
   ]);
 
   return (
@@ -148,6 +173,14 @@ export default async function ImportarCensoPage({
         <Metric label="Empresas identificadas" value={empresasIdentificadas.length} tone="yellow" />
         <Metric label="Disponiveis" value={total} tone="green" />
       </section>
+
+      <NotificaFacilNotificationChart
+        title="Gráfico de notificações do CENSO"
+        description="Acompanhamento das notificações geradas a partir de registros do CENSO."
+        generated={censoGenerated}
+        sent={censoSent}
+        responded={censoResponded}
+      />
 
       <form className="panel p-4">
         <label>
