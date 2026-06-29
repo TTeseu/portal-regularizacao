@@ -16,10 +16,13 @@ import {
 } from "lucide-react";
 import { canEdit as canEditUser, requireUser } from "@/lib/auth";
 import { AutoSearchInput } from "@/components/auto-search-input";
+import { NotificaFacilNotificationChart } from "@/components/notifica-facil-notification-chart";
 import { formatDate } from "@/lib/format";
 import { notificaFacilAddressCity } from "@/lib/notifica-facil-address";
 import { prisma } from "@/lib/prisma";
 import { cnpjSearchTerm } from "@/lib/cnpj";
+
+const CLIENT_RESPONSE_STATUS = "Resposta do Cliente - Anexo do E-mail.";
 
 const statuses = [
   "Aguardando assinatura Gestor",
@@ -34,6 +37,25 @@ const generatedNotificationWhere: Prisma.NotificaFacilNotificationWhereInput = {
   numero_notificacao: { not: null },
   pendencia_tecnica: false,
   OR: [{ tipo_servico: null }, { tipo_servico: { not: "CENSO" } }]
+};
+
+const generatedFromCensoWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  numero_notificacao: { not: null },
+  numero_registro_censo: { not: null }
+};
+
+const sentFromCensoWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  AND: [
+    generatedFromCensoWhere,
+    {
+      OR: [
+        { data_email_encaminhado: { not: null } },
+        { pt_notificado: true },
+        { regularizacao_notificada: true },
+        { status: "Notificação Encaminhada por E-mail." }
+      ]
+    }
+  ]
 };
 
 const DASHBOARD_BASELINE_CUTOFF = new Date("2026-06-12T17:10:00.000Z");
@@ -100,7 +122,10 @@ export default async function NotificaFacilPage({
     novoValorAgg,
     novaMultaAgg,
     novosIdsAgg,
-    novosRegularizadosAgg
+    novosRegularizadosAgg,
+    censoGenerated,
+    censoSent,
+    censoResponded
   ] = await Promise.all([
     prisma.notificaFacilNotification.findMany({
       where,
@@ -128,7 +153,10 @@ export default async function NotificaFacilPage({
     prisma.notificaFacilNotification.aggregate({
       where: combineWhere([metricWhere, { status: "Finalizar Notificação." }]),
       _sum: { total_ids_identificados: true }
-    })
+    }),
+    prisma.notificaFacilNotification.count({ where: generatedFromCensoWhere }),
+    prisma.notificaFacilNotification.count({ where: sentFromCensoWhere }),
+    prisma.notificaFacilNotification.count({ where: combineWhere([generatedFromCensoWhere, { status: CLIENT_RESPONSE_STATUS }]) })
   ]);
 
   const total = DASHBOARD_BASELINE.totalNotificacoes + novasNotificacoes;
@@ -182,6 +210,14 @@ export default async function NotificaFacilPage({
         <Metric label="Empresas notificadas" value={empresasNotificadas} hint="Empresas únicas" icon={<Building2 size={24} />} tone="blue" />
         <Metric label="E-mails enviados" value={emailEnviados} hint="Com data de envio" icon={<Users size={24} />} tone="purple" />
       </section>
+
+      <NotificaFacilNotificationChart
+        title="Gráfico de notificações do CENSO"
+        description="Resumo das notificações geradas a partir dos registros recebidos do CENSO."
+        generated={censoGenerated}
+        sent={censoSent}
+        responded={censoResponded}
+      />
 
       <section className="panel p-5">
         <form className="grid gap-4 xl:grid-cols-[1.4fr_1fr_1fr_1fr_auto] xl:items-end">
