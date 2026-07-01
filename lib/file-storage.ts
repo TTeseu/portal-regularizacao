@@ -19,7 +19,9 @@ function cleanEnv(value: string | undefined) {
 }
 
 function r2Config() {
-  const accountId = cleanEnv(process.env.R2_ACCOUNT_ID || process.env.CLOUDFLARE_R2_ACCOUNT_ID);
+  const accountId = cleanEnv(
+    process.env.R2_ACCOUNT_ID || process.env.CLOUDFLARE_R2_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID
+  );
   const accessKeyId = cleanEnv(process.env.R2_ACCESS_KEY_ID || process.env.CLOUDFLARE_R2_ACCESS_KEY_ID);
   const secretAccessKey = cleanEnv(process.env.R2_SECRET_ACCESS_KEY || process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY);
   const bucket = cleanEnv(process.env.R2_BUCKET || process.env.CLOUDFLARE_R2_BUCKET);
@@ -93,4 +95,3 @@ export async function uploadFile(input: UploadInput): Promise<UploadResult> {
 
   throw new Error("Nenhum storage persistente configurado. Configure R2_* ou BLOB_READ_WRITE_TOKEN.");
 }
-

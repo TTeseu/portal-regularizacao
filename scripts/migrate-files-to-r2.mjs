@@ -19,7 +19,7 @@ function env(name, fallback = "") {
   return (process.env[name] || fallback).trim();
 }
 
-const accountId = env("R2_ACCOUNT_ID", env("CLOUDFLARE_R2_ACCOUNT_ID"));
+const accountId = env("R2_ACCOUNT_ID", env("CLOUDFLARE_R2_ACCOUNT_ID", env("CLOUDFLARE_ACCOUNT_ID")));
 const accessKeyId = env("R2_ACCESS_KEY_ID", env("CLOUDFLARE_R2_ACCESS_KEY_ID"));
 const secretAccessKey = env("R2_SECRET_ACCESS_KEY", env("CLOUDFLARE_R2_SECRET_ACCESS_KEY"));
 const bucket = env("R2_BUCKET", env("CLOUDFLARE_R2_BUCKET"));
@@ -171,4 +171,3 @@ try {
 } finally {
   await prisma.$disconnect();
 }
-

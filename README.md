@@ -56,6 +56,7 @@ BASE44_TOKEN=""
 BASE44_SERVER_URL="https://base44.app"
 BLOB_READ_WRITE_TOKEN=""
 R2_ACCOUNT_ID=""
+CLOUDFLARE_ACCOUNT_ID=""
 R2_ACCESS_KEY_ID=""
 R2_SECRET_ACCESS_KEY=""
 R2_BUCKET=""
@@ -71,7 +72,7 @@ GNEWS_API_KEY=""
 
 `DATABASE_URL` deve apontar para o Supabase Postgres em producao. Use a connection string do pooler Supabase quando estiver rodando na Vercel.
 
-`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` e `R2_PUBLIC_URL` habilitam armazenamento permanente de PDFs e anexos no Cloudflare R2. Se R2 nao estiver configurado, o sistema ainda aceita `BLOB_READ_WRITE_TOKEN` como fallback legado. Sem R2/Blob, arquivos novos nao devem ser anexados e PDFs podem voltar ao fallback no banco.
+`R2_ACCOUNT_ID` ou `CLOUDFLARE_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` e `R2_PUBLIC_URL` habilitam armazenamento permanente de PDFs e anexos no Cloudflare R2. Se R2 nao estiver configurado, o sistema ainda aceita `BLOB_READ_WRITE_TOKEN` como fallback legado. Sem R2/Blob, arquivos novos nao devem ser anexados e PDFs podem voltar ao fallback no banco.
 
 `COLETA_DADOS_API_KEY` protege o endpoint do Coleta Dados. `NOTIFICA_FACIL_INTEGRATION_TOKEN` continua aceito como nome legado, mas prefira `COLETA_DADOS_API_KEY` para novas configuracoes.
 
@@ -128,6 +129,7 @@ O acesso legado por senha ainda funciona com `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
 ```bash
 R2_ACCOUNT_ID=""
+CLOUDFLARE_ACCOUNT_ID=""
 R2_ACCESS_KEY_ID=""
 R2_SECRET_ACCESS_KEY=""
 R2_BUCKET=""
