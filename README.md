@@ -144,6 +144,30 @@ npm run migrate:files:r2
 
 Esse comando usa o `DATABASE_URL` atual e envia os arquivos para o R2, limpando os campos base64 quando o upload termina.
 
+## Migracao Neon/Supabase
+
+Ordem recomendada:
+
+1. Configure R2 no ambiente local.
+2. Aponte `DATABASE_URL` para o banco antigo, se ele ainda estiver legivel.
+3. Rode `npm run migrate:files:r2` para tirar PDFs/anexos base64 do banco antigo.
+4. Configure o schema no Supabase:
+
+```bash
+DATABASE_URL="postgresql://SUPABASE..." npm run prisma:migrate
+```
+
+5. Copie os dados do banco antigo para o Supabase:
+
+```bash
+SOURCE_DATABASE_URL="postgresql://BANCO_ANTIGO..." TARGET_DATABASE_URL="postgresql://SUPABASE..." npm run migrate:db:supabase
+```
+
+Por padrao, o script de copia nao copia `pdf_base64`, para evitar levar arquivos grandes para o Supabase. Ele preserva as URLs em `pdfUrl`/`pdf_url`. Para forcar copia de base64, use `COPY_PDF_BASE64=true`, mas isso nao e recomendado.
+
+6. Na Vercel, troque `DATABASE_URL` para a URL do Supabase e mantenha as variaveis `R2_*`.
+7. Faca um novo deploy.
+
 ## Banco Neon legado
 
 1. Crie um projeto Neon.
