@@ -313,6 +313,16 @@ export async function updateLoteNotificacoesStatus(loteIdOrNome: string, formDat
   redirect(withFlash(safeRedirectPath(formData, "/regularizacao"), { success: "salvo" }));
 }
 
+export async function deleteLoteNotificacoes(loteIdOrNome: string, formData: FormData) {
+  await assertCanEdit();
+  await prisma.notificacao.deleteMany({
+    where: { OR: [{ lote_id: loteIdOrNome }, { lote_nome: loteIdOrNome }] }
+  });
+  revalidatePath("/regularizacao");
+  revalidatePath("/notificacoes");
+  redirect(withFlash(safeRedirectPath(formData, "/regularizacao"), { success: "lote-excluido" }));
+}
+
 export async function createEmpresa(formData: FormData) {
   const user = await assertCanEdit();
   const id = randomUUID();

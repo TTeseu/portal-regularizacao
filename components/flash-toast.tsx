@@ -16,6 +16,8 @@ function successMessage(code: string | null, count: string | null) {
       return amount > 0 ? `${amount} ${plural} gerada${amount === 1 ? "" : "s"} com sucesso.` : "Notificações geradas com sucesso.";
     case "notificacao-excluida":
       return "Notificação excluída com sucesso.";
+    case "lote-excluido":
+      return "Lote excluido com sucesso.";
     case "censos-historico":
       return amount > 0 ? `${amount} CENSO${amount === 1 ? "" : "s"} enviado${amount === 1 ? "" : "s"} ao histórico.` : "CENSO enviado ao histórico.";
     case "censos-clandestinos":

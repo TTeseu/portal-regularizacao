@@ -44,18 +44,25 @@ const generatedFromCensoWhere: Prisma.NotificaFacilNotificationWhereInput = {
   numero_registro_censo: { not: null }
 };
 
-const sentFromCensoWhere: Prisma.NotificaFacilNotificationWhereInput = {
-  AND: [
-    generatedFromCensoWhere,
-    {
-      OR: [
-        { data_email_encaminhado: { not: null } },
-        { pt_notificado: true },
-        { regularizacao_notificada: true },
-        { status: "Notificação Encaminhada por E-mail." }
-      ]
-    }
+const censoSentSignalWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  OR: [
+    { data_email_encaminhado: { not: null } },
+    { pt_notificado: true },
+    { regularizacao_notificada: true },
+    { status: "Notificação Encaminhada por E-mail." }
   ]
+};
+
+const pendingGeneratedFromCensoWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  AND: [generatedFromCensoWhere, { NOT: [censoSentSignalWhere, { status: CLIENT_RESPONSE_STATUS }] }]
+};
+
+const sentFromCensoWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  AND: [generatedFromCensoWhere, censoSentSignalWhere, { status: { not: CLIENT_RESPONSE_STATUS } }]
+};
+
+const respondedFromCensoWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  AND: [generatedFromCensoWhere, { status: CLIENT_RESPONSE_STATUS }]
 };
 
 const DASHBOARD_BASELINE_CUTOFF = new Date("2026-06-12T17:10:00.000Z");
@@ -154,9 +161,9 @@ export default async function NotificaFacilPage({
       where: combineWhere([metricWhere, { status: "Finalizar Notificação." }]),
       _sum: { total_ids_identificados: true }
     }),
-    prisma.notificaFacilNotification.count({ where: generatedFromCensoWhere }),
+    prisma.notificaFacilNotification.count({ where: pendingGeneratedFromCensoWhere }),
     prisma.notificaFacilNotification.count({ where: sentFromCensoWhere }),
-    prisma.notificaFacilNotification.count({ where: combineWhere([generatedFromCensoWhere, { status: CLIENT_RESPONSE_STATUS }]) })
+    prisma.notificaFacilNotification.count({ where: respondedFromCensoWhere })
   ]);
 
   const total = DASHBOARD_BASELINE.totalNotificacoes + novasNotificacoes;

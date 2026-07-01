@@ -28,6 +28,27 @@ const generatedFromCensoWhere: Prisma.NotificaFacilNotificationWhereInput = {
   numero_registro_censo: { not: null }
 };
 
+const censoSentSignalWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  OR: [
+    { data_email_encaminhado: { not: null } },
+    { pt_notificado: true },
+    { regularizacao_notificada: true },
+    { status: "Notificação Encaminhada por E-mail." }
+  ]
+};
+
+const pendingGeneratedFromCensoWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  AND: [generatedFromCensoWhere, { NOT: [censoSentSignalWhere, { status: CLIENT_RESPONSE_STATUS }] }]
+};
+
+const sentFromCensoWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  AND: [generatedFromCensoWhere, censoSentSignalWhere, { status: { not: CLIENT_RESPONSE_STATUS } }]
+};
+
+const respondedFromCensoWhere: Prisma.NotificaFacilNotificationWhereInput = {
+  AND: [generatedFromCensoWhere, { status: CLIENT_RESPONSE_STATUS }]
+};
+
 function buildWhere(params: Record<string, string | undefined>) {
   const filters: Prisma.NotificaFacilNotificationWhereInput[] = [activeCensoWhere];
   if (params.q) {
@@ -69,23 +90,9 @@ export default async function ImportarCensoPage({
     }),
     prisma.notificaFacilNotification.count({ where }),
     prisma.notificaFacilNotification.groupBy({ by: ["empresa"], where: activeCensoWhere, _count: { empresa: true } }),
-    prisma.notificaFacilNotification.count({ where: generatedFromCensoWhere }),
-    prisma.notificaFacilNotification.count({
-      where: {
-        AND: [
-          generatedFromCensoWhere,
-          {
-            OR: [
-              { data_email_encaminhado: { not: null } },
-              { pt_notificado: true },
-              { regularizacao_notificada: true },
-              { status: "Notificação Encaminhada por E-mail." }
-            ]
-          }
-        ]
-      }
-    }),
-    prisma.notificaFacilNotification.count({ where: { AND: [generatedFromCensoWhere, { status: CLIENT_RESPONSE_STATUS }] } })
+    prisma.notificaFacilNotification.count({ where: pendingGeneratedFromCensoWhere }),
+    prisma.notificaFacilNotification.count({ where: sentFromCensoWhere }),
+    prisma.notificaFacilNotification.count({ where: respondedFromCensoWhere })
   ]);
 
   return (

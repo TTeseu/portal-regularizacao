@@ -214,11 +214,27 @@ export async function NotificaFacilPendenciasPage({
   const where = currentWhere(mode, q, process, filter);
   const metricBaseWhere = baseWhereForMode(mode, process);
   const generatedWhere = mergeWhere(metricBaseWhere, { numero_notificacao: { not: null } });
+  const chartGeneratedWhere = mergeWhere(generatedWhere, { AND: [config.notifiedFalse, { status: { not: CLIENT_RESPONSE_STATUS } }] });
+  const chartSentWhere = mergeWhere(generatedWhere, { AND: [config.notifiedTrue, { status: { not: CLIENT_RESPONSE_STATUS } }] });
+  const chartRespondedWhere = mergeWhere(generatedWhere, { status: CLIENT_RESPONSE_STATUS });
   const exportQuery = new URLSearchParams();
   exportQuery.set("tipo", mode === "historico" ? config.exportHistoryType : config.exportType);
   if (q) exportQuery.set("q", q);
 
-  const [items, filteredTotal, total, aguardando, notificados, comData, respondidas, semRespostaCliente, logs] = await Promise.all([
+  const [
+    items,
+    filteredTotal,
+    total,
+    aguardando,
+    notificados,
+    comData,
+    respondidas,
+    semRespostaCliente,
+    chartGenerated,
+    chartSent,
+    chartResponded,
+    logs
+  ] = await Promise.all([
     prisma.notificaFacilNotification.findMany({
       where,
       orderBy: [{ updated_date: "desc" }, { created_date: "desc" }],
@@ -231,6 +247,9 @@ export async function NotificaFacilPendenciasPage({
     prisma.notificaFacilNotification.count({ where: mergeWhere(metricBaseWhere, config.withDate) }),
     prisma.notificaFacilNotification.count({ where: mergeWhere(generatedWhere, { status: CLIENT_RESPONSE_STATUS }) }),
     prisma.notificaFacilNotification.count({ where: mergeWhere(generatedWhere, { status: { not: CLIENT_RESPONSE_STATUS } }) }),
+    prisma.notificaFacilNotification.count({ where: chartGeneratedWhere }),
+    prisma.notificaFacilNotification.count({ where: chartSentWhere }),
+    prisma.notificaFacilNotification.count({ where: chartRespondedWhere }),
     mode === "historico"
       ? prisma.notificaFacilActivityLog.findMany({
           where: {
@@ -308,9 +327,9 @@ export async function NotificaFacilPendenciasPage({
       <NotificaFacilNotificationChart
         title={process === "regularizacao" ? "Gráfico de notificações de regularização" : "Gráfico de notificações de pendência técnica"}
         description="Comparativo entre notificações geradas, marcadas como notificadas e com resposta do cliente."
-        generated={total}
-        sent={notificados}
-        responded={respondidas}
+        generated={chartGenerated}
+        sent={chartSent}
+        responded={chartResponded}
       />
 
       <section className="panel p-5">

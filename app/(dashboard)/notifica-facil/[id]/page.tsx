@@ -288,12 +288,31 @@ function ClientResponsePanel({
 
           <label className="block text-xs font-bold uppercase text-edp-muted">
             Anexar arquivo
-            <span className="mt-2 flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-line bg-surface px-4 py-4 text-sm font-semibold text-white transition hover:border-edp/50">
+            <span className="mt-2 flex items-center gap-3 rounded-t-2xl border border-b-0 border-dashed border-line bg-surface px-4 py-3 text-sm font-semibold text-white">
               <UploadCloud className="text-edp" size={18} />
               <span className="flex-1">E-mail, PDF, imagem ou documento de resposta</span>
             </span>
-            <input className="sr-only" type="file" name="resposta_cliente_arquivo" />
+            <input
+              className="field rounded-t-none file:mr-4 file:rounded-lg file:border-0 file:bg-edp file:px-3 file:py-2 file:text-sm file:font-bold file:text-edp-navy"
+              type="file"
+              name="resposta_cliente_arquivo"
+            />
           </label>
+
+          <div className="grid gap-3 md:grid-cols-[1fr_220px]">
+            <label className="block text-xs font-bold uppercase text-edp-muted">
+              Link do e-mail ou anexo
+              <input
+                className="field mt-2"
+                name="resposta_cliente_link"
+                placeholder="https://mail.google.com/... ou mailto:cliente@empresa.com"
+              />
+            </label>
+            <label className="block text-xs font-bold uppercase text-edp-muted">
+              Nome do link
+              <input className="field mt-2" name="resposta_cliente_link_nome" placeholder="E-mail do cliente" />
+            </label>
+          </div>
 
           <button className="btn-primary w-full justify-center" type="submit">
             <Paperclip size={16} />
@@ -315,10 +334,12 @@ function ClientResponsePanel({
                 href={item.url}
                 target="_blank"
                 rel="noreferrer"
-                download
               >
                 <span className="truncate">{item.name}</span>
-                <Download size={14} />
+                <span className="flex items-center gap-1 text-xs font-bold text-edp">
+                  Abrir
+                  <Download size={14} />
+                </span>
               </a>
             ))}
           </div>

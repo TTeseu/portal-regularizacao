@@ -16,7 +16,7 @@ import { formatDate } from "@/lib/format";
 
 const CLIENT_RESPONSE_STATUS = "Resposta do Cliente - Anexo do E-mail.";
 const MAX_CLIENT_RESPONSE_FILE_BYTES = 15 * 1024 * 1024;
-const DATA_URL_FALLBACK_BYTES = 900 * 1024;
+const DATA_URL_FALLBACK_BYTES = MAX_CLIENT_RESPONSE_FILE_BYTES;
 const DEFAULT_NOTIFICA_FACIL_PRAZO_DIAS = "30 (trinta) dias";
 
 type ClientResponseAttachment = {
@@ -237,6 +237,15 @@ function safeFileName(value: string) {
 
 function hasBlobToken() {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
+}
+
+function safeAttachmentUrl(value: string | null) {
+  const raw = String(value || "").trim();
+  if (!raw || /^javascript:/i.test(raw)) return null;
+  if (/^(https?:|mailto:|data:)/i.test(raw)) return raw;
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) return `mailto:${raw}`;
+  if (/^[\w.-]+\.[a-z]{2,}/i.test(raw)) return `https://${raw.replace(/^\/+/, "")}`;
+  return raw;
 }
 
 function parseDelimitedCsv(textValue: string) {
@@ -945,8 +954,10 @@ export async function saveNotificaFacilClientResponse(id: string, formData: Form
 
   const observacoes = text(formData, "observacoes");
   const file = formData.get("resposta_cliente_arquivo");
+  const linkUrl = safeAttachmentUrl(text(formData, "resposta_cliente_link"));
+  const linkName = text(formData, "resposta_cliente_link_nome") || "Link do e-mail/resposta";
   const anexos = normalizeAttachmentRows(notification.anexos_resposta_email);
-  let uploadedName: string | null = null;
+  const uploadedNames: string[] = [];
 
   if (file instanceof File && file.size > 0) {
     if (file.size > MAX_CLIENT_RESPONSE_FILE_BYTES) {
@@ -983,7 +994,18 @@ export async function saveNotificaFacilClientResponse(id: string, formData: Form
       uploadedAt: new Date().toISOString(),
       uploadedBy: user.email
     });
-    uploadedName = file.name || safeName;
+    uploadedNames.push(file.name || safeName);
+  }
+
+  if (linkUrl) {
+    anexos.push({
+      nome: linkName,
+      url: linkUrl,
+      tipo: "link/email",
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: user.email
+    });
+    uploadedNames.push(linkName);
   }
 
   const hasResponse = Boolean(observacoes || anexos.length);
@@ -1005,8 +1027,8 @@ export async function saveNotificaFacilClientResponse(id: string, formData: Form
   await logAction(
     id,
     "resposta_cliente",
-    uploadedName
-      ? `Resposta do cliente registrada com anexo: ${uploadedName}`
+    uploadedNames.length
+      ? `Resposta do cliente registrada com anexo/link: ${uploadedNames.join(", ")}`
       : "Resposta do cliente registrada"
   );
 

@@ -18,7 +18,7 @@ import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/format";
 import { AutoSearchInput } from "@/components/auto-search-input";
 import { LEGACY_NOTIFICADO_STATUSES, STATUS_OPTIONS } from "@/lib/constants";
-import { updateLoteNotificacoesStatus, updateUserPermission } from "../actions";
+import { deleteLoteNotificacoes, updateLoteNotificacoesStatus, updateUserPermission } from "../actions";
 
 type DashboardTab = "notificacoes" | "relatorios" | "permissoes";
 
@@ -208,7 +208,12 @@ function NotificationsPanel({ total, lotes }: { total: number; lotes: ReturnType
               <div className="flex flex-wrap items-start gap-2 lg:justify-end">
                 <Link href={`/notificacoes?lote=${encodeURIComponent(lote.nome)}`} className="btn-secondary"><Send size={16} />Enviar Portal</Link>
                 <Link href={`/api/downloads/lote?lote_id=${encodeURIComponent(lote.loteId)}`} className="btn-primary"><Download size={16} />Baixar PDFs</Link>
-                <button className="btn bg-red-500 px-3 text-white hover:bg-red-600" title="Excluir lote"><Trash2 size={16} /></button>
+                <form action={deleteLoteNotificacoes.bind(null, lote.loteId)}>
+                  <input type="hidden" name="redirect_to" value="/regularizacao" />
+                  <button className="btn bg-red-500 px-3 text-white hover:bg-red-600" title="Excluir lote">
+                    <Trash2 size={16} />
+                  </button>
+                </form>
               </div>
             </div>
 
