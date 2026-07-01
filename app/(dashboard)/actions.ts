@@ -13,6 +13,12 @@ import { notifyAdminsNewAccessRequest } from "@/lib/email";
 import { countActiveAdmins, isSuperAdminEmail } from "@/lib/super-admin";
 import { requireFormattedCNPJ } from "@/lib/cnpj";
 import { BR_TIME_ZONE } from "@/lib/format";
+import {
+  EMPRESA_BLOQUEADA_ERROR_CODE,
+  assertEmpresaNotificacaoLiberada,
+  assertEmpresasNotificacaoLiberadaByIds,
+  isEmpresaNotificacaoBloqueadaError
+} from "@/lib/empresa-bloqueio";
 
 function stringValue(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -86,6 +92,18 @@ export async function createNotificacao(formData: FormData) {
   const user = await assertCanEdit();
   const id = randomUUID();
   const anexos = parseAnexos(formData);
+  try {
+    await assertEmpresaNotificacaoLiberada({
+      empresa: stringValue(formData, "empresa"),
+      cnpj: stringValue(formData, "cnpj"),
+      contrato_numero: stringValue(formData, "contrato_numero")
+    });
+  } catch (error) {
+    if (isEmpresaNotificacaoBloqueadaError(error)) {
+      redirect(withFlash(safeRedirectPath(formData, "/notificacoes/nova"), { error: EMPRESA_BLOQUEADA_ERROR_CODE, empresa: error.empresa }));
+    }
+    throw error;
+  }
   const data = {
     id,
     created_date: new Date(),
@@ -158,6 +176,15 @@ export async function createNotificacoesWizard(formData: FormData) {
   const empresaIds = formData.getAll("empresa_ids").map(String).filter(Boolean);
   if (empresaIds.length === 0) {
     throw new Error("Selecione ao menos uma empresa.");
+  }
+
+  try {
+    await assertEmpresasNotificacaoLiberadaByIds(empresaIds);
+  } catch (error) {
+    if (isEmpresaNotificacaoBloqueadaError(error)) {
+      redirect(withFlash("/notificacoes/nova", { error: EMPRESA_BLOQUEADA_ERROR_CODE, empresa: error.empresa }));
+    }
+    throw error;
   }
 
   const empresas = await prisma.empresa.findMany({
@@ -357,6 +384,7 @@ export async function createEmpresa(formData: FormData) {
       multa: stringValue(formData, "multa"),
       faturamento_mensal: stringValue(formData, "faturamento_mensal"),
       retroativo: stringValue(formData, "retroativo"),
+      bloqueio_notificacao: boolValue(formData, "bloqueio_notificacao"),
       tem_clausula_11_6_3: boolValue(formData, "tem_clausula_11_6_3"),
       campo_11_6_3: stringValue(formData, "campo_11_6_3")
     }
@@ -396,6 +424,7 @@ export async function updateEmpresa(id: string, formData: FormData) {
       multa: stringValue(formData, "multa"),
       faturamento_mensal: stringValue(formData, "faturamento_mensal"),
       retroativo: stringValue(formData, "retroativo"),
+      bloqueio_notificacao: boolValue(formData, "bloqueio_notificacao"),
       tem_clausula_11_6_3: boolValue(formData, "tem_clausula_11_6_3"),
       campo_11_6_3: stringValue(formData, "campo_11_6_3")
     }

@@ -57,6 +57,7 @@ export default async function EmpresasPage({
                 <th className="px-4 py-3">Contrato</th>
                 <th className="px-4 py-3">Cidade</th>
                 <th className="px-4 py-3">11.6.3</th>
+                <th className="px-4 py-3">Bloqueio</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -68,6 +69,13 @@ export default async function EmpresasPage({
                   <td className="px-4 py-3">{empresa.contrato_numero || "-"}</td>
                   <td className="px-4 py-3">{formatPtBrDisplay(empresa.cidade)}</td>
                   <td className="px-4 py-3">{empresa.tem_clausula_11_6_3 ? "Sim" : "Não"}</td>
+                  <td className="px-4 py-3">
+                    {empresa.bloqueio_notificacao ? (
+                      <span className="rounded-full border border-red-400/35 bg-red-950/35 px-2 py-1 text-xs font-bold uppercase text-red-100">Bloqueada</span>
+                    ) : (
+                      "Liberada"
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <Link className="btn-secondary px-2" href={`/empresas/${empresa.id}`}>
                       <Eye size={16} />

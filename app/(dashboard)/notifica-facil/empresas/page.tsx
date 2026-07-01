@@ -102,6 +102,7 @@ export default async function NotificaFacilEmpresasPage({
                 <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3">Vencimento</th>
                 <th className="px-4 py-3">Status envio</th>
+                <th className="px-4 py-3">Bloqueio</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -117,6 +118,13 @@ export default async function NotificaFacilEmpresasPage({
                   <td className="px-4 py-3 text-edp-muted">{empresa.estado || "-"}</td>
                   <td className="px-4 py-3 text-edp-muted">{empresa.vencimento_contrato || "-"}</td>
                   <td className="px-4 py-3 text-edp-muted">{empresa.status_envio_notificacao || "-"}</td>
+                  <td className="px-4 py-3">
+                    {empresa.bloqueio_notificacao ? (
+                      <span className="rounded-full border border-red-400/35 bg-red-950/35 px-2 py-1 text-xs font-bold uppercase text-red-100">Bloqueada</span>
+                    ) : (
+                      <span className="text-edp-muted">Liberada</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
                       <Link className="btn-secondary h-9 px-3" href={`/notifica-facil/empresas/${empresa.id}`} title="Visualizar e editar">
@@ -136,7 +144,7 @@ export default async function NotificaFacilEmpresasPage({
               ))}
               {empresas.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-edp-muted">Nenhuma empresa encontrada.</td>
+                  <td colSpan={11} className="px-4 py-12 text-center text-edp-muted">Nenhuma empresa encontrada.</td>
                 </tr>
               ) : null}
             </tbody>

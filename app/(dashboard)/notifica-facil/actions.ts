@@ -13,6 +13,12 @@ import { buildNotificaFacilHtml } from "@/lib/notifica-facil-html";
 import { storePdfForNotificaFacil } from "@/lib/notifica-facil-pdf-cache";
 import { requireFormattedCNPJ } from "@/lib/cnpj";
 import { formatDate } from "@/lib/format";
+import {
+  EMPRESA_BLOQUEADA_ERROR_CODE,
+  assertEmpresaNotificacaoLiberada,
+  assertEmpresasNotificacaoLiberadaByIds,
+  isEmpresaNotificacaoBloqueadaError
+} from "@/lib/empresa-bloqueio";
 
 const CLIENT_RESPONSE_STATUS = "Resposta do Cliente - Anexo do E-mail.";
 const MAX_CLIENT_RESPONSE_FILE_BYTES = 15 * 1024 * 1024;
@@ -458,6 +464,18 @@ export async function createNotificaFacilNotification(formData: FormData) {
   const data = formToData(formData);
   data.created_by_id = user.id;
   data.created_by = user.email;
+  try {
+    await assertEmpresaNotificacaoLiberada({
+      empresa: data.empresa,
+      cnpj: data.cnpj,
+      contrato_numero: data.contrato_numero
+    });
+  } catch (error) {
+    if (isEmpresaNotificacaoBloqueadaError(error)) {
+      redirect(withFlash("/notifica-facil/nova", { error: EMPRESA_BLOQUEADA_ERROR_CODE, empresa: error.empresa }));
+    }
+    throw error;
+  }
 
   const created = await prisma.$transaction(async (tx) => {
     const year = yearFromDateText(data.data_notificacao);
@@ -739,6 +757,15 @@ async function createNotificaFacilProcessWizard(formData: FormData, process: "pe
   const empresaIds = formData.getAll("empresa_ids").map(String).filter(Boolean);
   if (empresaIds.length === 0) {
     throw new Error("Selecione ao menos uma empresa.");
+  }
+
+  try {
+    await assertEmpresasNotificacaoLiberadaByIds(empresaIds);
+  } catch (error) {
+    if (isEmpresaNotificacaoBloqueadaError(error)) {
+      redirect(withFlash(targetPath, { error: EMPRESA_BLOQUEADA_ERROR_CODE, empresa: error.empresa }));
+    }
+    throw error;
   }
 
   const empresas = await prisma.empresa.findMany({

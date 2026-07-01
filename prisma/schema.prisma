@@ -123,6 +123,7 @@ model Empresa {
   multa                 String?
   faturamento_mensal    String?
   retroativo            String?
+  bloqueio_notificacao  Boolean   @default(false)
   tem_clausula_11_6_3   Boolean   @default(false)
   campo_11_6_3          String?
 

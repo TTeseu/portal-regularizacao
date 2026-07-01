@@ -73,6 +73,18 @@ export function EmpresaForm({ empresa, action, canEdit, redirectTo }: Props) {
           </label>
         ))}
 
+        <label className="rounded-xl border border-red-300/30 bg-red-950/20 p-4 text-sm font-medium text-red-100 md:col-span-2">
+          <span className="flex items-start gap-3">
+            <input className="mt-1" type="checkbox" name="bloqueio_notificacao" defaultChecked={empresa?.bloqueio_notificacao || false} />
+            <span>
+              <span className="block font-bold text-red-100">Bloquear geração de notificação para esta empresa</span>
+              <span className="mt-1 block text-red-100/75">
+                Quando marcado, o Portal de Regularização e o Notifica Fácil impedem a geração de novas notificações para esta empresa.
+              </span>
+            </span>
+          </span>
+        </label>
+
         <label className="flex items-center gap-2 text-sm font-medium md:col-span-2">
           <input type="checkbox" name="tem_clausula_11_6_3" defaultChecked={empresa?.tem_clausula_11_6_3 || false} />
           Possui clausula 11.6.3

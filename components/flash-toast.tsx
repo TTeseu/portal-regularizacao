@@ -33,8 +33,10 @@ function successMessage(code: string | null, count: string | null) {
   }
 }
 
-function errorMessage(code: string | null) {
+function errorMessage(code: string | null, empresa?: string | null) {
   switch (code) {
+    case "empresa-bloqueada":
+      return `Nao pode ser gerada uma notificacao${empresa ? ` para ${empresa}` : " para esta empresa"}. Para mais informacoes, consulte os superiores.`;
     case "empresa-vinculada":
       return "Não foi possível excluir: esta empresa possui registros vinculados.";
     case "arquivo":
@@ -55,7 +57,7 @@ export function FlashToast() {
   const [dismissedKey, setDismissedKey] = useState("");
   const payload = useMemo(() => {
     const success = successMessage(searchParams.get("success"), searchParams.get("count"));
-    const error = errorMessage(searchParams.get("error") || searchParams.get("erro"));
+    const error = errorMessage(searchParams.get("error") || searchParams.get("erro"), searchParams.get("empresa"));
     const importados = searchParams.get("importados");
     const ignorados = searchParams.get("ignorados");
     if (success) return { tone: "success" as const, message: success };
