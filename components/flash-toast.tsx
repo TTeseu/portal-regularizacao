@@ -45,6 +45,8 @@ function errorMessage(code: string | null, empresa?: string | null) {
       return "O arquivo é muito grande. Envie um arquivo de até 15 MB.";
     case "blob":
       return "Não foi possível anexar arquivo grande porque o armazenamento Blob não está configurado.";
+    case "storage":
+      return "Nao foi possivel anexar o arquivo porque o armazenamento R2/Blob nao esta configurado.";
     case "resposta-indisponivel":
       return "Esta notificação ainda não aceita resposta do cliente.";
     default:

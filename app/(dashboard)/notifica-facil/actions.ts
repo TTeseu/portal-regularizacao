@@ -4,13 +4,13 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
-import { put } from "@vercel/blob";
 import { canEdit, requireUser } from "@/lib/auth";
 import { activeCensoWhere } from "@/lib/notifica-facil-censo";
 import { prisma } from "@/lib/prisma";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 import { buildNotificaFacilHtml } from "@/lib/notifica-facil-html";
 import { storePdfForNotificaFacil } from "@/lib/notifica-facil-pdf-cache";
+import { hasPersistentFileStorage, uploadFile } from "@/lib/file-storage";
 import { requireFormattedCNPJ } from "@/lib/cnpj";
 import { formatDate } from "@/lib/format";
 import {
@@ -22,7 +22,6 @@ import {
 
 const CLIENT_RESPONSE_STATUS = "Resposta do Cliente - Anexo do E-mail.";
 const MAX_CLIENT_RESPONSE_FILE_BYTES = 15 * 1024 * 1024;
-const DATA_URL_FALLBACK_BYTES = MAX_CLIENT_RESPONSE_FILE_BYTES;
 const DEFAULT_NOTIFICA_FACIL_PRAZO_DIAS = "30 (trinta) dias";
 
 type ClientResponseAttachment = {
@@ -239,10 +238,6 @@ function safeFileName(value: string) {
     .replace(/[^a-zA-Z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 120) || "anexo";
-}
-
-function hasBlobToken() {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
 }
 
 function safeAttachmentUrl(value: string | null) {
@@ -995,22 +990,15 @@ export async function saveNotificaFacilClientResponse(id: string, formData: Form
     const contentType = file.type || "application/octet-stream";
     let url: string;
 
-    if (hasBlobToken()) {
-      const blob = await put(
-        `notifica-facil/respostas-clientes/${notification.id}/${Date.now()}-${safeName}`,
-        Buffer.from(await file.arrayBuffer()),
-        {
-          access: "public",
-          contentType,
-          addRandomSuffix: true
-        }
-      );
-      url = blob.url;
-    } else if (file.size <= DATA_URL_FALLBACK_BYTES) {
-      const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
-      url = `data:${contentType};base64,${base64}`;
+    if (hasPersistentFileStorage()) {
+      const uploaded = await uploadFile({
+        key: `notifica-facil/respostas-clientes/${notification.id}/${Date.now()}-${safeName}`,
+        body: Buffer.from(await file.arrayBuffer()),
+        contentType
+      });
+      url = uploaded.url;
     } else {
-      redirect(withFlash(`/notifica-facil/${id}`, { error: "blob" }));
+      redirect(withFlash(`/notifica-facil/${id}`, { error: "storage" }));
     }
 
     anexos.push({

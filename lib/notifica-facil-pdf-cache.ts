@@ -1,5 +1,5 @@
 import type { NotificaFacilNotification } from "@prisma/client";
-import { put } from "@vercel/blob";
+import { hasPersistentFileStorage, uploadFile } from "@/lib/file-storage";
 import { prisma } from "@/lib/prisma";
 import { normalizeEdpLogoSourcesForPdf } from "@/lib/edp-logo-server";
 import { buildNotificaFacilHtml, sanitizeNotificaFacilHtml } from "@/lib/notifica-facil-html";
@@ -14,12 +14,8 @@ import {
 type PdfCacheResult = {
   bytes: Uint8Array;
   url: string;
-  source: "blob" | "database" | "generated";
+  source: "storage" | "database" | "generated";
 };
-
-function hasBlobToken() {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
-}
 
 function isExternalPdfUrl(value?: string | null) {
   return Boolean(value && /^https?:\/\//i.test(value));
@@ -51,13 +47,13 @@ export async function storePdfForNotificaFacil(notification: NotificaFacilNotifi
   let pdfUrl = markPdfRoute(`/api/notifica-facil/notifications/${notification.id}/pdf`);
   let pdfBase64: string | null = Buffer.from(pdf).toString("base64");
 
-  if (hasBlobToken()) {
-    const blob = await put(`notifica-facil/notifications/${PDF_RENDERER_VERSION}/${notification.id}.pdf`, Buffer.from(pdf), {
-      access: "public",
-      contentType: "application/pdf",
-      allowOverwrite: true
+  if (hasPersistentFileStorage()) {
+    const file = await uploadFile({
+      key: `notifica-facil/notifications/${PDF_RENDERER_VERSION}/${notification.id}.pdf`,
+      body: pdf,
+      contentType: "application/pdf"
     });
-    pdfUrl = blob.url;
+    pdfUrl = file.url;
     pdfBase64 = null;
   }
 
@@ -86,7 +82,7 @@ export async function ensurePdfForNotificaFacil(notification: NotificaFacilNotif
   if (isExternalPdfUrl(notification.pdf_url) && !isSelfPdfRoute(notification.pdf_url, notification.id) && hasCurrentPdfRenderer(notification.pdf_url)) {
     const bytes = await readExternalPdf(notification.pdf_url!);
     if (bytes) {
-      return { bytes, url: notification.pdf_url!, source: "blob" };
+      return { bytes, url: notification.pdf_url!, source: "storage" };
     }
   }
 

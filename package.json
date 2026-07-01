@@ -18,10 +18,12 @@
     "export:notifica-facil": "node scripts/export-notifica-facil-base44.mjs",
     "import:notifica-facil": "node scripts/import-notifica-facil-base44.mjs",
     "sync:notifica-facil-attachments": "node scripts/sync-notifica-facil-attachments.mjs",
-    "sync:notifica-facil-empresas": "node scripts/sync-notifica-facil-empresas.mjs"
+    "sync:notifica-facil-empresas": "node scripts/sync-notifica-facil-empresas.mjs",
+    "migrate:files:r2": "node scripts/migrate-files-to-r2.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
+    "@aws-sdk/client-s3": "^3.1077.0",
     "@base44/sdk": "latest",
     "@prisma/client": "6.19.3",
     "@sparticuz/chromium": "latest",

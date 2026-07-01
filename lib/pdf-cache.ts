@@ -2,7 +2,7 @@ import type { Notificacao } from "@prisma/client";
 import { existsSync } from "node:fs";
 import chromium from "@sparticuz/chromium";
 import puppeteer from "puppeteer-core";
-import { put } from "@vercel/blob";
+import { hasPersistentFileStorage, uploadFile } from "@/lib/file-storage";
 import { prisma } from "@/lib/prisma";
 import { buildNotificacaoHtml } from "@/lib/notificacao-html";
 import { normalizeEdpLogoSourcesForPdf } from "@/lib/edp-logo-server";
@@ -12,12 +12,8 @@ export const PDF_RENDERER_VERSION = "html-render-v5";
 type PdfCacheResult = {
   bytes: Uint8Array;
   url: string;
-  source: "blob" | "database" | "generated";
+  source: "storage" | "database" | "generated";
 };
-
-function hasBlobToken() {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
-}
 
 function isExternalPdfUrl(value?: string | null) {
   return Boolean(value && /^https?:\/\//i.test(value));
@@ -116,13 +112,13 @@ export async function storePdfForNotificacao(notificacao: Notificacao, html = bu
   let pdfUrl = markPdfRoute(`/api/notificacoes/${notificacao.id}/pdf`);
   let pdfBase64: string | null = Buffer.from(pdf).toString("base64");
 
-  if (hasBlobToken()) {
-    const blob = await put(`regularizacao/notificacoes/${PDF_RENDERER_VERSION}/${notificacao.id}.pdf`, Buffer.from(pdf), {
-      access: "public",
-      contentType: "application/pdf",
-      allowOverwrite: true
+  if (hasPersistentFileStorage()) {
+    const file = await uploadFile({
+      key: `regularizacao/notificacoes/${PDF_RENDERER_VERSION}/${notificacao.id}.pdf`,
+      body: pdf,
+      contentType: "application/pdf"
     });
-    pdfUrl = blob.url;
+    pdfUrl = file.url;
     pdfBase64 = null;
   }
 
@@ -154,7 +150,7 @@ export async function ensurePdfForNotificacao(notificacao: Notificacao): Promise
       return {
         bytes,
         url: notificacao.pdfUrl!,
-        source: "blob"
+        source: "storage"
       };
     }
   }

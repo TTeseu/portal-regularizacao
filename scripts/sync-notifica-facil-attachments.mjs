@@ -11,7 +11,7 @@ if (!token) {
 }
 
 if (!process.env.DATABASE_URL) {
-  throw new Error("Defina DATABASE_URL apontando para o Neon antes de sincronizar.");
+  throw new Error("Defina DATABASE_URL apontando para o PostgreSQL/Supabase antes de sincronizar.");
 }
 
 const base44 = createClient({ appId, token, serverUrl });

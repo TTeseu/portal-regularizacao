@@ -5,7 +5,7 @@ Portal central independente para notificacoes EDP, com dois modulos no mesmo pro
 - Portal de Regularizacao
 - Notifica Facil
 
-O projeto foi migrado/recriado a partir dos apps Base44 usando Next.js, TypeScript, Tailwind CSS, Prisma e PostgreSQL Neon.
+O projeto foi migrado/recriado a partir dos apps Base44 usando Next.js, TypeScript, Tailwind CSS, Prisma e PostgreSQL. O banco recomendado para a nova fase e Supabase Postgres, com Cloudflare R2 para PDFs e anexos.
 
 ## Stack
 
@@ -13,10 +13,10 @@ O projeto foi migrado/recriado a partir dos apps Base44 usando Next.js, TypeScri
 - TypeScript
 - Tailwind CSS
 - Prisma ORM
-- PostgreSQL Neon
+- PostgreSQL Supabase
 - Auth.js/NextAuth com Google
 - Vercel
-- Vercel Blob opcional para PDFs
+- Cloudflare R2 para PDFs e anexos
 
 ## Rotas principais
 
@@ -55,6 +55,11 @@ BASE44_APP_ID="690248a304b1770ec9b7c4ed"
 BASE44_TOKEN=""
 BASE44_SERVER_URL="https://base44.app"
 BLOB_READ_WRITE_TOKEN=""
+R2_ACCOUNT_ID=""
+R2_ACCESS_KEY_ID=""
+R2_SECRET_ACCESS_KEY=""
+R2_BUCKET=""
+R2_PUBLIC_URL=""
 NOTIFICA_FACIL_INTEGRATION_TOKEN=""
 COLETA_DADOS_API_KEY=""
 GNEWS_API_KEY=""
@@ -64,7 +69,9 @@ GNEWS_API_KEY=""
 
 `SUPER_ADMIN_EMAILS` aceita multiplos emails separados por virgula. O email `jabasff159@gmail.com` e sempre tratado como administrador principal aprovado.
 
-`BLOB_READ_WRITE_TOKEN` habilita armazenamento permanente de PDFs no Vercel Blob. Sem essa variavel, o sistema usa fallback no banco (`pdf_base64`) e continua evitando regeracao em cada download.
+`DATABASE_URL` deve apontar para o Supabase Postgres em producao. Use a connection string do pooler Supabase quando estiver rodando na Vercel.
+
+`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` e `R2_PUBLIC_URL` habilitam armazenamento permanente de PDFs e anexos no Cloudflare R2. Se R2 nao estiver configurado, o sistema ainda aceita `BLOB_READ_WRITE_TOKEN` como fallback legado. Sem R2/Blob, arquivos novos nao devem ser anexados e PDFs podem voltar ao fallback no banco.
 
 `COLETA_DADOS_API_KEY` protege o endpoint do Coleta Dados. `NOTIFICA_FACIL_INTEGRATION_TOKEN` continua aceito como nome legado, mas prefira `COLETA_DADOS_API_KEY` para novas configuracoes.
 
@@ -104,7 +111,40 @@ http://localhost:3000/api/auth/callback/google
 
 O acesso legado por senha ainda funciona com `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
-## Banco Neon
+## Banco Supabase
+
+1. Crie um projeto no Supabase.
+2. Copie a connection string PostgreSQL. Para Vercel, prefira o pooler na porta `6543`.
+3. Defina `DATABASE_URL` localmente e na Vercel.
+4. Rode `npm run prisma:migrate` para aplicar as migrations no Supabase.
+5. Rode `npm run seed` se precisar criar o administrador local legado.
+
+## Cloudflare R2
+
+1. Crie um bucket no Cloudflare R2.
+2. Crie uma API Token/Access Key com permissao de escrita/leitura no bucket.
+3. Configure uma URL publica para o bucket, via dominio customizado ou `r2.dev`.
+4. Defina na Vercel:
+
+```bash
+R2_ACCOUNT_ID=""
+R2_ACCESS_KEY_ID=""
+R2_SECRET_ACCESS_KEY=""
+R2_BUCKET=""
+R2_PUBLIC_URL="https://seu-dominio-ou-r2-dev"
+```
+
+Depois de configurar R2, novos PDFs e anexos passam a ser gravados no R2, e o banco guarda apenas a URL.
+
+Para migrar arquivos antigos que estao em `pdf_base64` ou `data:` no banco:
+
+```bash
+npm run migrate:files:r2
+```
+
+Esse comando usa o `DATABASE_URL` atual e envia os arquivos para o R2, limpando os campos base64 quando o upload termina.
+
+## Banco Neon legado
 
 1. Crie um projeto Neon.
 2. Copie a connection string PostgreSQL com SSL.
