@@ -3,17 +3,18 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Notificacao {
-  id                      String    @id
-  created_date            DateTime?
-  updated_date            DateTime?
-  created_by_id           String?
-  created_by              String?
-  is_sample               Boolean   @default(false)
+  id            String    @id
+  created_date  DateTime?
+  updated_date  DateTime?
+  created_by_id String?
+  created_by    String?
+  is_sample     Boolean   @default(false)
 
   tipo_notificacao        String?
   numero_oficio           String?
@@ -92,40 +93,40 @@ model Notificacao {
 }
 
 model Empresa {
-  id                    String    @id
-  created_date          DateTime?
-  updated_date          DateTime?
-  created_by_id         String?
-  created_by            String?
-  is_sample             Boolean   @default(false)
+  id            String    @id
+  created_date  DateTime?
+  updated_date  DateTime?
+  created_by_id String?
+  created_by    String?
+  is_sample     Boolean   @default(false)
 
-  nome                  String
-  cnpj                  String?
-  contrato_numero       String?
-  endereco              String?
-  bairro                String?
-  cidade                String?
-  estado                String?
-  celebrado_em          String?
-  numero_parceiro       String?
+  nome                     String
+  cnpj                     String?
+  contrato_numero          String?
+  endereco                 String?
+  bairro                   String?
+  cidade                   String?
+  estado                   String?
+  celebrado_em             String?
+  numero_parceiro          String?
   status_envio_notificacao String?
-  vencimento_contrato   String?
-  ano_vencimento_contrato String?
-  ac                    String?
-  numero_nome_empresa   String?
-  empresa_incorporada   String?
-  texto_contrato_7_14   String?
-  texto_ocupacao_revelia String?
-  texto_23_3            String?
-  texto_24_1            String?
-  texto_24_3            String?
-  valor_atualizado      String?
-  multa                 String?
-  faturamento_mensal    String?
-  retroativo            String?
-  bloqueio_notificacao  Boolean   @default(false)
-  tem_clausula_11_6_3   Boolean   @default(false)
-  campo_11_6_3          String?
+  vencimento_contrato      String?
+  ano_vencimento_contrato  String?
+  ac                       String?
+  numero_nome_empresa      String?
+  empresa_incorporada      String?
+  texto_contrato_7_14      String?
+  texto_ocupacao_revelia   String?
+  texto_23_3               String?
+  texto_24_1               String?
+  texto_24_3               String?
+  valor_atualizado         String?
+  multa                    String?
+  faturamento_mensal       String?
+  retroativo               String?
+  bloqueio_notificacao     Boolean @default(false)
+  tem_clausula_11_6_3      Boolean @default(false)
+  campo_11_6_3             String?
 
   @@index([nome])
   @@index([cnpj])
@@ -135,51 +136,51 @@ model Empresa {
 }
 
 model HistoricoDownload {
-  id                   String    @id
-  created_date         DateTime?
-  updated_date         DateTime?
-  created_by_id        String?
-  created_by           String?
-  is_sample            Boolean   @default(false)
+  id            String    @id
+  created_date  DateTime?
+  updated_date  DateTime?
+  created_by_id String?
+  created_by    String?
+  is_sample     Boolean   @default(false)
 
-  tipo                 String
-  descricao            String
-  quantidade_arquivos  Int       @default(0)
-  ids_baixados         String[]
-  usuario_nome         String?
+  tipo                String
+  descricao           String
+  quantidade_arquivos Int      @default(0)
+  ids_baixados        String[]
+  usuario_nome        String?
 
   @@index([tipo])
   @@index([created_date])
 }
 
 model User {
-  id                    String    @id @default(cuid())
-  created_date          DateTime?
-  updated_date          DateTime?
-  full_name             String?
-  name                  String?
-  email                 String    @unique
-  emailVerified         DateTime?
-  image                 String?
-  role                  String    @default("user")
-  status                String    @default("pending")
-  accessApproved        Boolean   @default(false)
-  pode_editar_importar  Boolean   @default(false)
-  pode_acessar_regularizacao Boolean @default(true)
-  pode_acessar_notifica_facil Boolean @default(true)
-  pode_editar_regularizacao Boolean @default(false)
-  pode_editar_notifica_facil Boolean @default(false)
-  pode_importar_dados   Boolean   @default(false)
-  pode_gerenciar_usuarios Boolean @default(false)
-  requestedAt           DateTime?
-  approvedAt            DateTime?
-  approvedBy            String?
-  rejectedAt            DateTime?
-  rejectedBy            String?
-  password_hash         String?
-  accounts              Account[]
-  sessions              Session[]
-  authenticators        Authenticator[]
+  id                          String          @id @default(cuid())
+  created_date                DateTime?
+  updated_date                DateTime?
+  full_name                   String?
+  name                        String?
+  email                       String          @unique
+  emailVerified               DateTime?
+  image                       String?
+  role                        String          @default("user")
+  status                      String          @default("pending")
+  accessApproved              Boolean         @default(false)
+  pode_editar_importar        Boolean         @default(false)
+  pode_acessar_regularizacao  Boolean         @default(true)
+  pode_acessar_notifica_facil Boolean         @default(true)
+  pode_editar_regularizacao   Boolean         @default(false)
+  pode_editar_notifica_facil  Boolean         @default(false)
+  pode_importar_dados         Boolean         @default(false)
+  pode_gerenciar_usuarios     Boolean         @default(false)
+  requestedAt                 DateTime?
+  approvedAt                  DateTime?
+  approvedBy                  String?
+  rejectedAt                  DateTime?
+  rejectedBy                  String?
+  password_hash               String?
+  accounts                    Account[]
+  sessions                    Session[]
+  authenticators              Authenticator[]
 
   @@index([role])
   @@index([status])
@@ -187,18 +188,18 @@ model User {
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?
-  access_token       String?
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -241,84 +242,84 @@ model Authenticator {
 }
 
 model NotificaFacilNotification {
-  id                            String    @id
-  created_date                  DateTime?
-  updated_date                  DateTime?
-  created_by_id                 String?
-  created_by                    String?
-  is_sample                     Boolean   @default(false)
+  id            String    @id
+  created_date  DateTime?
+  updated_date  DateTime?
+  created_by_id String?
+  created_by    String?
+  is_sample     Boolean   @default(false)
 
-  empresa                       String
-  tipo_servico                  String?
-  numero_protocolo              String?
-  numero_notificacao            String?
-  numero_registro_censo         String?
-  destinatario_nome             String?
-  destinatario_cpf              String?
-  destinatario_endereco         String?
-  valor_cobrado                 Float?
-  data_notificacao              String?
-  prazo_resposta                String?
-  data_email_encaminhado        String?
-  qtd_notificacoes_enviadas     Int       @default(0)
-  status                        String    @default("Aguardando assinatura Gestor")
-  is_draft                      Boolean   @default(false)
-  is_standby                    Boolean   @default(false)
-  pendencia_tecnica             Boolean   @default(false)
-  pt_notificado                 Boolean   @default(false)
-  pt_data_notificado            String?
-  regularizacao                 Boolean   @default(false)
-  regularizacao_notificada      Boolean   @default(false)
-  regularizacao_data_notificada String?
-  lote_nome                     String?
-  lote_id                       String?
-  pdf_url                       String?
-  pdf_base64                    String?
-  html_content                  String?
-  regularizacao_assinada_url    String?
-  notificacao_assinada_anexos   Json?
-  anexos_resposta_email         Json?
-  observacoes                   String?
-  status_envio_notificacao      String?
-  vencimento_contrato           String?
-  ano_vencimento_contrato       String?
-  celebrado_em                  String?
-  mostrar_celebrado_em          Boolean   @default(true)
-  empresa_endereco              String?
-  empresa_bairro                String?
-  empresa_cidade                String?
-  empresa_estado                String?
-  empresa_incorporada           String?
-  contrato_numero               String?
-  ac                            String?
-  numero_nome_empresa           String?
-  numero_parceiro               String?
-  cnpj                          String?
-  texto_contrato_7_14           String?
-  texto_ocupacao_revelia        String?
-  texto_23_3                    String?
-  texto_24_1                    String?
-  texto_24_3                    String?
-  valor_atualizado              Float?
-  multa                         Float?
-  retroativo                    String?
-  enderecos_revelia             Json?
-  total_ids_identificados       Int?
-  quantidade_postes             Int?
+  empresa                         String
+  tipo_servico                    String?
+  numero_protocolo                String?
+  numero_notificacao              String?
+  numero_registro_censo           String?
+  destinatario_nome               String?
+  destinatario_cpf                String?
+  destinatario_endereco           String?
+  valor_cobrado                   Float?
+  data_notificacao                String?
+  prazo_resposta                  String?
+  data_email_encaminhado          String?
+  qtd_notificacoes_enviadas       Int       @default(0)
+  status                          String    @default("Aguardando assinatura Gestor")
+  is_draft                        Boolean   @default(false)
+  is_standby                      Boolean   @default(false)
+  pendencia_tecnica               Boolean   @default(false)
+  pt_notificado                   Boolean   @default(false)
+  pt_data_notificado              String?
+  regularizacao                   Boolean   @default(false)
+  regularizacao_notificada        Boolean   @default(false)
+  regularizacao_data_notificada   String?
+  lote_nome                       String?
+  lote_id                         String?
+  pdf_url                         String?
+  pdf_base64                      String?
+  html_content                    String?
+  regularizacao_assinada_url      String?
+  notificacao_assinada_anexos     Json?
+  anexos_resposta_email           Json?
+  observacoes                     String?
+  status_envio_notificacao        String?
+  vencimento_contrato             String?
+  ano_vencimento_contrato         String?
+  celebrado_em                    String?
+  mostrar_celebrado_em            Boolean   @default(true)
+  empresa_endereco                String?
+  empresa_bairro                  String?
+  empresa_cidade                  String?
+  empresa_estado                  String?
+  empresa_incorporada             String?
+  contrato_numero                 String?
+  ac                              String?
+  numero_nome_empresa             String?
+  numero_parceiro                 String?
+  cnpj                            String?
+  texto_contrato_7_14             String?
+  texto_ocupacao_revelia          String?
+  texto_23_3                      String?
+  texto_24_1                      String?
+  texto_24_3                      String?
+  valor_atualizado                Float?
+  multa                           Float?
+  retroativo                      String?
+  enderecos_revelia               Json?
+  total_ids_identificados         Int?
+  quantidade_postes               Int?
   quantidade_postes_regularizados Int?
-  ordem_venda                   String?
-  censo_registro_id             String?
-  censo_draft_id                String?
-  censo_finalizado              Boolean   @default(false)
-  numero_poste                  String?
-  dados_plaqueta                String?
-  latitude                      Float?
-  longitude                     Float?
-  fotos_censo                   Json?
-  ocr_legendas                  Json?
-  download_count                Int       @default(0)
-  last_downloaded_at            DateTime?
-  last_downloaded_by            String?
+  ordem_venda                     String?
+  censo_registro_id               String?
+  censo_draft_id                  String?
+  censo_finalizado                Boolean   @default(false)
+  numero_poste                    String?
+  dados_plaqueta                  String?
+  latitude                        Float?
+  longitude                       Float?
+  fotos_censo                     Json?
+  ocr_legendas                    Json?
+  download_count                  Int       @default(0)
+  last_downloaded_at              DateTime?
+  last_downloaded_by              String?
 
   @@index([empresa])
   @@index([status])
@@ -334,12 +335,12 @@ model NotificaFacilNotification {
 }
 
 model NotificaFacilBaseNotificacao {
-  id                       String    @id
-  created_date             DateTime?
-  updated_date             DateTime?
-  created_by_id            String?
-  created_by               String?
-  is_sample                Boolean   @default(false)
+  id            String    @id
+  created_date  DateTime?
+  updated_date  DateTime?
+  created_by_id String?
+  created_by    String?
+  is_sample     Boolean   @default(false)
 
   empresa                  String
   status_envio_notificacao String?
@@ -376,22 +377,22 @@ model NotificaFacilBaseNotificacao {
 }
 
 model NotificaFacilEmpresa {
-  id                    String    @id
-  created_date          DateTime?
-  updated_date          DateTime?
-  created_by_id         String?
-  created_by            String?
-  is_sample             Boolean   @default(false)
+  id            String    @id
+  created_date  DateTime?
+  updated_date  DateTime?
+  created_by_id String?
+  created_by    String?
+  is_sample     Boolean   @default(false)
 
-  nome                  String
-  cnpj                  String?
-  contrato_numero       String?
-  endereco              String?
-  cidade                String?
-  estado                String?
-  celebrado_em          String?
-  tem_clausula_11_6_3   Boolean   @default(false)
-  campo_11_6_3          String?
+  nome                String
+  cnpj                String?
+  contrato_numero     String?
+  endereco            String?
+  cidade              String?
+  estado              String?
+  celebrado_em        String?
+  tem_clausula_11_6_3 Boolean @default(false)
+  campo_11_6_3        String?
 
   @@index([nome])
   @@index([cnpj])
@@ -399,23 +400,23 @@ model NotificaFacilEmpresa {
 }
 
 model NotificaFacilActivityLog {
-  id                   String    @id
-  created_date         DateTime?
-  updated_date         DateTime?
-  created_by_id        String?
-  created_by           String?
-  is_sample            Boolean   @default(false)
+  id            String    @id
+  created_date  DateTime?
+  updated_date  DateTime?
+  created_by_id String?
+  created_by    String?
+  is_sample     Boolean   @default(false)
 
-  notification_id      String
-  notification_number  String?
-  action               String
-  field_changed        String?
-  old_value            String?
-  new_value            String?
-  user_email           String
-  user_name            String?
-  timestamp            DateTime
-  details              String?
+  notification_id     String
+  notification_number String?
+  action              String
+  field_changed       String?
+  old_value           String?
+  new_value           String?
+  user_email          String
+  user_name           String?
+  timestamp           DateTime
+  details             String?
 
   @@index([notification_id])
   @@index([action])
@@ -435,12 +436,12 @@ model NotificaFacilNotificationCounter {
 }
 
 model NotificaFacilRelatorioEmpresaClandestina {
-  id                    String    @id
-  created_date          DateTime?
-  updated_date          DateTime?
-  created_by_id         String?
-  created_by            String?
-  is_sample             Boolean   @default(false)
+  id            String    @id
+  created_date  DateTime?
+  updated_date  DateTime?
+  created_by_id String?
+  created_by    String?
+  is_sample     Boolean   @default(false)
 
   empresa               String
   numero_registro_censo String?
@@ -452,7 +453,7 @@ model NotificaFacilRelatorioEmpresaClandestina {
   longitude             Float?
   fotos_censo           Json?
   motivo                String?
-  status                String    @default("Pendente")
+  status                String  @default("Pendente")
   observacoes           String?
   data_relatorio        String?
   responsaveis          String?
@@ -465,13 +466,13 @@ model NotificaFacilRelatorioEmpresaClandestina {
 }
 
 model NotificaFacilRawEntity {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   entity_name  String
   base44_id    String
   payload      Json
   created_date DateTime?
   updated_date DateTime?
-  imported_at  DateTime @default(now())
+  imported_at  DateTime  @default(now())
 
   @@unique([entity_name, base44_id])
   @@index([entity_name])
