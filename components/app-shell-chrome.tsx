@@ -18,6 +18,7 @@ import {
 import { SidebarWeather } from "@/components/sidebar-weather";
 import { FlashToast } from "@/components/flash-toast";
 import { AutoDataRefresh } from "@/components/auto-data-refresh";
+import { UsageLimitAlert } from "@/components/usage-limit-alert";
 
 type ShellUser = {
   full_name: string | null;
@@ -154,6 +155,7 @@ export function AppShellChrome({ children, user }: { children: React.ReactNode; 
             </form>
           </div>
         </header>
+        <UsageLimitAlert enabled={user.role === "admin"} />
         <main className="px-4 py-8 lg:px-8">{children}</main>
       </div>
     </div>
